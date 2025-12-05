@@ -1,0 +1,25 @@
+{
+  "name": "unik",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KBL ALL STAR Tour - Philippines to Korea Travel Package",
+  "scripts": {
+    "dev:web": "pnpm --filter @unik/web dev",
+    "dev:admin": "pnpm --filter @unik/admin dev",
+    "build:web": "pnpm --filter @unik/web build",
+    "build:admin": "pnpm --filter @unik/admin build",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint"
+  },
+  "keywords": [
+    "kbl",
+    "basketball",
+    "tour",
+    "travel",
+    "philippines",
+    "korea"
+  ],
+  "author": "Cebu Direct Club",
+  "license": "UNLICENSED"
+}
+
