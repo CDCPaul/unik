@@ -1,0 +1,65 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 헬퍼 함수: 관리자 이메일 체크
+    function isAdmin() {
+      return request.auth != null 
+        && request.auth.token.email.matches('.*@cebudirectclub[.]com$');
+    }
+
+    // 신청서 - 누구나 생성 가능, 관리자만 읽기/수정/삭제
+    match /registrations/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 문의 - 누구나 생성 가능, 관리자만 읽기/수정/삭제  
+    match /contacts/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 테마 설정 - 누구나 읽기, 관리자만 수정
+    match /settings/theme {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 네비게이션 설정 - 누구나 읽기, 관리자만 수정
+    match /settings/navigation {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 일반 설정 - 누구나 읽기, 관리자만 수정
+    match /settings/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 플레이어 정보 - 누구나 읽기, 관리자만 수정
+    match /players/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 갤러리 - 누구나 읽기, 관리자만 수정
+    match /gallery/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 투어 정보 - 누구나 읽기, 관리자만 수정
+    match /tours/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 기타 모든 문서 - 관리자만 접근
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+

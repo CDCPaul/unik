@@ -1,0 +1,41 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 헬퍼 함수: 관리자 이메일 체크
+    function isAdmin() {
+      return request.auth != null 
+        && request.auth.token.email.matches('.*@cebudirectclub[.]com$');
+    }
+
+    // 이미지 파일은 누구나 읽기 가능, 관리자만 업로드
+    match /images/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // 갤러리 이미지
+    match /gallery/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // 선수 이미지
+    match /players/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 투어 이미지
+    match /tours/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // 기타 파일은 관리자만
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+
