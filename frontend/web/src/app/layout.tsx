@@ -1,11 +1,6 @@
 import type { Metadata } from 'next';
 import { Outfit, Playfair_Display } from 'next/font/google';
 import './globals.css';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import FloatingButton from '@/components/layout/FloatingButton';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { NavigationProvider } from '@/context/NavigationContext';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -38,15 +33,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
-      <body className="min-h-screen flex flex-col">
-        <ThemeProvider>
-          <NavigationProvider>
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <FloatingButton />
-          </NavigationProvider>
-        </ThemeProvider>
+      <body className="min-h-screen">
+        {children}
       </body>
     </html>
   );
