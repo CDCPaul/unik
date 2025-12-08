@@ -1,13 +1,13 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
+import { getAuth, Auth } from 'firebase/auth';
 import { firebaseConfig } from '@unik/shared/firebase/config';
 
 let app: FirebaseApp;
 let db: Firestore;
 let storage: FirebaseStorage;
-let analytics: Analytics | null = null;
+let auth: Auth;
 
 // Initialize Firebase
 if (getApps().length === 0) {
@@ -22,16 +22,9 @@ db = getFirestore(app);
 // Initialize Storage
 storage = getStorage(app);
 
-// Initialize Analytics (only in browser)
-export const initAnalytics = async () => {
-  if (typeof window !== 'undefined' && !analytics) {
-    const supported = await isSupported();
-    if (supported) {
-      analytics = getAnalytics(app);
-    }
-  }
-  return analytics;
-};
+// Initialize Auth
+auth = getAuth(app);
 
-export { app, db, storage, analytics };
+export { app, db, storage, auth };
 export default app;
+

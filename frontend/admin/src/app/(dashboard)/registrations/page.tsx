@@ -1,63 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Download, Eye, ChevronDown } from 'lucide-react';
-
-type RegistrationStatus = 'all' | 'new' | 'contacted' | 'confirmed' | 'cancelled';
-
-const mockRegistrations = [
-  { 
-    id: '1', 
-    name: 'Juan dela Cruz', 
-    email: 'juan@email.com', 
-    phone: '+63 912 345 6789',
-    date: '2025-12-05', 
-    status: 'new',
-    adults: 2,
-    children: 1,
-  },
-  { 
-    id: '2', 
-    name: 'Maria Santos', 
-    email: 'maria@email.com', 
-    phone: '+63 923 456 7890',
-    date: '2025-12-04', 
-    status: 'contacted',
-    adults: 1,
-    children: 0,
-  },
-  { 
-    id: '3', 
-    name: 'Pedro Garcia', 
-    email: 'pedro@email.com', 
-    phone: '+63 934 567 8901',
-    date: '2025-12-04', 
-    status: 'confirmed',
-    adults: 4,
-    children: 2,
-  },
-  { 
-    id: '4', 
-    name: 'Ana Reyes', 
-    email: 'ana@email.com', 
-    phone: '+63 945 678 9012',
-    date: '2025-12-03', 
-    status: 'new',
-    adults: 2,
-    children: 0,
-  },
-  { 
-    id: '5', 
-    name: 'Jose Cruz', 
-    email: 'jose@email.com', 
-    phone: '+63 956 789 0123',
-    date: '2025-12-03', 
-    status: 'contacted',
-    adults: 3,
-    children: 1,
-  },
-];
+import { Search, Filter, Download, Eye, ChevronDown, RefreshCw } from 'lucide-react';
+import { getRegistrations, updateRegistrationStatus, getRegistrationStats } from '@/lib/services/registrations';
+import type { Registration, RegistrationStatus } from '@unik/shared/types';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -74,21 +21,88 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-export default function RegistrationsPage() {
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<RegistrationStatus>('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+const formatDate = (date: Date | undefined) => {
+  if (!date) return '-';
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
 
-  const filteredRegistrations = mockRegistrations.filter(reg => {
-    const matchesSearch = reg.name.toLowerCase().includes(search.toLowerCase()) ||
+export default function RegistrationsPage() {
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [stats, setStats] = useState({ total: 0, new: 0, contacted: 0, confirmed: 0, cancelled: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'all'>('all');
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [regs, statsData] = await Promise.all([
+        getRegistrations(),
+        getRegistrationStats(),
+      ]);
+      setRegistrations(regs);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error loading registrations:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleStatusChange = async (id: string, newStatus: RegistrationStatus) => {
+    try {
+      await updateRegistrationStatus(id, newStatus);
+      // Update local state
+      setRegistrations(prev => 
+        prev.map(reg => reg.id === id ? { ...reg, status: newStatus } : reg)
+      );
+      // Reload stats
+      const statsData = await getRegistrationStats();
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Failed to update status');
+    }
+  };
+
+  const filteredRegistrations = registrations.filter(reg => {
+    const matchesSearch = reg.fullName.toLowerCase().includes(search.toLowerCase()) ||
                          reg.email.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || reg.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const updateStatus = (id: string, newStatus: string) => {
-    // TODO: Update status in Firebase
-    console.log('Update status:', id, newStatus);
+  const exportToCSV = () => {
+    const headers = ['Name', 'Email', 'Phone', 'Date of Birth', 'Passport Name', 'Nationality', 'Adults', 'Children', 'Special Requests', 'Status', 'Created At'];
+    const rows = filteredRegistrations.map(reg => [
+      reg.fullName,
+      reg.email,
+      reg.phone,
+      reg.dateOfBirth,
+      reg.passportName,
+      reg.nationality,
+      reg.adultsCount,
+      reg.childrenCount,
+      reg.specialRequests || '',
+      reg.status,
+      formatDate(reg.createdAt),
+    ]);
+    
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `registrations-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
   };
 
   return (
@@ -99,10 +113,16 @@ export default function RegistrationsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Registrations</h1>
           <p className="text-slate-500 mt-1">Manage tour registrations</p>
         </div>
-        <button className="btn-secondary">
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+        <div className="flex gap-3">
+          <button onClick={loadData} className="btn-secondary" disabled={isLoading}>
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button onClick={exportToCSV} className="btn-secondary">
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -129,7 +149,7 @@ export default function RegistrationsPage() {
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as RegistrationStatus)}
+              onChange={(e) => setStatusFilter(e.target.value as RegistrationStatus | 'all')}
               className="input-field pl-10 pr-10 appearance-none cursor-pointer"
             >
               <option value="all">All Status</option>
@@ -150,62 +170,61 @@ export default function RegistrationsPage() {
         transition={{ delay: 0.1 }}
         className="card overflow-hidden"
       >
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="table-header">Name</th>
-                <th className="table-header">Contact</th>
-                <th className="table-header">Travelers</th>
-                <th className="table-header">Date</th>
-                <th className="table-header">Status</th>
-                <th className="table-header">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {filteredRegistrations.map((reg) => (
-                <tr key={reg.id} className="hover:bg-slate-50">
-                  <td className="table-cell">
-                    <div className="font-medium">{reg.name}</div>
-                  </td>
-                  <td className="table-cell">
-                    <div className="text-slate-900">{reg.email}</div>
-                    <div className="text-slate-500 text-xs">{reg.phone}</div>
-                  </td>
-                  <td className="table-cell">
-                    <div className="text-slate-900">{reg.adults} Adults</div>
-                    {reg.children > 0 && (
-                      <div className="text-slate-500 text-xs">{reg.children} Children</div>
-                    )}
-                  </td>
-                  <td className="table-cell text-slate-500">{reg.date}</td>
-                  <td className="table-cell">
-                    <select
-                      value={reg.status}
-                      onChange={(e) => updateStatus(reg.id, e.target.value)}
-                      className={`${getStatusBadge(reg.status)} cursor-pointer border-0 pr-6 appearance-none`}
-                    >
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </td>
-                  <td className="table-cell">
-                    <button
-                      onClick={() => setSelectedId(reg.id)}
-                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                      <Eye className="w-4 h-4 text-slate-500" />
-                    </button>
-                  </td>
+        {isLoading ? (
+          <div className="p-12 text-center text-slate-500">
+            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4" />
+            Loading registrations...
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="table-header">Name</th>
+                  <th className="table-header">Contact</th>
+                  <th className="table-header">Travelers</th>
+                  <th className="table-header">Date</th>
+                  <th className="table-header">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {filteredRegistrations.map((reg) => (
+                  <tr key={reg.id} className="hover:bg-slate-50">
+                    <td className="table-cell">
+                      <div className="font-medium">{reg.fullName}</div>
+                      <div className="text-slate-500 text-xs">{reg.passportName}</div>
+                    </td>
+                    <td className="table-cell">
+                      <div className="text-slate-900">{reg.email}</div>
+                      <div className="text-slate-500 text-xs">{reg.phone}</div>
+                    </td>
+                    <td className="table-cell">
+                      <div className="text-slate-900">{1 + reg.adultsCount} Adults</div>
+                      {reg.childrenCount > 0 && (
+                        <div className="text-slate-500 text-xs">{reg.childrenCount} Children</div>
+                      )}
+                    </td>
+                    <td className="table-cell text-slate-500">{formatDate(reg.createdAt)}</td>
+                    <td className="table-cell">
+                      <select
+                        value={reg.status}
+                        onChange={(e) => handleStatusChange(reg.id, e.target.value as RegistrationStatus)}
+                        className={`${getStatusBadge(reg.status)} cursor-pointer border-0 pr-6 appearance-none`}
+                      >
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-        {filteredRegistrations.length === 0 && (
+        {!isLoading && filteredRegistrations.length === 0 && (
           <div className="p-12 text-center text-slate-500">
             No registrations found matching your criteria.
           </div>
@@ -213,31 +232,28 @@ export default function RegistrationsPage() {
       </motion.div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-slate-900">{mockRegistrations.length}</div>
+          <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
           <div className="text-sm text-slate-500">Total</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-blue-600">
-            {mockRegistrations.filter(r => r.status === 'new').length}
-          </div>
+          <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
           <div className="text-sm text-slate-500">New</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-600">
-            {mockRegistrations.filter(r => r.status === 'contacted').length}
-          </div>
+          <div className="text-2xl font-bold text-yellow-600">{stats.contacted}</div>
           <div className="text-sm text-slate-500">Contacted</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">
-            {mockRegistrations.filter(r => r.status === 'confirmed').length}
-          </div>
+          <div className="text-2xl font-bold text-green-600">{stats.confirmed}</div>
           <div className="text-sm text-slate-500">Confirmed</div>
+        </div>
+        <div className="card p-4 text-center">
+          <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
+          <div className="text-sm text-slate-500">Cancelled</div>
         </div>
       </div>
     </div>
   );
 }
-

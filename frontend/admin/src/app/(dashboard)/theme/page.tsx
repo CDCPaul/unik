@@ -1,57 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, RotateCcw, Eye, Palette, Sun, Moon } from 'lucide-react';
-
-interface ThemeColors {
-  // Background
-  pageBg: string;
-  navbarBg: string;
-  cardBg: string;
-  footerBg: string;
-  
-  // Text
-  headingText: string;
-  bodyText: string;
-  mutedText: string;
-  
-  // Primary Button
-  primaryBtnBg: string;
-  primaryBtnText: string;
-  primaryBtnHoverBg: string;
-  
-  // Secondary Button
-  secondaryBtnBg: string;
-  secondaryBtnText: string;
-  secondaryBtnBorder: string;
-  
-  // Accent
-  accentColor: string;
-  goldColor: string;
-}
-
-const defaultTheme: ThemeColors = {
-  pageBg: '#0f172a',
-  navbarBg: '#0f172a',
-  cardBg: '#1e293b',
-  footerBg: '#020617',
-  
-  headingText: '#ffffff',
-  bodyText: '#f1f5f9',
-  mutedText: '#94a3b8',
-  
-  primaryBtnBg: '#d4876a',
-  primaryBtnText: '#ffffff',
-  primaryBtnHoverBg: '#c66a4a',
-  
-  secondaryBtnBg: '#334155',
-  secondaryBtnText: '#ffffff',
-  secondaryBtnBorder: '#475569',
-  
-  accentColor: '#0ea5e9',
-  goldColor: '#eab308',
-};
+import { Save, RotateCcw, Eye, Palette, RefreshCw } from 'lucide-react';
+import { getTheme, saveTheme, defaultTheme, type ThemeColors } from '@/lib/services/theme';
 
 const presetThemes = [
   {
@@ -152,8 +104,31 @@ const colorGroups = [
 
 export default function ThemePage() {
   const [theme, setTheme] = useState<ThemeColors>(defaultTheme);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activePreset, setActivePreset] = useState<string>('Dark Premium');
+  const [activePreset, setActivePreset] = useState<string>('Custom');
+
+  useEffect(() => {
+    loadTheme();
+  }, []);
+
+  const loadTheme = async () => {
+    setIsLoading(true);
+    try {
+      const savedTheme = await getTheme();
+      setTheme(savedTheme);
+      
+      // Check if it matches a preset
+      const matchingPreset = presetThemes.find(p => 
+        JSON.stringify(p.colors) === JSON.stringify(savedTheme)
+      );
+      setActivePreset(matchingPreset?.name || 'Custom');
+    } catch (error) {
+      console.error('Error loading theme:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const updateColor = (key: keyof ThemeColors, value: string) => {
     setTheme(prev => ({ ...prev, [key]: value }));
@@ -170,19 +145,26 @@ export default function ThemePage() {
     setActivePreset('Dark Premium');
   };
 
-  const saveTheme = async () => {
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      // TODO: Save to Firebase
-      console.log('Saving theme:', theme);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Theme saved successfully!');
+      await saveTheme(theme);
+      alert('Theme saved successfully! The changes will be visible on the main website.');
     } catch (error) {
+      console.error('Error saving theme:', error);
       alert('Failed to save theme');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -197,7 +179,7 @@ export default function ThemePage() {
             <RotateCcw className="w-4 h-4" />
             Reset
           </button>
-          <button onClick={saveTheme} disabled={isSaving} className="btn-primary">
+          <button onClick={handleSave} disabled={isSaving} className="btn-primary">
             <Save className="w-4 h-4" />
             {isSaving ? 'Saving...' : 'Save Theme'}
           </button>
@@ -420,4 +402,3 @@ export default function ThemePage() {
     </div>
   );
 }
-

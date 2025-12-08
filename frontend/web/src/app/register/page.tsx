@@ -8,6 +8,7 @@ import {
   Users, MessageSquare, Send, CheckCircle, AlertCircle,
   Minus, Plus
 } from 'lucide-react';
+import { createRegistration } from '@/lib/services/registrations';
 
 interface RegistrationForm {
   fullName: string;
@@ -40,24 +41,25 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      // Add companion counts to data
-      const formData = {
-        ...data,
+      // Submit to Firebase
+      await createRegistration({
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth,
+        passportName: data.passportName,
+        nationality: data.nationality,
         adultsCount,
         childrenCount,
-      };
-
-      // TODO: Submit to Firebase and send email
-      console.log('Form submitted:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+        specialRequests: data.specialRequests || '',
+      });
       
       setIsSuccess(true);
       reset();
       setAdultsCount(0);
       setChildrenCount(0);
     } catch (err) {
+      console.error('Registration error:', err);
       setError('Something went wrong. Please try again or contact us directly.');
     } finally {
       setIsSubmitting(false);

@@ -1,20 +1,21 @@
 // Firebase Configuration
+// Uses environment variables when available, falls back to hardcoded values for development
 export const firebaseConfig = {
-  apiKey: "AIzaSyAy8U6juEFaRkuzZ9_nkHx6KmGcXnMvWtA",
-  authDomain: "unik-90206.firebaseapp.com",
-  projectId: "unik-90206",
-  storageBucket: "unik-90206.firebasestorage.app",
-  messagingSenderId: "884586493742",
-  appId: "1:884586493742:web:7ea7ddc03c2653ac2facbf",
-  measurementId: "G-KZ37Z5VKCR"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyAy8U6juEFaRkuzZ9_nkHx6KmGcXnMvWtA",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "unik-90206.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "unik-90206",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "unik-90206.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "884586493742",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:884586493742:web:7ea7ddc03c2653ac2facbf",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-KZ37Z5VKCR"
 };
 
 // Allowed email domain for admin access
-export const ALLOWED_ADMIN_DOMAIN = 'cebudirectclub.com';
+export const ALLOWED_ADMIN_DOMAIN = process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'cebudirectclub.com';
 
 // Email configuration
 export const EMAIL_CONFIG = {
-  receiverEmail: 'ticket@cebudirectclub.com',
+  receiverEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'ticket@cebudirectclub.com',
 };
 
 // Collection names
@@ -25,5 +26,7 @@ export const COLLECTIONS = {
   gallery: 'gallery',
   contacts: 'contacts',
   infoSections: 'infoSections',
+  navigation: 'navigation',
+  theme: 'theme',
+  settings: 'settings',
 } as const;
-

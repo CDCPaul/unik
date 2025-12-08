@@ -1,30 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { GripVertical, Eye, EyeOff, Save, Plus, Trash2, ExternalLink } from 'lucide-react';
-
-interface NavItem {
-  id: string;
-  label: string;
-  href: string;
-  isVisible: boolean;
-  order: number;
-}
-
-const defaultNavItems: NavItem[] = [
-  { id: '1', label: 'Home', href: '/', isVisible: true, order: 0 },
-  { id: '2', label: 'Players', href: '/players', isVisible: true, order: 1 },
-  { id: '3', label: 'Tour', href: '/tour', isVisible: true, order: 2 },
-  { id: '4', label: 'Info', href: '/info', isVisible: true, order: 3 },
-  { id: '5', label: 'Register', href: '/register', isVisible: true, order: 4 },
-  { id: '6', label: 'Contact', href: '/contact', isVisible: true, order: 5 },
-];
+import { GripVertical, Eye, EyeOff, Save, Plus, Trash2, ExternalLink, RefreshCw } from 'lucide-react';
+import { getNavigation, saveNavigation, defaultNavItems, type NavItem } from '@/lib/services/navigation';
 
 export default function NavigationPage() {
   const [navItems, setNavItems] = useState<NavItem[]>(defaultNavItems);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadNavigation();
+  }, []);
+
+  const loadNavigation = async () => {
+    setIsLoading(true);
+    try {
+      const items = await getNavigation();
+      setNavItems(items);
+    } catch (error) {
+      console.error('Error loading navigation:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const updateItem = (id: string, updates: Partial<NavItem>) => {
     setNavItems(items => 
@@ -82,16 +83,23 @@ export default function NavigationPage() {
   const saveChanges = async () => {
     setIsSaving(true);
     try {
-      // TODO: Save to Firebase
-      console.log('Saving navigation:', navItems);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await saveNavigation(navItems);
       alert('Navigation saved successfully!');
     } catch (error) {
+      console.error('Error saving navigation:', error);
       alert('Failed to save navigation');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <RefreshCw className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -250,4 +258,3 @@ export default function NavigationPage() {
     </div>
   );
 }
-
