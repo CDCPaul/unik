@@ -175,3 +175,15 @@ export interface ThemeColors {
   accentColor: string;
   goldColor: string;
 }
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  emailNotificationSent?: boolean;
+  emailNotificationError?: string;
+  createdAt?: Date;
+}
