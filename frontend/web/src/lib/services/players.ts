@@ -2,6 +2,7 @@ import {
   collection, 
   addDoc, 
   getDocs, 
+  getDoc,
   doc, 
   updateDoc, 
   deleteDoc,
@@ -31,6 +32,27 @@ export async function getPlayers(): Promise<Player[]> {
   } catch (error) {
     console.error('Error getting players:', error);
     return [];
+  }
+}
+
+// Get single player by ID
+export async function getPlayer(id: string): Promise<Player | null> {
+  try {
+    const docRef = doc(db, COLLECTIONS.players, id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return {
+        id: docSnap.id,
+        ...docSnap.data(),
+        createdAt: docSnap.data().createdAt?.toDate(),
+        updatedAt: docSnap.data().updatedAt?.toDate(),
+      } as Player;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting player:', error);
+    return null;
   }
 }
 
@@ -88,4 +110,3 @@ export async function reorderPlayers(players: { id: string; order: number }[]): 
   });
   await Promise.all(promises);
 }
-
