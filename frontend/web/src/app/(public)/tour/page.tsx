@@ -149,10 +149,18 @@ export default function TourPage() {
             </div>
             <div className="relative">
               <div className="aspect-video rounded-2xl overflow-hidden border border-dark-600 shadow-2xl">
-                {/* Placeholder for Game Image */}
-                <div className="absolute inset-0 bg-linear-to-br from-blue-900 to-dark-900 flex items-center justify-center">
-                  <span className="text-white/20 text-4xl font-display font-bold">KBL ALL-STAR</span>
-                </div>
+                {tour.heroImageUrl ? (
+                  <img
+                    src={tour.heroImageUrl}
+                    alt={tour.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  /* Placeholder for Game Image */
+                  <div className="absolute inset-0 bg-linear-to-br from-blue-900 to-dark-900 flex items-center justify-center">
+                    <span className="text-white/20 text-4xl font-display font-bold">KBL ALL-STAR</span>
+                  </div>
+                )}
               </div>
               {/* Decorative elements */}
               <div className="absolute -top-4 -right-4 w-24 h-24 bg-gold-500/20 rounded-full blur-2xl" />

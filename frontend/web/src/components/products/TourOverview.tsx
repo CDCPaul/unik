@@ -217,7 +217,18 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
             <div className="relative">
               <div className="aspect-video rounded-2xl overflow-hidden border shadow-2xl" style={{ borderColor: theme.secondaryBtnBorder }}>
                 {(() => {
-                  // Find highlight day with image
+                  // Priority 1: Use heroImageUrl (uploaded in admin)
+                  if (currentTour.heroImageUrl) {
+                    return (
+                      <img
+                        src={currentTour.heroImageUrl}
+                        alt={currentTour.title}
+                        className="w-full h-full object-cover"
+                      />
+                    );
+                  }
+                  
+                  // Priority 2: Find highlight day with image
                   const highlightDay = currentTour.itinerary?.find(day => day.highlight && day.imageUrl);
                   
                   if (highlightDay?.imageUrl) {
