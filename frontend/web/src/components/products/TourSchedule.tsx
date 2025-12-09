@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Plane, Users, Info, RefreshCw } from 'lucide-react';
+import { Calendar, MapPin, Plane, Info, RefreshCw } from 'lucide-react';
 import { getTours } from '@/lib/services/tours';
 import type { TourPackage, TourDeparture } from '@unik/shared/types';
 import { useTheme } from '@/context/ThemeContext';
@@ -63,23 +63,6 @@ export default function TourSchedule({ productCategory, tourType }: TourSchedule
     );
   }
 
-  const getDepartureStatusColor = (status: TourDeparture['status']) => {
-    switch (status) {
-      case 'available': return theme.goldColor;
-      case 'limited': return '#ff9800';
-      case 'sold-out': return '#ef4444';
-      default: return theme.mutedText;
-    }
-  };
-
-  const getDepartureStatusLabel = (status: TourDeparture['status']) => {
-    switch (status) {
-      case 'available': return 'Available';
-      case 'limited': return 'Limited Seats';
-      case 'sold-out': return 'Sold Out';
-      default: return 'Unknown';
-    }
-  };
 
   return (
     <section className="pt-32 pb-16" style={{ backgroundColor: theme.pageBg, color: theme.bodyText }}>
@@ -129,20 +112,6 @@ export default function TourSchedule({ productCategory, tourType }: TourSchedule
                   className="card p-6 relative overflow-hidden"
                   style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBg }}
                 >
-                  {/* Status Badge */}
-                  <div className="absolute top-4 right-4">
-                    <span 
-                      className="text-xs font-bold px-3 py-1 rounded-full"
-                      style={{ 
-                        backgroundColor: `${getDepartureStatusColor(departure.status)}20`,
-                        color: getDepartureStatusColor(departure.status),
-                        border: `1px solid ${getDepartureStatusColor(departure.status)}40`
-                      }}
-                    >
-                      {getDepartureStatusLabel(departure.status)}
-                    </span>
-                  </div>
-
                   <div className="space-y-4">
                     {/* Dates */}
                     <div>
@@ -161,14 +130,6 @@ export default function TourSchedule({ productCategory, tourType }: TourSchedule
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4" style={{ color: theme.goldColor }} />
                       <span style={{ color: theme.bodyText }}>{selectedTour.duration}</span>
-                    </div>
-
-                    {/* Available Seats */}
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" style={{ color: theme.goldColor }} />
-                      <span style={{ color: theme.bodyText }}>
-                        {departure.availableSeats} seats available
-                      </span>
                     </div>
 
                     {/* Special Note */}

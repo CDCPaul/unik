@@ -248,17 +248,10 @@ export default function RegisterPage() {
                       {availableDepartures.map(departure => (
                         <option key={departure.id} value={departure.id}>
                           {new Date(departure.departureDate).toLocaleDateString()} - {new Date(departure.returnDate).toLocaleDateString()}
-                          {departure.status === 'limited' && ' (Limited Seats)'}
-                          {departure.status === 'sold-out' && ' (Sold Out)'}
                           {departure.specialNote && ` - ${departure.specialNote}`}
                         </option>
                       ))}
                     </select>
-                    {selectedDeparture && selectedDeparture.availableSeats && (
-                      <p className="text-sm text-gold-500 mt-2">
-                        {selectedDeparture.availableSeats} seats remaining
-                      </p>
-                    )}
                   </div>
                 )}
               </div>

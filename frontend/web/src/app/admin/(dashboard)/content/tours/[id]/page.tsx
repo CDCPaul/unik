@@ -144,8 +144,8 @@ export default function TourDetailPage() {
       id: `dep_${Date.now()}`,
       departureDate: '',
       returnDate: '',
-      availableSeats: 40,
-      status: 'available',
+      availableSeats: 0, // Not used in UI, but required by type
+      status: 'available', // Not used in UI, but required by type
       specialNote: '',
     };
     setTour({ ...tour, departures: [...(tour.departures || []), newDeparture] });
@@ -512,29 +512,7 @@ export default function TourDetailPage() {
                       className="admin-input text-sm bg-white text-black"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Available Seats</label>
-                    <input
-                      type="number"
-                      value={departure.availableSeats}
-                      onChange={(e) => updateDeparture(index, { availableSeats: parseInt(e.target.value) })}
-                      className="admin-input text-sm bg-white text-black"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                    <select
-                      value={departure.status}
-                      onChange={(e) => updateDeparture(index, { status: e.target.value as TourDeparture['status'] })}
-                      className="admin-input text-sm bg-white text-black"
-                    >
-                      <option value="available">Available</option>
-                      <option value="limited">Limited Seats</option>
-                      <option value="sold-out">Sold Out</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-1">
                     <label className="block text-xs font-medium text-slate-600 mb-1">Special Note (Optional)</label>
                     <input
                       type="text"
