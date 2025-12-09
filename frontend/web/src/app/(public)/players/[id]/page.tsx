@@ -82,18 +82,6 @@ export default function PlayerDetailPage() {
                   <p className="text-gold-500 font-medium">{player.team}</p>
                 </div>
               </motion.div>
-
-              {/* Action Shot (if available) */}
-              {player.actionPhotoUrl && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="aspect-video rounded-2xl overflow-hidden bg-dark-800 border border-dark-700 shadow-xl"
-                >
-                  <img src={player.actionPhotoUrl} alt={`${player.name} action`} className="w-full h-full object-cover" />
-                </motion.div>
-              )}
             </div>
 
             {/* Right Column: Info */}
@@ -197,6 +185,26 @@ export default function PlayerDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* Action Shot Section */}
+      {player.actionPhotoUrl && (
+        <section className="py-16 bg-dark-900">
+          <div className="container-custom">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h2 className="text-3xl font-display font-bold text-white mb-8 text-center">Action Shot</h2>
+              <div className="max-w-5xl mx-auto">
+                <div className="aspect-video rounded-2xl overflow-hidden bg-dark-800 border border-dark-700 shadow-2xl">
+                  <img src={player.actionPhotoUrl} alt={`${player.name} action`} className="w-full h-full object-cover" />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
     </>
   );
 }

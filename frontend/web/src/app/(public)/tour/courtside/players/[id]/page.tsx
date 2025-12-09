@@ -220,6 +220,34 @@ export default function CourtsidePlayerDetailPage() {
         </div>
       </section>
 
+      {/* Action Shot Section */}
+      {player.actionPhotoUrl && (
+        <section className="py-16">
+          <div className="container-custom">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <h2 className="text-3xl font-display font-bold mb-8 text-center" style={{ color: theme.headingText }}>
+                Action Shot
+              </h2>
+              <div className="max-w-5xl mx-auto">
+                <div className="aspect-video rounded-2xl overflow-hidden border-2 shadow-2xl"
+                  style={{ borderColor: theme.goldColor }}
+                >
+                  <img
+                    src={player.actionPhotoUrl}
+                    alt={`${player.name} action`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
+
       {/* CTA Section */}
       <section className="py-16 border-t" style={{ borderColor: theme.cardBg }}>
         <div className="container-custom text-center">
