@@ -38,10 +38,10 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mb-6 leading-relaxed" style={{ color: theme.mutedText }}>
-              {!isLoading && (settings.description || 'Your gateway to the ultimate KBL All-Star experience.')}
+              {settings?.description || 'Your gateway to the ultimate KBL All-Star experience.'}
             </p>
             <div className="flex items-center gap-4">
-              {!isLoading && settings.socialMedia.facebook && (
+              {settings?.socialMedia?.facebook && (
                 <a
                   href={settings.socialMedia.facebook}
                   target="_blank"
@@ -64,7 +64,7 @@ export default function Footer() {
                   <Facebook className="w-5 h-5" />
                 </a>
               )}
-              {!isLoading && settings.socialMedia.instagram && (
+              {settings?.socialMedia?.instagram && (
                 <a
                   href={settings.socialMedia.instagram}
                   target="_blank"
@@ -87,7 +87,7 @@ export default function Footer() {
                   <Instagram className="w-5 h-5" />
                 </a>
               )}
-              {!isLoading && settings.socialMedia.twitter && (
+              {settings?.socialMedia?.twitter && (
                 <a
                   href={settings.socialMedia.twitter}
                   target="_blank"
@@ -163,7 +163,7 @@ export default function Footer() {
               Contact Us
             </h3>
             <ul className="space-y-4">
-              {!isLoading && (
+              {settings && (
                 <>
                   <li className="flex items-start gap-3">
                     <Mail className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
@@ -207,7 +207,7 @@ export default function Footer() {
         <div className="container-custom py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm" style={{ color: theme.mutedText }}>
-              © {new Date().getFullYear()} {!isLoading && settings.brandName}. All rights reserved.
+              © {new Date().getFullYear()} {settings?.brandName || 'UNIK'}. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm">
               <Link 

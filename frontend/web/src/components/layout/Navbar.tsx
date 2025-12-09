@@ -49,7 +49,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            {!settingsLoading && settings.logoUrl ? (
+            {!settingsLoading && settings?.logoUrl ? (
               <div className="relative h-24 w-auto">
                 <Image
                   src={settings.logoUrl}
@@ -66,7 +66,7 @@ export default function Navbar() {
                   <Sparkles className="w-16 h-16 group-hover:opacity-80 transition-colors" style={{ color: theme.goldColor }} />
                   <div className="absolute inset-0 blur-lg opacity-30" style={{ backgroundColor: theme.goldColor }} />
                 </div>
-                {!settingsLoading && (
+                {!settingsLoading && settings && (
                   <span className="text-3xl font-display font-bold tracking-tight">
                     <span style={{ color: theme.headingText }}>{settings.brandName || 'UNIK'}</span>
                   </span>

@@ -49,7 +49,7 @@ export default function ContactPage() {
     }
   };
 
-  const contactInfo = [
+  const contactInfo = settings ? [
     {
       icon: Mail,
       title: 'Email',
@@ -74,7 +74,7 @@ export default function ContactPage() {
       value: 'Mon-Fri: 9AM - 6PM (PHT)',
       link: null,
     },
-  ];
+  ] : [];
 
   return (
     <>
@@ -118,7 +118,7 @@ export default function ContactPage() {
               </h2>
 
               <div className="space-y-6 mb-10">
-                {!isLoading && contactInfo.map((item) => (
+                {contactInfo.map((item) => (
                   <div key={item.title} className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gold-500/10 flex items-center justify-center shrink-0">
                       <item.icon className="w-5 h-5 text-gold-400" />
@@ -144,7 +144,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-white font-medium mb-4">Follow Us</h3>
                 <div className="flex items-center gap-3">
-                  {!isLoading && settings.socialMedia.facebook && (
+                  {settings?.socialMedia?.facebook && (
                     <a
                       href={settings.socialMedia.facebook}
                       target="_blank"
@@ -156,7 +156,7 @@ export default function ContactPage() {
                       <Facebook className="w-5 h-5" />
                     </a>
                   )}
-                  {!isLoading && settings.socialMedia.instagram && (
+                  {settings?.socialMedia?.instagram && (
                     <a
                       href={settings.socialMedia.instagram}
                       target="_blank"
@@ -168,7 +168,7 @@ export default function ContactPage() {
                       <Instagram className="w-5 h-5" />
                     </a>
                   )}
-                  {!isLoading && settings.socialMedia.twitter && (
+                  {settings?.socialMedia?.twitter && (
                     <a
                       href={settings.socialMedia.twitter}
                       target="_blank"

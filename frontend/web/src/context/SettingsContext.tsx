@@ -8,17 +8,17 @@ import { CompanyInfo } from '@unik/shared/types';
 import { defaultSettings } from '@/lib/services/admin/settings';
 
 interface SettingsContextType {
-  settings: CompanyInfo;
+  settings: CompanyInfo | null;
   isLoading: boolean;
 }
 
 const SettingsContext = createContext<SettingsContextType>({
-  settings: defaultSettings,
+  settings: null,
   isLoading: true,
 });
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<CompanyInfo>(defaultSettings);
+  const [settings, setSettings] = useState<CompanyInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -35,13 +35,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             updatedAt: data.updatedAt?.toDate(),
           } as CompanyInfo);
         } else {
-          setSettings(defaultSettings);
+          // Keep null if no data exists to prevent showing default data
+          setSettings(null);
         }
         setIsLoading(false);
       },
       (error) => {
         console.error('Error loading settings:', error);
-        setSettings(defaultSettings);
+        // Keep null to prevent showing default data on initial load
+        setSettings(null);
         setIsLoading(false);
       }
     );
