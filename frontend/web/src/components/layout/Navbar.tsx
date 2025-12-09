@@ -65,19 +65,11 @@ export default function Navbar() {
                   priority
                 />
               </div>
-            ) : (
-              <>
-                <div className="relative">
-                  <Sparkles className="w-16 h-16 group-hover:opacity-80 transition-colors" style={{ color: theme.goldColor }} />
-                  <div className="absolute inset-0 blur-lg opacity-30" style={{ backgroundColor: theme.goldColor }} />
-                </div>
-                {mounted && !settingsLoading && settings && (
-                  <span className="text-3xl font-display font-bold tracking-tight">
-                    <span style={{ color: theme.headingText }}>{settings.brandName || 'UNIK'}</span>
-                  </span>
-                )}
-              </>
-            )}
+            ) : mounted && !settingsLoading && settings ? (
+              <span className="text-3xl font-display font-bold tracking-tight">
+                <span style={{ color: theme.headingText }}>{settings.brandName || 'UNIK'}</span>
+              </span>
+            ) : null}
           </Link>
 
           {/* Desktop Navigation */}
@@ -167,18 +159,20 @@ export default function Navbar() {
           </div>
 
           {/* CTA Button */}
-          <div className="hidden lg:block">
-            <Link 
-              href="/register" 
-              className="btn-gold text-sm"
-              style={{
-                backgroundColor: theme.goldColor,
-                color: theme.pageBg,
-              }}
-            >
-              Book Now
-            </Link>
-          </div>
+          {mounted && !settingsLoading && (
+            <div className="hidden lg:block">
+              <Link 
+                href="/register" 
+                className="btn-gold text-sm"
+                style={{
+                  backgroundColor: theme.goldColor,
+                  color: theme.pageBg,
+                }}
+              >
+                Book Now
+              </Link>
+            </div>
+          )}
 
           {/* Mobile Menu Button */}
           <button
@@ -252,24 +246,26 @@ export default function Navbar() {
                   )}
                 </motion.div>
               ))}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="pt-4"
-              >
-                <Link
-                  href="/register"
-                  onClick={() => setIsOpen(false)}
-                  className="btn-gold w-full text-center"
-                  style={{
-                    backgroundColor: theme.goldColor,
-                    color: theme.pageBg,
-                  }}
+              {mounted && !settingsLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="pt-4"
                 >
-                  Book Now
-                </Link>
-              </motion.div>
+                  <Link
+                    href="/register"
+                    onClick={() => setIsOpen(false)}
+                    className="btn-gold w-full text-center"
+                    style={{
+                      backgroundColor: theme.goldColor,
+                      color: theme.pageBg,
+                    }}
+                  >
+                    Book Now
+                  </Link>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         )}

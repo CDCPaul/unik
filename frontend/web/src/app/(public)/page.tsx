@@ -81,27 +81,31 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-400 font-medium text-sm mb-6">
-                Official Tour Package
-              </span>
-              <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight mb-6">
-                {tour ? tour.title : 'Experience KBL All-Star 2026'}
-              </h1>
-              <p className="text-xl text-dark-200 mb-8 max-w-2xl">
-                {tour ? tour.subtitle : 'Join the ultimate basketball tour from Philippines to Korea. Watch the game, meet the stars, and explore Seoul.'}
-              </p>
-              
-              <div className="flex flex-wrap gap-4">
-                <Link 
-                  href={tour ? getTourDetailUrl(tour) : '/tour/courtside'} 
-                  className="btn-primary"
-                >
-                  View Tour Details
-                </Link>
-                <Link href="/register" className="btn-secondary">
-                  Book Now <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </div>
+              {!isLoading && tour && (
+                <>
+                  <span className="inline-block py-1 px-3 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-400 font-medium text-sm mb-6">
+                    Official Tour Package
+                  </span>
+                  <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight mb-6">
+                    {tour.title}
+                  </h1>
+                  <p className="text-xl text-dark-200 mb-8 max-w-2xl">
+                    {tour.subtitle}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-4">
+                    <Link 
+                      href={getTourDetailUrl(tour)} 
+                      className="btn-primary"
+                    >
+                      View Tour Details
+                    </Link>
+                    <Link href="/register" className="btn-secondary">
+                      Book Now <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </div>
+                </>
+              )}
             </motion.div>
 
             {/* Quick Info */}
