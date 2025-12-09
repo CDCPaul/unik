@@ -10,6 +10,8 @@ export interface Player {
   position: 'Guard' | 'Forward' | 'Center';
   height: string;
   team: string;
+  hometown: string;
+  dateOfBirth?: string; // Optional date of birth
   thumbnailUrl: string;      // Grid용 작은 사진 (300x400 권장)
   photoUrl: string;          // 상세 페이지용 큰 사진 (900x1200 권장)
   actionPhotoUrl?: string;   // 액션 샷 (선택, 1800x1200 권장)
@@ -21,10 +23,10 @@ export interface Player {
     apg: number;
     rpg: number;
   };
-  hometown: string;
   isAllStar: boolean;
   allStarYear: number;
   order: number;
+  productIds?: string[]; // ['courtside', 'cherry-blossom']
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -40,6 +42,7 @@ export interface ItineraryDay {
     dinner: boolean;
   };
   highlight?: boolean;
+  imageUrl?: string; // Image for highlight day (displayed in Main Event section)
 }
 
 export interface FlightRoute {
@@ -59,15 +62,37 @@ export interface FlightRoute {
   };
 }
 
+export interface TourDeparture {
+  id: string;
+  departureDate: string; // e.g., "2026-01-15"
+  returnDate: string; // e.g., "2026-01-18"
+  availableSeats: number;
+  status: 'available' | 'limited' | 'sold-out';
+  specialNote?: string; // e.g., "Includes All-Star Game"
+}
+
 export interface TourPackage {
   id: string;
   title: string;
   subtitle: string;
   duration: string;
-  dates: {
+  
+  // Product categorization
+  productCategory: 'courtside' | 'cherry-blossom'; // Which product line
+  tourType: 'regular' | 'special-event'; // Regular tour or special event
+  
+  // Legacy support
+  productId?: 'courtside' | 'courtside-special' | 'cherry-blossom';
+  
+  // Multiple departure dates support
+  departures: TourDeparture[];
+  
+  // Legacy single date support (for backward compatibility)
+  dates?: {
     departure: string;
     return: string;
   };
+  
   gameInfo: {
     date: string;
     venue: string;
@@ -85,8 +110,10 @@ export interface TourPackage {
   };
   thumbnailUrl: string;
   galleryUrls: string[];
+  heroImageUrl?: string; // Hero image for home page (1920x1080 recommended)
   isActive: boolean;
   isFeatured: boolean;
+  isFeaturedOnHome: boolean; // Display on home page hero section
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -96,6 +123,7 @@ export interface GalleryImage {
   url: string;
   caption?: string;
   category: 'game' | 'tour' | 'accommodation' | 'food' | 'other';
+  productId?: string; // 'courtside', 'cherry-blossom', etc.
   order: number;
   createdAt?: Date;
 }
@@ -130,6 +158,13 @@ export interface Registration {
   nationality: string;
   adultsCount: number;
   childrenCount: number;
+  
+  // Tour selection
+  tourId: string; // Selected tour package ID
+  tourTitle: string; // Tour title for display
+  departureId: string; // Selected departure ID
+  departureDate: string; // Selected departure date
+  
   specialRequests?: string;
   status: RegistrationStatus;
   emailNotificationSent?: boolean;
@@ -150,12 +185,22 @@ export interface RegistrationForm {
 }
 
 // Navigation & Theme types (기존)
+export interface TabItem {
+  id: string;
+  label: string;
+  path: string; // 'overview', 'schedule', 'players', 'gallery'
+  isVisible: boolean;
+  order: number;
+}
+
 export interface NavItem {
   id: string;
   label: string;
   href: string;
   isVisible: boolean;
   order: number;
+  children?: NavItem[]; // 드롭다운 지원
+  tabs?: TabItem[]; // 페이지 내부 탭
 }
 
 export interface ThemeColors {

@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Globe, Mail, Phone, MapPin, Loader2 } from 'lucide-react';
-import { getSettings, saveSettings, defaultSettings } from '@/lib/services/admin/settings';
+import { Save, Globe, Mail, Phone, MapPin, Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { getSettings, saveSettings, defaultSettings, uploadLogo } from '@/lib/services/admin/settings';
 import { CompanyInfo } from '@unik/shared/types';
+import Image from 'next/image';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<CompanyInfo>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -39,6 +41,43 @@ export default function SettingsPage() {
         [key]: value
       }
     }));
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const logoUrl = await uploadLogo(file);
+      setSettings(prev => ({ ...prev, logoUrl }));
+      alert('Logo uploaded successfully!');
+    } catch (error) {
+      console.error('Failed to upload logo:', error);
+      alert('Failed to upload logo');
+    } finally {
+      setIsUploadingLogo(false);
+      // Reset input
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    if (confirm('Are you sure you want to remove the logo?')) {
+      setSettings(prev => ({ ...prev, logoUrl: '' }));
+    }
   };
 
   const handleSave = async () => {
@@ -112,6 +151,80 @@ export default function SettingsPage() {
               onChange={(e) => handleChange('description', e.target.value)}
               className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
+          </div>
+        </div>
+
+        {/* Logo Upload */}
+        <div className="mt-6 pt-6 border-t border-slate-200">
+          <label className="block text-sm font-medium text-slate-700 mb-3">Logo</label>
+          <div className="flex items-start gap-6">
+            {/* Logo Preview */}
+            <div className="shrink-0">
+              {settings.logoUrl ? (
+                <div className="relative">
+                  <div className="w-32 h-20 border-2 border-slate-300 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center">
+                    <Image
+                      src={settings.logoUrl}
+                      alt="Logo Preview"
+                      width={128}
+                      height={80}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                    title="Remove Logo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-32 h-20 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 flex items-center justify-center">
+                  <ImageIcon className="w-8 h-8 text-slate-400" />
+                </div>
+              )}
+            </div>
+
+            {/* Upload Controls */}
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isUploadingLogo ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      {settings.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    disabled={isUploadingLogo}
+                    className="hidden"
+                  />
+                </label>
+                {settings.logoUrl && (
+                  <a
+                    href={settings.logoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-slate-600 hover:text-slate-900 underline"
+                  >
+                    View Full Size
+                  </a>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Recommended: PNG or SVG format, max 5MB. Logo will appear in the navigation bar.
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>

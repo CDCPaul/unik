@@ -1,8 +1,11 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@unik/shared/firebase/config';
 import { CompanyInfo } from '@unik/shared/types';
-import { getSettings, defaultSettings } from '@/lib/services/admin/settings';
+import { defaultSettings } from '@/lib/services/admin/settings';
 
 interface SettingsContextType {
   settings: CompanyInfo;
@@ -19,19 +22,33 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    // Set up real-time listener for settings changes
+    const docRef = doc(db, COLLECTIONS.settings, 'company');
+    
+    const unsubscribe = onSnapshot(docRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setSettings({
+            id: snapshot.id,
+            ...data,
+            updatedAt: data.updatedAt?.toDate(),
+          } as CompanyInfo);
+        } else {
+          setSettings(defaultSettings);
+        }
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error loading settings:', error);
+        setSettings(defaultSettings);
+        setIsLoading(false);
+      }
+    );
 
-  const loadSettings = async () => {
-    try {
-      const data = await getSettings();
-      setSettings(data);
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ settings, isLoading }}>

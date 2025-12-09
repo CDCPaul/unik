@@ -10,6 +10,28 @@ import { db } from '../firebase';
 import { COLLECTIONS } from '@unik/shared/firebase/config';
 import type { TourPackage } from '@unik/shared/types';
 
+// Get all tours
+export async function getTours(): Promise<TourPackage[]> {
+  try {
+    const q = query(
+      collection(db, COLLECTIONS.tours),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate(),
+    })) as TourPackage[];
+  } catch (error) {
+    console.error('Error getting tours:', error);
+    return [];
+  }
+}
+
 // Get the currently active tour package
 export async function getActiveTour(): Promise<TourPackage | null> {
   try {

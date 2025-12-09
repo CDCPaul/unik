@@ -65,7 +65,13 @@ export default function TourPage() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold-500/10 border border-gold-500/20 text-gold-400 mb-6"
             >
               <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">{tour.dates.departure} - {tour.dates.return}</span>
+              <span className="text-sm font-medium">
+                {tour.departures && tour.departures.length > 0 
+                  ? `${tour.departures[0].departureDate} - ${tour.departures[0].returnDate}` 
+                  : tour.dates 
+                  ? `${tour.dates.departure} - ${tour.dates.return}` 
+                  : 'TBA'}
+              </span>
             </motion.div>
             
             <motion.h1

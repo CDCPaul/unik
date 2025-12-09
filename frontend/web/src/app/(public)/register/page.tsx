@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { 
   User, Mail, Phone, Calendar, FileText, Globe, 
   Users, MessageSquare, Send, CheckCircle, AlertCircle,
-  Minus, Plus
+  Minus, Plus, MapPin
 } from 'lucide-react';
 import { createRegistration } from '@/lib/services/registrations';
+import { getTours } from '@/lib/services/tours';
+import type { TourPackage, TourDeparture } from '@unik/shared/types';
 
 interface RegistrationForm {
   fullName: string;
@@ -17,8 +19,6 @@ interface RegistrationForm {
   dateOfBirth: string;
   passportName: string;
   nationality: string;
-  adultsCount: number;
-  childrenCount: number;
   specialRequests: string;
 }
 
@@ -26,8 +26,14 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [adultsCount, setAdultsCount] = useState(0);
+  const [adultsCount, setAdultsCount] = useState(1);
   const [childrenCount, setChildrenCount] = useState(0);
+  
+  // Tour selection state
+  const [tours, setTours] = useState<TourPackage[]>([]);
+  const [selectedTourId, setSelectedTourId] = useState<string>('');
+  const [selectedDepartureId, setSelectedDepartureId] = useState<string>('');
+  const [isLoadingTours, setIsLoadingTours] = useState(true);
 
   const {
     register,
@@ -36,12 +42,49 @@ export default function RegisterPage() {
     reset,
   } = useForm<RegistrationForm>();
 
+  useEffect(() => {
+    async function loadTours() {
+      try {
+        const allTours = await getTours();
+        const activeTours = allTours.filter(t => t.isActive);
+        setTours(activeTours);
+        
+        // Auto-select first tour and first departure
+        if (activeTours.length > 0) {
+          setSelectedTourId(activeTours[0].id);
+          if (activeTours[0].departures && activeTours[0].departures.length > 0) {
+            setSelectedDepartureId(activeTours[0].departures[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load tours:', error);
+      } finally {
+        setIsLoadingTours(false);
+      }
+    }
+    loadTours();
+  }, []);
+
+  const selectedTour = tours.find(t => t.id === selectedTourId);
+  const availableDepartures = selectedTour?.departures || [];
+  const selectedDeparture = availableDepartures.find(d => d.id === selectedDepartureId);
+
   const onSubmit = async (data: RegistrationForm) => {
+    if (!selectedTourId || !selectedDepartureId) {
+      setError('Please select a tour and departure date.');
+      return;
+    }
+
+    const selectedDeparture = availableDepartures.find(d => d.id === selectedDepartureId);
+    if (!selectedDeparture) {
+      setError('Selected departure not found.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Submit to Firebase
       await createRegistration({
         fullName: data.fullName,
         email: data.email,
@@ -51,12 +94,16 @@ export default function RegisterPage() {
         nationality: data.nationality,
         adultsCount,
         childrenCount,
+        tourId: selectedTourId,
+        tourTitle: selectedTour?.title || '',
+        departureId: selectedDepartureId,
+        departureDate: `${selectedDeparture.departureDate} - ${selectedDeparture.returnDate}`,
         specialRequests: data.specialRequests || '',
       });
       
       setIsSuccess(true);
       reset();
-      setAdultsCount(0);
+      setAdultsCount(1);
       setChildrenCount(0);
     } catch (err) {
       console.error('Registration error:', err);
@@ -70,7 +117,7 @@ export default function RegisterPage() {
     if (type === 'adults') {
       setAdultsCount(prev => {
         if (operation === 'add' && prev < 10) return prev + 1;
-        if (operation === 'subtract' && prev > 0) return prev - 1;
+        if (operation === 'subtract' && prev > 1) return prev - 1; // Minimum 1 adult
         return prev;
       });
     } else {
@@ -98,15 +145,16 @@ export default function RegisterPage() {
               Registration Submitted!
             </h1>
             <p className="text-dark-400 mb-8">
-              Thank you for your interest in the KBL All-Star 2026 Tour. 
-              Our team will contact you within 24-48 hours to confirm your booking 
-              and discuss payment details.
+              Thank you for your interest! We'll contact you within 24 hours via email to confirm your booking.
             </p>
             <button
-              onClick={() => setIsSuccess(false)}
-              className="btn-secondary"
+              onClick={() => {
+                setIsSuccess(false);
+                window.location.href = '/';
+              }}
+              className="btn-primary"
             >
-              Submit Another Registration
+              Return to Home
             </button>
           </motion.div>
         </div>
@@ -115,66 +163,124 @@ export default function RegisterPage() {
   }
 
   return (
-    <>
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 bg-hero-pattern relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-900" />
-        <div className="absolute top-1/3 right-1/3 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl" />
-        
-        <div className="container-custom relative">
+    <section className="min-h-screen pt-32 pb-16 bg-dark-900">
+      <div className="container-custom">
+        <div className="max-w-3xl mx-auto">
+          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-3xl mx-auto"
+            className="text-center mb-12"
           >
-            <span className="text-gold-500 font-medium uppercase tracking-wider">
-              Secure Your Spot
-            </span>
-            <h1 className="section-heading mt-4 mb-6">
-              Tour Registration
+            <h1 className="text-4xl font-display font-bold text-white mb-4">
+              Register for Tour
             </h1>
             <p className="text-dark-400 text-lg">
-              Fill out the form below to register for the KBL All-Star 2026 Tour.
-              Our team will contact you to finalize your booking.
+              Fill out the form below to secure your spot on the ultimate basketball experience.
             </p>
           </motion.div>
-        </div>
-      </section>
 
-      {/* Registration Form */}
-      <section className="py-16 bg-dark-900">
-        <div className="container-custom">
-          <div className="max-w-2xl mx-auto">
-            <motion.form
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              onSubmit={handleSubmit(onSubmit)}
-              className="card p-8 md:p-10"
-            >
-              {/* Error Message */}
-              {error && (
-                <div className="mb-8 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-red-400">{error}</p>
+          {/* Form */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="card p-8"
+          >
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+              
+              {/* Tour Selection */}
+              <div className="space-y-6 pb-8 border-b border-dark-700">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-gold-500" />
+                  Select Your Tour
+                </h3>
+
+                {/* Tour Package */}
+                <div>
+                  <label className="block text-sm font-medium text-dark-400 mb-2">
+                    Tour Package <span className="text-red-500">*</span>
+                  </label>
+                  {isLoadingTours ? (
+                    <div className="text-dark-400">Loading tours...</div>
+                  ) : tours.length === 0 ? (
+                    <div className="text-dark-400">No active tours available at the moment.</div>
+                  ) : (
+                    <select
+                      value={selectedTourId}
+                      onChange={(e) => {
+                        setSelectedTourId(e.target.value);
+                        // Reset departure selection
+                        const newTour = tours.find(t => t.id === e.target.value);
+                        if (newTour?.departures && newTour.departures.length > 0) {
+                          setSelectedDepartureId(newTour.departures[0].id);
+                        } else {
+                          setSelectedDepartureId('');
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      required
+                    >
+                      {tours.map(tour => (
+                        <option key={tour.id} value={tour.id}>
+                          {tour.title} - {tour.duration}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {selectedTour && (
+                    <p className="text-sm text-dark-400 mt-2">{selectedTour.subtitle}</p>
+                  )}
                 </div>
-              )}
 
-              {/* Section: Personal Information */}
-              <div className="mb-10">
-                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+                {/* Departure Date */}
+                {selectedTour && availableDepartures.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Departure Date <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedDepartureId}
+                      onChange={(e) => setSelectedDepartureId(e.target.value)}
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      required
+                    >
+                      {availableDepartures.map(departure => (
+                        <option key={departure.id} value={departure.id}>
+                          {new Date(departure.departureDate).toLocaleDateString()} - {new Date(departure.returnDate).toLocaleDateString()}
+                          {departure.status === 'limited' && ' (Limited Seats)'}
+                          {departure.status === 'sold-out' && ' (Sold Out)'}
+                          {departure.specialNote && ` - ${departure.specialNote}`}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedDeparture && selectedDeparture.availableSeats && (
+                      <p className="text-sm text-gold-500 mt-2">
+                        {selectedDeparture.availableSeats} seats remaining
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Personal Information */}
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
                   <User className="w-5 h-5 text-gold-500" />
                   Personal Information
-                </h2>
-                
-                <div className="space-y-5">
+                </h3>
+
+                <div className="grid md:grid-cols-2 gap-6">
                   {/* Full Name */}
                   <div>
-                    <label className="label">Full Name *</label>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      type="text"
                       {...register('fullName', { required: 'Full name is required' })}
-                      className="input-field"
-                      placeholder="Enter your full name"
+                      type="text"
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      placeholder="John Doe"
                     />
                     {errors.fullName && (
                       <p className="text-red-400 text-sm mt-1">{errors.fullName.message}</p>
@@ -183,22 +289,21 @@ export default function RegisterPage() {
 
                   {/* Email */}
                   <div>
-                    <label className="label">Email Address *</label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-                      <input
-                        type="email"
-                        {...register('email', { 
-                          required: 'Email is required',
-                          pattern: {
-                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: 'Invalid email address'
-                          }
-                        })}
-                        className="input-field pl-12"
-                        placeholder="your@email.com"
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...register('email', { 
+                        required: 'Email is required',
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: 'Invalid email address'
+                        }
+                      })}
+                      type="email"
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      placeholder="john@example.com"
+                    />
                     {errors.email && (
                       <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
                     )}
@@ -206,16 +311,15 @@ export default function RegisterPage() {
 
                   {/* Phone */}
                   <div>
-                    <label className="label">Phone Number *</label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-                      <input
-                        type="tel"
-                        {...register('phone', { required: 'Phone number is required' })}
-                        className="input-field pl-12"
-                        placeholder="+63 9XX XXX XXXX"
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...register('phone', { required: 'Phone number is required' })}
+                      type="tel"
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      placeholder="+63 912 345 6789"
+                    />
                     {errors.phone && (
                       <p className="text-red-400 text-sm mt-1">{errors.phone.message}</p>
                     )}
@@ -223,15 +327,14 @@ export default function RegisterPage() {
 
                   {/* Date of Birth */}
                   <div>
-                    <label className="label">Date of Birth *</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-                      <input
-                        type="date"
-                        {...register('dateOfBirth', { required: 'Date of birth is required' })}
-                        className="input-field pl-12"
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Date of Birth <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...register('dateOfBirth', { required: 'Date of birth is required' })}
+                      type="date"
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                    />
                     {errors.dateOfBirth && (
                       <p className="text-red-400 text-sm mt-1">{errors.dateOfBirth.message}</p>
                     )}
@@ -239,16 +342,15 @@ export default function RegisterPage() {
 
                   {/* Passport Name */}
                   <div>
-                    <label className="label">Passport Name (as shown on passport) *</label>
-                    <div className="relative">
-                      <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-                      <input
-                        type="text"
-                        {...register('passportName', { required: 'Passport name is required' })}
-                        className="input-field pl-12"
-                        placeholder="LASTNAME, FIRSTNAME MIDDLENAME"
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Passport Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...register('passportName', { required: 'Passport name is required' })}
+                      type="text"
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      placeholder="As shown in passport"
+                    />
                     {errors.passportName && (
                       <p className="text-red-400 text-sm mt-1">{errors.passportName.message}</p>
                     )}
@@ -256,16 +358,15 @@ export default function RegisterPage() {
 
                   {/* Nationality */}
                   <div>
-                    <label className="label">Nationality *</label>
-                    <div className="relative">
-                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-                      <input
-                        type="text"
-                        {...register('nationality', { required: 'Nationality is required' })}
-                        className="input-field pl-12"
-                        placeholder="Filipino"
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Nationality <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      {...register('nationality', { required: 'Nationality is required' })}
+                      type="text"
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      placeholder="Filipino"
+                    />
                     {errors.nationality && (
                       <p className="text-red-400 text-sm mt-1">{errors.nationality.message}</p>
                     )}
@@ -273,126 +374,120 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Section: Companions */}
-              <div className="mb-10">
-                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+              {/* Group Size */}
+              <div className="space-y-6 pt-8 border-t border-dark-700">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
                   <Users className="w-5 h-5 text-gold-500" />
-                  Travel Companions
-                </h2>
-                <p className="text-dark-400 text-sm mb-6">
-                  How many additional travelers will be joining you? (Maximum 10 each)
-                </p>
+                  Group Size
+                </h3>
 
-                <div className="grid sm:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
                   {/* Adults */}
-                  <div className="bg-dark-800/50 rounded-xl p-5">
-                    <div className="text-dark-300 mb-3">Adults (12 years & above)</div>
-                    <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-sm font-medium text-dark-400 mb-3">
+                      Adults (12 years and above)
+                    </label>
+                    <div className="flex items-center gap-4">
                       <button
                         type="button"
                         onClick={() => adjustCount('adults', 'subtract')}
-                        className="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center 
-                                 text-white hover:bg-dark-600 transition-colors disabled:opacity-50"
-                        disabled={adultsCount === 0}
+                        className="w-10 h-10 rounded-full bg-dark-800 border border-dark-700 text-white hover:bg-dark-700 transition-colors flex items-center justify-center"
                       >
-                        <Minus className="w-5 h-5" />
+                        <Minus className="w-4 h-4" />
                       </button>
-                      <span className="text-2xl font-semibold text-white">{adultsCount}</span>
+                      <span className="text-2xl font-bold text-white w-12 text-center">{adultsCount}</span>
                       <button
                         type="button"
                         onClick={() => adjustCount('adults', 'add')}
-                        className="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center 
-                                 text-white hover:bg-dark-600 transition-colors disabled:opacity-50"
-                        disabled={adultsCount === 10}
+                        className="w-10 h-10 rounded-full bg-dark-800 border border-dark-700 text-white hover:bg-dark-700 transition-colors flex items-center justify-center"
                       >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
 
                   {/* Children */}
-                  <div className="bg-dark-800/50 rounded-xl p-5">
-                    <div className="text-dark-300 mb-3">Children (under 12 years)</div>
-                    <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-sm font-medium text-dark-400 mb-3">
+                      Children (under 12 years)
+                    </label>
+                    <div className="flex items-center gap-4">
                       <button
                         type="button"
                         onClick={() => adjustCount('children', 'subtract')}
-                        className="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center 
-                                 text-white hover:bg-dark-600 transition-colors disabled:opacity-50"
-                        disabled={childrenCount === 0}
+                        className="w-10 h-10 rounded-full bg-dark-800 border border-dark-700 text-white hover:bg-dark-700 transition-colors flex items-center justify-center"
                       >
-                        <Minus className="w-5 h-5" />
+                        <Minus className="w-4 h-4" />
                       </button>
-                      <span className="text-2xl font-semibold text-white">{childrenCount}</span>
+                      <span className="text-2xl font-bold text-white w-12 text-center">{childrenCount}</span>
                       <button
                         type="button"
                         onClick={() => adjustCount('children', 'add')}
-                        className="w-10 h-10 rounded-lg bg-dark-700 flex items-center justify-center 
-                                 text-white hover:bg-dark-600 transition-colors disabled:opacity-50"
-                        disabled={childrenCount === 10}
+                        className="w-10 h-10 rounded-full bg-dark-800 border border-dark-700 text-white hover:bg-dark-700 transition-colors flex items-center justify-center"
                       >
-                        <Plus className="w-5 h-5" />
+                        <Plus className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {(adultsCount > 0 || childrenCount > 0) && (
-                  <p className="text-gold-400 text-sm mt-4">
-                    Total travelers: {1 + adultsCount + childrenCount} (including yourself)
+                <div className="p-4 bg-dark-800 rounded-lg border border-dark-700">
+                  <p className="text-white font-medium">
+                    Total: <span className="text-gold-500">{adultsCount + childrenCount} person(s)</span>
                   </p>
-                )}
+                </div>
               </div>
 
-              {/* Section: Special Requests */}
-              <div className="mb-10">
-                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+              {/* Special Requests */}
+              <div className="pt-8 border-t border-dark-700">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
                   <MessageSquare className="w-5 h-5 text-gold-500" />
-                  Special Requests
-                </h2>
-                
+                  Additional Information
+                </h3>
+
                 <div>
-                  <label className="label">Any special requests or requirements? (Optional)</label>
+                  <label className="block text-sm font-medium text-dark-400 mb-2">
+                    Special Requests (Optional)
+                  </label>
                   <textarea
                     {...register('specialRequests')}
                     rows={4}
-                    className="input-field resize-none"
-                    placeholder="Dietary restrictions, accessibility needs, room preferences, etc."
+                    className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors resize-none"
+                    placeholder="Dietary restrictions, accessibility needs, etc."
                   />
                 </div>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="btn-gold w-full text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting || isLoadingTours || tours.length === 0}
+                className="w-full btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Submitting...
-                  </span>
+                  </>
                 ) : (
-                  <span className="flex items-center justify-center gap-2">
+                  <>
                     <Send className="w-5 h-5" />
                     Submit Registration
-                  </span>
+                  </>
                 )}
               </button>
-
-              <p className="text-dark-500 text-sm text-center mt-4">
-                By submitting, you agree to our terms and conditions. 
-                Our team will contact you within 24-48 hours.
-              </p>
-            </motion.form>
-          </div>
+            </form>
+          </motion.div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 }
-

@@ -4,10 +4,26 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, Calendar, MapPin } from 'lucide-react';
 import Link from 'next/link';
-import { getActiveTour } from '@/lib/services/tours';
+import { getTours } from '@/lib/services/tours';
 import { getPlayers } from '@/lib/services/players';
 import { getGalleryImages } from '@/lib/services/gallery';
 import type { TourPackage, Player, GalleryImage } from '@unik/shared/types';
+
+// Helper function to get tour detail URL
+function getTourDetailUrl(tour: TourPackage): string {
+  if (tour.productCategory === 'courtside') {
+    return '/tour/courtside';
+  } else if (tour.productCategory === 'cherry-blossom') {
+    return '/tour/cherry-blossom';
+  }
+  // Legacy support
+  if (tour.productId?.startsWith('courtside')) {
+    return '/tour/courtside';
+  } else if (tour.productId === 'cherry-blossom') {
+    return '/cherry-blossom-marathon';
+  }
+  return '/tour/courtside'; // Default
+}
 
 export default function HomePage() {
   const [tour, setTour] = useState<TourPackage | null>(null);
@@ -18,13 +34,19 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [tourData, playersData, galleryData] = await Promise.all([
-          getActiveTour(),
+        const [toursData, playersData, galleryData] = await Promise.all([
+          getTours(),
           getPlayers(),
           getGalleryImages()
         ]);
         
-        setTour(tourData);
+        // Get tour featured on home page
+        const homeTour = toursData.find(t => t.isFeaturedOnHome && t.isActive) 
+          || toursData.find(t => t.isFeatured && t.isActive) 
+          || toursData.find(t => t.isActive)
+          || toursData[0];
+        
+        setTour(homeTour);
         // Featured players: prioritize All-Stars, then take top 4
         const sortedPlayers = playersData.sort((a, b) => (b.isAllStar ? 1 : 0) - (a.isAllStar ? 1 : 0));
         setFeaturedPlayers(sortedPlayers.slice(0, 4));
@@ -46,7 +68,7 @@ export default function HomePage() {
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-linear-to-r from-dark-900 via-dark-900/80 to-transparent z-10" />
           <img 
-            src={tour?.thumbnailUrl || '/images/hero-placeholder.jpg'} 
+            src={tour?.heroImageUrl || tour?.thumbnailUrl || '/images/hero-placeholder.jpg'} 
             alt="Hero Background" 
             className="w-full h-full object-cover"
           />
@@ -70,7 +92,10 @@ export default function HomePage() {
               </p>
               
               <div className="flex flex-wrap gap-4">
-                <Link href="/tour" className="btn-primary">
+                <Link 
+                  href={tour ? getTourDetailUrl(tour) : '/tour/courtside'} 
+                  className="btn-primary"
+                >
                   View Tour Details
                 </Link>
                 <Link href="/register" className="btn-secondary">
@@ -93,7 +118,13 @@ export default function HomePage() {
                   </div>
                   <div>
                     <p className="text-xs text-dark-400 uppercase tracking-wider">Date</p>
-                    <p className="text-white font-medium">{tour.dates.departure} - {tour.dates.return}</p>
+                    <p className="text-white font-medium">
+                      {tour.departures && tour.departures.length > 0 
+                        ? `${tour.departures[0].departureDate} - ${tour.departures[0].returnDate}` 
+                        : tour.dates 
+                        ? `${tour.dates.departure} - ${tour.dates.return}` 
+                        : 'TBA'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -119,7 +150,7 @@ export default function HomePage() {
               <h2 className="section-heading mb-2">Filipino Stars</h2>
               <p className="text-dark-400">Meet the pride of Philippines in KBL.</p>
             </div>
-            <Link href="/players" className="hidden md:flex items-center gap-2 text-gold-500 hover:text-gold-400 transition-colors">
+            <Link href="/tour/courtside/players" className="hidden md:flex items-center gap-2 text-gold-500 hover:text-gold-400 transition-colors">
               View All Players <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -134,7 +165,7 @@ export default function HomePage() {
                 transition={{ delay: index * 0.1 }}
                 className="group cursor-pointer"
               >
-                <Link href={`/players/${player.id}`}>
+                <Link href={`/tour/courtside/players/${player.id}`}>
                   <div className="card overflow-hidden">
                     <div className="aspect-3/4 relative overflow-hidden bg-dark-800">
                       {player.thumbnailUrl ? (
@@ -163,7 +194,7 @@ export default function HomePage() {
           </div>
           
           <div className="mt-8 text-center md:hidden">
-            <Link href="/players" className="btn-secondary w-full justify-center">
+            <Link href="/tour/courtside/players" className="btn-secondary w-full justify-center">
               View All Players
             </Link>
           </div>

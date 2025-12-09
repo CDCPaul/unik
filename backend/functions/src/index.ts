@@ -16,8 +16,26 @@ setGlobalOptions({
 // Define secret
 const resendApiKey = defineSecret("RESEND_API_KEY");
 
-// 담당자 이메일
-const STAFF_EMAIL = "ticket@cebudirectclub.com";
+/**
+ * Get staff email from settings
+ */
+async function getStaffEmail(): Promise<string> {
+  try {
+    const settingsDoc = await admin.firestore()
+      .collection('settings')
+      .doc('company')
+      .get();
+    
+    if (settingsDoc.exists) {
+      const data = settingsDoc.data();
+      return data?.contactEmail || "ticket@cebudirectclub.com"; // Fallback
+    }
+    return "ticket@cebudirectclub.com"; // Default fallback
+  } catch (error) {
+    console.error("Error fetching staff email:", error);
+    return "ticket@cebudirectclub.com"; // Error fallback
+  }
+}
 
 /**
  * 새로운 투어 신청이 들어오면 이메일 알림 발송
@@ -41,11 +59,14 @@ export const onNewRegistration = onDocumentCreated(
 
     // Initialize Resend with secret
     const resend = new Resend(resendApiKey.value());
+    
+    // Get staff email from settings
+    const staffEmail = await getStaffEmail();
 
     try {
       await resend.emails.send({
-        from: "UNI-K Tour <onboarding@resend.dev>",
-        to: [STAFF_EMAIL],
+        from: "UNI-K Tour <noreply@unik.ph>",
+        to: [staffEmail],
         subject: `🎫 [UNI-K] New Tour Registration: ${data.fullName}`,
         html: generateRegistrationEmail(data, docId),
       });
@@ -91,11 +112,14 @@ export const onNewContact = onDocumentCreated(
 
     // Initialize Resend with secret
     const resend = new Resend(resendApiKey.value());
+    
+    // Get staff email from settings
+    const staffEmail = await getStaffEmail();
 
     try {
       await resend.emails.send({
-        from: "UNI-K Tour <onboarding@resend.dev>",
-        to: [STAFF_EMAIL],
+        from: "UNI-K Tour <noreply@unik.ph>",
+        to: [staffEmail],
         subject: `💬 [UNI-K] New Inquiry: ${data.subject || "General Inquiry"}`,
         html: generateContactEmail(data, docId),
       });
@@ -147,6 +171,18 @@ function generateRegistrationEmail(data: any, docId: string): string {
         </div>
         
         <div class="content">
+          <div class="section">
+            <div class="section-title">🎫 Tour Information</div>
+            <div class="field">
+              <div class="label">Selected Tour</div>
+              <div class="value"><strong>${data.tourTitle || "N/A"}</strong></div>
+            </div>
+            <div class="field">
+              <div class="label">Departure Date</div>
+              <div class="value">${data.departureDate || "N/A"}</div>
+            </div>
+          </div>
+
           <div class="section">
             <div class="section-title">📋 Applicant Information</div>
             <div class="field">

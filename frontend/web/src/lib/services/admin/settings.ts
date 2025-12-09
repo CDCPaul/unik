@@ -1,9 +1,10 @@
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 import { CompanyInfo } from '@unik/shared/types';
 
 export const defaultSettings: CompanyInfo = {
-  id: 'general',
+  id: 'company',
   brandName: 'UNI-K Tour',
   logoUrl: '',
   description: 'Experience the KBL All-Star 2026 Tour',
@@ -21,7 +22,7 @@ export const defaultSettings: CompanyInfo = {
 // Get settings
 export async function getSettings(): Promise<CompanyInfo> {
   try {
-    const docRef = doc(db, 'settings', 'general');
+    const docRef = doc(db, 'settings', 'company');
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -36,7 +37,7 @@ export async function getSettings(): Promise<CompanyInfo> {
 
 // Save settings
 export async function saveSettings(settings: CompanyInfo): Promise<void> {
-  const docRef = doc(db, 'settings', 'general');
+  const docRef = doc(db, 'settings', 'company');
   // Remove undefined values
   const data = JSON.parse(JSON.stringify(settings));
   
@@ -44,5 +45,18 @@ export async function saveSettings(settings: CompanyInfo): Promise<void> {
     ...data,
     updatedAt: serverTimestamp(),
   });
+}
+
+// Upload logo image
+export async function uploadLogo(file: File): Promise<string> {
+  try {
+    const storageRef = ref(storage, `settings/logo/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading logo:', error);
+    throw error;
+  }
 }
 
