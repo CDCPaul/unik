@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
@@ -23,6 +24,11 @@ const footerLinks = {
 export default function Footer() {
   const { settings, isLoading } = useSettings();
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <footer style={{ backgroundColor: theme.footerBg, borderTopColor: theme.cardBg }} className="border-t">
@@ -38,10 +44,10 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mb-6 leading-relaxed" style={{ color: theme.mutedText }}>
-              {settings?.description || 'Your gateway to the ultimate KBL All-Star experience.'}
+              {mounted && settings?.description ? settings.description : 'Your gateway to the ultimate KBL All-Star experience.'}
             </p>
             <div className="flex items-center gap-4">
-              {settings?.socialMedia?.facebook && (
+              {mounted && settings?.socialMedia?.facebook && (
                 <a
                   href={settings.socialMedia.facebook}
                   target="_blank"
@@ -64,7 +70,7 @@ export default function Footer() {
                   <Facebook className="w-5 h-5" />
                 </a>
               )}
-              {settings?.socialMedia?.instagram && (
+              {mounted && settings?.socialMedia?.instagram && (
                 <a
                   href={settings.socialMedia.instagram}
                   target="_blank"
@@ -87,7 +93,7 @@ export default function Footer() {
                   <Instagram className="w-5 h-5" />
                 </a>
               )}
-              {settings?.socialMedia?.twitter && (
+              {mounted && settings?.socialMedia?.twitter && (
                 <a
                   href={settings.socialMedia.twitter}
                   target="_blank"
@@ -163,7 +169,7 @@ export default function Footer() {
               Contact Us
             </h3>
             <ul className="space-y-4">
-              {settings && (
+              {mounted && settings && (
                 <>
                   <li className="flex items-start gap-3">
                     <Mail className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
@@ -207,7 +213,7 @@ export default function Footer() {
         <div className="container-custom py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm" style={{ color: theme.mutedText }}>
-              © {new Date().getFullYear()} {settings?.brandName || 'UNIK'}. All rights reserved.
+              © {new Date().getFullYear()} {mounted && settings?.brandName ? settings.brandName : 'UNIK'}. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm">
               <Link 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { 
@@ -18,9 +18,14 @@ interface ContactForm {
 
 export default function ContactPage() {
   const { settings, isLoading } = useSettings();
+  const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     register,
@@ -49,7 +54,7 @@ export default function ContactPage() {
     }
   };
 
-  const contactInfo = settings ? [
+  const contactInfo = mounted && settings ? [
     {
       icon: Mail,
       title: 'Email',
