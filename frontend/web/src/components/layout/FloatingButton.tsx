@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Ticket, ChevronUp } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function FloatingButton() {
   const [isVisible, setIsVisible] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const pathname = usePathname();
+  const { theme } = useTheme();
 
   // Hide on register page
   const isRegisterPage = pathname === '/register';
@@ -44,9 +46,20 @@ export default function FloatingButton() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8, y: 20 }}
                 onClick={scrollToTop}
-                className="p-3 rounded-full bg-dark-700/80 backdrop-blur-sm border border-dark-600 
-                           text-dark-300 hover:text-white hover:bg-dark-600 
-                           shadow-lg transition-all duration-300"
+                className="p-3 rounded-full backdrop-blur-sm border shadow-lg transition-all duration-300"
+                style={{
+                  backgroundColor: `${theme.cardBg}cc`,
+                  borderColor: theme.secondaryBtnBorder,
+                  color: theme.mutedText,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = theme.headingText;
+                  e.currentTarget.style.backgroundColor = theme.secondaryBtnBg;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = theme.mutedText;
+                  e.currentTarget.style.backgroundColor = `${theme.cardBg}cc`;
+                }}
                 aria-label="Scroll to top"
               >
                 <ChevronUp className="w-5 h-5" />
@@ -63,7 +76,11 @@ export default function FloatingButton() {
           >
             <Link
               href="/register"
-              className="floating-btn group"
+              className="flex items-center gap-2 px-5 py-3 rounded-full font-bold shadow-lg transition-all duration-300 transform hover:scale-105 group"
+              style={{
+                background: `linear-gradient(135deg, ${theme.goldColor}, ${theme.accentColor})`,
+                color: theme.pageBg,
+              }}
             >
               <Ticket className="w-5 h-5 group-hover:rotate-12 transition-transform" />
               <span className="hidden sm:inline">Register Now</span>
@@ -74,4 +91,3 @@ export default function FloatingButton() {
     </AnimatePresence>
   );
 }
-

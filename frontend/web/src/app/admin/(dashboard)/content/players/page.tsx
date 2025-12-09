@@ -171,7 +171,7 @@ export default function PlayersPage() {
               className="admin-card overflow-hidden"
             >
               {/* Player Photo */}
-              <div className="aspect-[3/4] bg-slate-100 relative">
+              <div className="aspect-3/4 bg-slate-100 relative">
                 {player.thumbnailUrl ? (
                   <img src={player.thumbnailUrl} alt={player.name} className="w-full h-full object-cover" />
                 ) : (

@@ -5,8 +5,9 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { 
   Mail, Phone, MapPin, Clock, Send, 
-  CheckCircle, AlertCircle, Facebook, Instagram, Youtube
+  CheckCircle, AlertCircle, Facebook, Instagram, Twitter
 } from 'lucide-react';
+import { useSettings } from '@/context/SettingsContext';
 
 interface ContactForm {
   name: string;
@@ -15,40 +16,8 @@ interface ContactForm {
   message: string;
 }
 
-const contactInfo = [
-  {
-    icon: Mail,
-    title: 'Email',
-    value: 'ticket@cebudirectclub.com',
-    link: 'mailto:ticket@cebudirectclub.com',
-  },
-  {
-    icon: Phone,
-    title: 'Phone',
-    value: '+63 912 345 6789',
-    link: 'tel:+639123456789',
-  },
-  {
-    icon: MapPin,
-    title: 'Office',
-    value: 'Cebu City, Philippines',
-    link: null,
-  },
-  {
-    icon: Clock,
-    title: 'Hours',
-    value: 'Mon-Fri: 9AM - 6PM (PHT)',
-    link: null,
-  },
-];
-
-const socialLinks = [
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Youtube, href: '#', label: 'Youtube' },
-];
-
 export default function ContactPage() {
+  const { settings, isLoading } = useSettings();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,11 +49,38 @@ export default function ContactPage() {
     }
   };
 
+  const contactInfo = [
+    {
+      icon: Mail,
+      title: 'Email',
+      value: settings.contactEmail,
+      link: `mailto:${settings.contactEmail}`,
+    },
+    {
+      icon: Phone,
+      title: 'Phone',
+      value: settings.contactPhone,
+      link: `tel:${settings.contactPhone}`,
+    },
+    {
+      icon: MapPin,
+      title: 'Office',
+      value: settings.officeAddress,
+      link: null,
+    },
+    {
+      icon: Clock,
+      title: 'Hours',
+      value: 'Mon-Fri: 9AM - 6PM (PHT)',
+      link: null,
+    },
+  ];
+
   return (
     <>
       {/* Hero Section */}
       <section className="pt-32 pb-16 bg-hero-pattern relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-900" />
+        <div className="absolute inset-0 bg-linear-to-b from-transparent to-dark-900" />
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl" />
         
         <div className="container-custom relative">
@@ -124,7 +120,7 @@ export default function ContactPage() {
               <div className="space-y-6 mb-10">
                 {contactInfo.map((item) => (
                   <div key={item.title} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gold-500/10 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-gold-500/10 flex items-center justify-center shrink-0">
                       <item.icon className="w-5 h-5 text-gold-400" />
                     </div>
                     <div>
@@ -148,17 +144,42 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-white font-medium mb-4">Follow Us</h3>
                 <div className="flex items-center gap-3">
-                  {socialLinks.map((social) => (
+                  {settings.socialMedia.facebook && (
                     <a
-                      key={social.label}
-                      href={social.href}
+                      href={settings.socialMedia.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="w-10 h-10 rounded-lg bg-dark-800 flex items-center justify-center
                                text-dark-400 hover:text-white hover:bg-dark-700 transition-all"
-                      aria-label={social.label}
+                      aria-label="Facebook"
                     >
-                      <social.icon className="w-5 h-5" />
+                      <Facebook className="w-5 h-5" />
                     </a>
-                  ))}
+                  )}
+                  {settings.socialMedia.instagram && (
+                    <a
+                      href={settings.socialMedia.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-10 h-10 rounded-lg bg-dark-800 flex items-center justify-center
+                               text-dark-400 hover:text-white hover:bg-dark-700 transition-all"
+                      aria-label="Instagram"
+                    >
+                      <Instagram className="w-5 h-5" />
+                    </a>
+                  )}
+                  {settings.socialMedia.twitter && (
+                    <a
+                      href={settings.socialMedia.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-10 h-10 rounded-lg bg-dark-800 flex items-center justify-center
+                               text-dark-400 hover:text-white hover:bg-dark-700 transition-all"
+                      aria-label="Twitter"
+                    >
+                      <Twitter className="w-5 h-5" />
+                    </a>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -195,7 +216,7 @@ export default function ContactPage() {
 
                   {error && (
                     <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                       <p className="text-red-400">{error}</p>
                     </div>
                   )}
@@ -293,4 +314,3 @@ export default function ContactPage() {
     </>
   );
 }
-

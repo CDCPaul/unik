@@ -5,6 +5,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@unik/shared/firebase/config';
 
 export interface ThemeColors {
   pageBg: string;
@@ -45,7 +46,7 @@ export const defaultTheme: ThemeColors = {
 // Get current theme
 export async function getTheme(): Promise<ThemeColors> {
   try {
-    const docRef = doc(db, 'settings', 'theme');
+    const docRef = doc(db, COLLECTIONS.theme, 'current');
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -61,7 +62,7 @@ export async function getTheme(): Promise<ThemeColors> {
 
 // Save theme
 export async function saveTheme(theme: ThemeColors): Promise<void> {
-  const docRef = doc(db, 'settings', 'theme');
+  const docRef = doc(db, COLLECTIONS.theme, 'current');
   await setDoc(docRef, {
     ...theme,
     updatedAt: serverTimestamp(),

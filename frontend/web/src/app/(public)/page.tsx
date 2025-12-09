@@ -44,7 +44,7 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-dark-900 via-dark-900/80 to-transparent z-10" />
+          <div className="absolute inset-0 bg-linear-to-r from-dark-900 via-dark-900/80 to-transparent z-10" />
           <img 
             src={tour?.thumbnailUrl || '/images/hero-placeholder.jpg'} 
             alt="Hero Background" 
@@ -136,7 +136,7 @@ export default function HomePage() {
               >
                 <Link href={`/players/${player.id}`}>
                   <div className="card overflow-hidden">
-                    <div className="aspect-[3/4] relative overflow-hidden bg-dark-800">
+                    <div className="aspect-3/4 relative overflow-hidden bg-dark-800">
                       {player.thumbnailUrl ? (
                         <img 
                           src={player.thumbnailUrl} 
@@ -148,7 +148,7 @@ export default function HomePage() {
                           <Star className="w-12 h-12 text-dark-600" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-transparent opacity-80" />
+                      <div className="absolute inset-0 bg-linear-to-t from-dark-950 via-transparent to-transparent opacity-80" />
                       
                       <div className="absolute bottom-0 left-0 right-0 p-4">
                         <div className="text-gold-500 text-xs font-bold uppercase mb-1">{player.position}</div>
@@ -197,7 +197,7 @@ export default function HomePage() {
                 />
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
                 {image.caption && (
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <p className="text-white text-sm font-medium">{image.caption}</p>
                   </div>
                 )}

@@ -1,7 +1,10 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getNavigation, defaultNavItems, type NavItem } from '@/lib/services/navigation';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@unik/shared/firebase/config';
+import { defaultNavItems, type NavItem } from '@/lib/services/navigation';
 
 interface NavigationContextType {
   navItems: NavItem[];
@@ -18,18 +21,28 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadNavigation = async () => {
-      try {
-        const items = await getNavigation();
-        setNavItems(items);
-      } catch (error) {
+    // Set up real-time listener for navigation changes
+    const docRef = doc(db, COLLECTIONS.navigation, 'main');
+    
+    const unsubscribe = onSnapshot(docRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setNavItems(data.items as NavItem[]);
+        } else {
+          setNavItems(defaultNavItems);
+        }
+        setIsLoading(false);
+      },
+      (error) => {
         console.error('Error loading navigation:', error);
-      } finally {
+        setNavItems(defaultNavItems);
         setIsLoading(false);
       }
-    };
+    );
 
-    loadNavigation();
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
 
   return (

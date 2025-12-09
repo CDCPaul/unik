@@ -1,7 +1,10 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getTheme, defaultTheme, type ThemeColors } from '@/lib/services/theme';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@unik/shared/firebase/config';
+import { defaultTheme, type ThemeColors } from '@/lib/services/theme';
 
 interface ThemeContextType {
   theme: ThemeColors;
@@ -18,18 +21,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await getTheme();
-        setTheme(savedTheme);
-      } catch (error) {
+    // Set up real-time listener for theme changes
+    const docRef = doc(db, COLLECTIONS.theme, 'current');
+    
+    const unsubscribe = onSnapshot(docRef, 
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setTheme({ ...defaultTheme, ...data } as ThemeColors);
+        } else {
+          setTheme(defaultTheme);
+        }
+        setIsLoading(false);
+      },
+      (error) => {
         console.error('Error loading theme:', error);
-      } finally {
+        setTheme(defaultTheme);
         setIsLoading(false);
       }
-    };
+    );
 
-    loadTheme();
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
 
   // Apply CSS variables when theme changes

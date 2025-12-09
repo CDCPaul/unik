@@ -1,39 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Globe, Mail, Phone, MapPin } from 'lucide-react';
+import { Save, Globe, Mail, Phone, MapPin, Loader2 } from 'lucide-react';
+import { getSettings, saveSettings, defaultSettings } from '@/lib/services/admin/settings';
+import { CompanyInfo } from '@unik/shared/types';
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState({
-    siteName: 'UNI-K Tour',
-    siteDescription: 'Experience the KBL All-Star 2026 Tour',
-    contactEmail: 'ticket@cebudirectclub.com',
-    contactPhone: '+63-XXX-XXX-XXXX',
-    contactViber: '+63-XXX-XXX-XXXX',
-    officeAddress: 'Cebu City, Philippines',
-    facebookUrl: '',
-    instagramUrl: '',
-    twitterUrl: '',
-  });
+  const [settings, setSettings] = useState<CompanyInfo>(defaultSettings);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleChange = (key: string, value: string) => {
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const data = await getSettings();
+      setSettings(data);
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+      alert('Failed to load settings');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (key: keyof CompanyInfo, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSocialChange = (key: keyof CompanyInfo['socialMedia'], value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      socialMedia: {
+        ...prev.socialMedia,
+        [key]: value
+      }
+    }));
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // TODO: Save to Firebase
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await saveSettings(settings);
       alert('Settings saved successfully!');
     } catch (error) {
+      console.error('Failed to save settings:', error);
       alert('Failed to save settings');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -43,8 +70,16 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
           <p className="text-slate-500 mt-1">Manage general website settings</p>
         </div>
-        <button onClick={handleSave} disabled={isSaving} className="admin-btn-primary">
-          <Save className="w-4 h-4" />
+        <button 
+          onClick={handleSave} 
+          disabled={isSaving} 
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isSaving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
           {isSaving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
@@ -53,7 +88,7 @@ export default function SettingsPage() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="admin-card p-6"
+        className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
       >
         <div className="flex items-center gap-3 mb-6">
           <Globe className="w-5 h-5 text-blue-600" />
@@ -61,21 +96,21 @@ export default function SettingsPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Site Name</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Brand Name</label>
             <input
               type="text"
-              value={settings.siteName}
-              onChange={(e) => handleChange('siteName', e.target.value)}
-              className="admin-input"
+              value={settings.brandName}
+              onChange={(e) => handleChange('brandName', e.target.value)}
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Site Description</label>
             <input
               type="text"
-              value={settings.siteDescription}
-              onChange={(e) => handleChange('siteDescription', e.target.value)}
-              className="admin-input"
+              value={settings.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
         </div>
@@ -86,7 +121,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="admin-card p-6"
+        className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
       >
         <div className="flex items-center gap-3 mb-6">
           <Mail className="w-5 h-5 text-green-600" />
@@ -99,7 +134,7 @@ export default function SettingsPage() {
               type="email"
               value={settings.contactEmail}
               onChange={(e) => handleChange('contactEmail', e.target.value)}
-              className="admin-input"
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
           <div>
@@ -108,7 +143,7 @@ export default function SettingsPage() {
               type="text"
               value={settings.contactPhone}
               onChange={(e) => handleChange('contactPhone', e.target.value)}
-              className="admin-input"
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
           <div>
@@ -117,7 +152,7 @@ export default function SettingsPage() {
               type="text"
               value={settings.contactViber}
               onChange={(e) => handleChange('contactViber', e.target.value)}
-              className="admin-input"
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
           <div>
@@ -126,7 +161,7 @@ export default function SettingsPage() {
               type="text"
               value={settings.officeAddress}
               onChange={(e) => handleChange('officeAddress', e.target.value)}
-              className="admin-input"
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
         </div>
@@ -137,7 +172,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="admin-card p-6"
+        className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
       >
         <div className="flex items-center gap-3 mb-6">
           <MapPin className="w-5 h-5 text-purple-600" />
@@ -148,30 +183,30 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Facebook URL</label>
             <input
               type="url"
-              value={settings.facebookUrl}
-              onChange={(e) => handleChange('facebookUrl', e.target.value)}
+              value={settings.socialMedia.facebook}
+              onChange={(e) => handleSocialChange('facebook', e.target.value)}
               placeholder="https://facebook.com/..."
-              className="admin-input"
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Instagram URL</label>
             <input
               type="url"
-              value={settings.instagramUrl}
-              onChange={(e) => handleChange('instagramUrl', e.target.value)}
+              value={settings.socialMedia.instagram}
+              onChange={(e) => handleSocialChange('instagram', e.target.value)}
               placeholder="https://instagram.com/..."
-              className="admin-input"
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Twitter URL</label>
             <input
               type="url"
-              value={settings.twitterUrl}
-              onChange={(e) => handleChange('twitterUrl', e.target.value)}
+              value={settings.socialMedia.twitter}
+              onChange={(e) => handleSocialChange('twitter', e.target.value)}
               placeholder="https://twitter.com/..."
-              className="admin-input"
+              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
             />
           </div>
         </div>
@@ -179,4 +214,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

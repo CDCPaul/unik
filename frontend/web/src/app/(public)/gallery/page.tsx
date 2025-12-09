@@ -90,7 +90,7 @@ export default function GalleryPage() {
                       alt={image.caption || 'Gallery Image'}
                       className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-dark-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    <div className="absolute inset-0 bg-linear-to-t from-dark-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
                       {image.caption && (
                         <p className="text-white font-medium">{image.caption}</p>
                       )}

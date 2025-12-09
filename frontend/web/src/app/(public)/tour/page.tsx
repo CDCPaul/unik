@@ -49,8 +49,8 @@ export default function TourPage() {
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-dark-900/80 via-dark-900/70 to-dark-900 z-10" />
-          <img 
+          <div className="absolute inset-0 bg-linear-to-b from-dark-900/80 via-dark-900/70 to-dark-900 z-10" />
+          <img  
             src={tour.thumbnailUrl || '/images/tour-bg-placeholder.jpg'} 
             alt={tour.title}
             className="w-full h-full object-cover"
@@ -144,7 +144,7 @@ export default function TourPage() {
             <div className="relative">
               <div className="aspect-video rounded-2xl overflow-hidden border border-dark-600 shadow-2xl">
                 {/* Placeholder for Game Image */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-dark-900 flex items-center justify-center">
+                <div className="absolute inset-0 bg-linear-to-br from-blue-900 to-dark-900 flex items-center justify-center">
                   <span className="text-white/20 text-4xl font-display font-bold">KBL ALL-STAR</span>
                 </div>
               </div>
@@ -268,7 +268,7 @@ export default function TourPage() {
                   {/* Content */}
                   <div className={`md:w-1/2 ${index % 2 === 0 ? 'md:text-left' : 'md:text-right'} mb-8 md:mb-0`}>
                     <div className={`card p-6 md:p-8 hover:border-gold-500/30 transition-colors ${
-                      day.highlight ? 'bg-gradient-to-br from-gold-900/20 to-dark-800 border-gold-500/30' : ''
+                      day.highlight ? 'bg-linear-to-br from-gold-900/20 to-dark-800 border-gold-500/30' : ''
                     }`}>
                       <div className="flex items-center gap-3 mb-4 md:hidden">
                         <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gold-500 text-dark-900 font-bold text-sm">

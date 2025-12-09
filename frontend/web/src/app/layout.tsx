@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Outfit, Playfair_Display } from 'next/font/google';
 import './globals.css';
+import { ThemeProvider } from '@/context/ThemeContext';
+import { NavigationProvider } from '@/context/NavigationContext';
+import { SettingsProvider } from '@/context/SettingsContext';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -34,7 +37,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
       <body className="min-h-screen">
-        {children}
+        <ThemeProvider>
+          <SettingsProvider>
+            <NavigationProvider>
+              {children}
+            </NavigationProvider>
+          </SettingsProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

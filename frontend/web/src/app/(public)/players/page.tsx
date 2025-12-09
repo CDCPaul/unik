@@ -29,7 +29,7 @@ export default function PlayersPage() {
     <>
       {/* Hero Section */}
       <section className="pt-32 pb-16 bg-hero-pattern relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-dark-900" />
+        <div className="absolute inset-0 bg-linear-to-b from-transparent to-dark-900" />
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl" />
         
         <div className="container-custom relative">
@@ -97,7 +97,7 @@ export default function PlayersPage() {
                   <Link href={`/players/${player.id}`} className="block h-full">
                     <div className="card h-full overflow-hidden hover:border-gold-500/30 transition-all duration-500 flex flex-col">
                       {/* Player Image */}
-                      <div className="aspect-[3/4] bg-gradient-to-br from-dark-700 to-dark-800 
+                      <div className="aspect-3/4 bg-linear-to-br from-dark-700 to-dark-800 
                                      relative overflow-hidden">
                         {player.thumbnailUrl ? (
                           <img 
@@ -112,7 +112,7 @@ export default function PlayersPage() {
                         )}
                         
                         {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
+                        <div className="absolute inset-0 bg-linear-to-t from-dark-900 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
                         
                         {/* Jersey Number */}
                         <div className="absolute top-4 right-4 text-5xl font-display font-bold 
@@ -130,7 +130,7 @@ export default function PlayersPage() {
                         )}
                         
                         {/* Player Info - Overlay on bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 p-5 pt-12 bg-gradient-to-t from-dark-950 to-transparent">
+                        <div className="absolute bottom-0 left-0 right-0 p-5 pt-12 bg-linear-to-t from-dark-950 to-transparent">
                           <div className="text-gold-400 text-xs font-bold uppercase tracking-widest mb-1">
                             {player.position}
                           </div>

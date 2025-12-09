@@ -5,6 +5,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { COLLECTIONS } from '@unik/shared/firebase/config';
 
 export interface NavItem {
   id: string;
@@ -26,7 +27,7 @@ export const defaultNavItems: NavItem[] = [
 // Get navigation items
 export async function getNavigation(): Promise<NavItem[]> {
   try {
-    const docRef = doc(db, 'settings', 'navigation');
+    const docRef = doc(db, COLLECTIONS.navigation, 'main');
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -41,7 +42,7 @@ export async function getNavigation(): Promise<NavItem[]> {
 
 // Save navigation items
 export async function saveNavigation(items: NavItem[]): Promise<void> {
-  const docRef = doc(db, 'settings', 'navigation');
+  const docRef = doc(db, COLLECTIONS.navigation, 'main');
   await setDoc(docRef, {
     items,
     updatedAt: serverTimestamp(),

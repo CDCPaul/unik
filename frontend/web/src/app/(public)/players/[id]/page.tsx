@@ -64,7 +64,7 @@ export default function PlayerDetailPage() {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="aspect-[3/4] rounded-2xl overflow-hidden bg-dark-800 relative shadow-2xl border border-dark-700"
+                className="aspect-3/4 rounded-2xl overflow-hidden bg-dark-800 relative shadow-2xl border border-dark-700"
               >
                 {player.photoUrl ? (
                   <img src={player.photoUrl} alt={player.name} className="w-full h-full object-cover" />
@@ -74,7 +74,7 @@ export default function PlayerDetailPage() {
                   </div>
                 )}
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent opacity-60" />
+                <div className="absolute inset-0 bg-linear-to-t from-dark-900 via-transparent to-transparent opacity-60" />
                 
                 {/* Name Overlay (Mobile) */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 lg:hidden">
