@@ -17,6 +17,7 @@ export const defaultSettings: CompanyInfo = {
     instagram: '',
     twitter: '',
   },
+  homeFeaturedProductKey: 'auto',
   heroTitle: {
     text: '',
     fontFamily: 'display',

@@ -76,22 +76,40 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [homeConfig, setHomeConfig] = useState<HomeConfig | null>(null);
 
-  const featuredProductKey: HomeProductKey = useMemo(() => {
+  const forcedProductKey: HomeProductKey | null = useMemo(() => {
+    const v = (settings as any)?.homeFeaturedProductKey;
+    if (!v || v === 'auto') return null;
+    if (v === 'courtside' || v === 'cherry-blossom' || v === 'default') return v;
+    return null;
+  }, [settings]);
+
+  const featuredProductKeyFromTour: HomeProductKey = useMemo(() => {
     if (!tour) return 'default';
     if (tour.productCategory === 'courtside' || tour.productId?.startsWith('courtside')) return 'courtside';
     if (tour.productCategory === 'cherry-blossom' || tour.productId?.includes('cherry')) return 'cherry-blossom';
     return 'default';
   }, [tour]);
 
+  const effectiveProductKey: HomeProductKey = forcedProductKey || featuredProductKeyFromTour;
+
   useEffect(() => {
     async function loadData() {
       try {
         const [toursData, playersData, galleryData] = await Promise.all([getTours(), getPlayers(), getGalleryImages()]);
 
+        const activeTours = toursData.filter((t) => t.isActive);
+        const byProduct = forcedProductKey
+          ? activeTours.filter((t) => {
+              if (forcedProductKey === 'default') return true;
+              return t.productCategory === forcedProductKey || t.productId?.startsWith(forcedProductKey);
+            })
+          : activeTours;
+
+        const candidates = byProduct.length ? byProduct : activeTours;
         const homeTour =
-          toursData.find((t) => t.isFeaturedOnHome && t.isActive) ||
-          toursData.find((t) => t.isFeatured && t.isActive) ||
-          toursData.find((t) => t.isActive) ||
+          candidates.find((t) => t.isFeaturedOnHome) ||
+          candidates.find((t) => t.isFeatured) ||
+          candidates[0] ||
           toursData[0] ||
           null;
 
@@ -104,13 +122,14 @@ export default function HomePage() {
         setIsLoading(false);
       }
     }
+    setIsLoading(true);
     loadData();
-  }, []);
+  }, [forcedProductKey]);
 
   useEffect(() => {
     if (!tour) return;
     const unsubscribe = subscribeHomeConfig(
-      featuredProductKey,
+      effectiveProductKey,
       (cfg) => setHomeConfig(cfg),
       (err) => {
         console.error('Failed to load home config:', err);
@@ -118,12 +137,12 @@ export default function HomePage() {
       }
     );
     return () => unsubscribe();
-  }, [tour, featuredProductKey]);
+  }, [tour, effectiveProductKey]);
 
   // Avoid showing a "placeholder hero background" that then shifts on config load.
   if (isLoading || !tour) return null;
 
-  const effectiveConfig = homeConfig || buildFallbackHomeConfig(featuredProductKey, tour, settings);
+  const effectiveConfig = homeConfig || buildFallbackHomeConfig(effectiveProductKey, tour, settings);
 
   return <HomeRenderer config={effectiveConfig} tour={tour} players={players} galleryImages={galleryImages} />;
 }

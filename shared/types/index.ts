@@ -142,6 +142,12 @@ export interface CompanyInfo {
     instagram?: string;
     twitter?: string;
   };
+  /**
+   * Controls which product is shown on the public homepage.
+   * - 'auto': derive from the featured tour (default)
+   * - 'courtside' | 'cherry-blossom' | 'default': force a specific product home
+   */
+  homeFeaturedProductKey?: 'auto' | HomeProductKey;
   heroTitle?: {
     text: string;
     fontFamily: 'serif' | 'sans-serif' | 'display' | 'monospace';

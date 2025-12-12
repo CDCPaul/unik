@@ -61,6 +61,13 @@ export default function HomeRenderer({
     return candidates.filter(d => d.imageUrl).slice(0, maxItems);
   })();
 
+  const filteredGalleryImages = (() => {
+    const key = config.productKey;
+    if (key === 'default') return galleryImages;
+    // Legacy: old images without productId were Courtside
+    return galleryImages.filter((img) => img.productId === key || (!img.productId && key === 'courtside'));
+  })();
+
   const heroBgDesktop = config.hero.bgDesktopUrl || tour.heroImageUrl || tour.thumbnailUrl || '/images/hero-placeholder.jpg';
   const heroBgMobile = config.hero.bgMobileUrl || config.hero.bgDesktopUrl || heroBgDesktop;
 
@@ -311,7 +318,7 @@ export default function HomeRenderer({
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {galleryImages.slice(0, maxGallery).map((image, index) => (
+                  {filteredGalleryImages.slice(0, maxGallery).map((image, index) => (
                     <motion.div
                       key={image.id}
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -337,7 +344,11 @@ export default function HomeRenderer({
                 </div>
 
                 <div className="mt-12 text-center">
-                  <Link href="/gallery" className="btn-secondary" style={{ fontFamily: ctaFontFamily }}>
+                  <Link
+                    href={config.productKey === 'cherry-blossom' ? '/cbm/gallery' : '/tour/courtside/gallery'}
+                    className="btn-secondary"
+                    style={{ fontFamily: ctaFontFamily }}
+                  >
                     {ctaText}
                   </Link>
                 </div>

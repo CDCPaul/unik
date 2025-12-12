@@ -1,41 +1,71 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getGalleryImages } from '@/lib/services/gallery';
-import type { GalleryImage } from '@unik/shared/types';
+import type { GalleryImage, HomeProductKey, TourPackage } from '@unik/shared/types';
 import { RefreshCw, Image as ImageIcon } from 'lucide-react';
+import { useSettings } from '@/context/SettingsContext';
+import { getTours } from '@/lib/services/tours';
 
-const categories = [
-  { value: 'all', label: 'All Photos' },
-  { value: 'game', label: 'Game Action' },
-  { value: 'tour', label: 'Tour Scenes' },
-  { value: 'accommodation', label: 'Accommodation' },
-  { value: 'food', label: 'Food & Dining' },
-];
+function productKeyFromTour(tour: TourPackage | null): HomeProductKey {
+  if (!tour) return 'default';
+  if (tour.productCategory === 'courtside' || tour.productId?.startsWith('courtside')) return 'courtside';
+  if (tour.productCategory === 'cherry-blossom' || tour.productId?.includes('cherry')) return 'cherry-blossom';
+  return 'default';
+}
 
 export default function GalleryPage() {
   const [images, setImages] = useState<GalleryImage[]>([]);
+  const [tour, setTour] = useState<TourPackage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('all');
+  const { settings } = useSettings();
+
+  const forcedProductKey: HomeProductKey | null = useMemo(() => {
+    const v = (settings as any)?.homeFeaturedProductKey;
+    if (!v || v === 'auto') return null;
+    if (v === 'courtside' || v === 'cherry-blossom' || v === 'default') return v;
+    return null;
+  }, [settings]);
+
+  const effectiveProductKey: HomeProductKey = forcedProductKey || productKeyFromTour(tour);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await getGalleryImages();
-        setImages(data);
+        const [gallery, tours] = await Promise.all([getGalleryImages(), getTours()]);
+        const activeTours = tours.filter((t) => t.isActive);
+        const candidates = forcedProductKey
+          ? activeTours.filter((t) => {
+              if (forcedProductKey === 'default') return true;
+              return t.productCategory === forcedProductKey || t.productId?.startsWith(forcedProductKey);
+            })
+          : activeTours;
+
+        const homeTour =
+          (candidates.length ? candidates : activeTours).find((t) => t.isFeaturedOnHome) ||
+          (candidates.length ? candidates : activeTours).find((t) => t.isFeatured) ||
+          (candidates.length ? candidates : activeTours)[0] ||
+          tours[0] ||
+          null;
+
+        setTour(homeTour);
+        setImages(gallery);
       } catch (error) {
         console.error('Failed to load gallery:', error);
       } finally {
         setIsLoading(false);
       }
     }
+    setIsLoading(true);
     loadData();
-  }, []);
+  }, [forcedProductKey]);
 
-  const filteredImages = activeCategory === 'all'
-    ? images
-    : images.filter(img => img.category === activeCategory);
+  const filteredImages = useMemo(() => {
+    if (effectiveProductKey === 'default') return images;
+    // Legacy: old images without productId were Courtside
+    return images.filter((img) => img.productId === effectiveProductKey || (!img.productId && effectiveProductKey === 'courtside'));
+  }, [images, effectiveProductKey]);
 
   return (
     <>
@@ -46,23 +76,6 @@ export default function GalleryPage() {
             Explore moments from our tours and the excitement of KBL basketball.
           </p>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
-            {categories.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => setActiveCategory(cat.value)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeCategory === cat.value
-                    ? 'bg-gold-500 text-dark-900 shadow-lg shadow-gold-500/20'
-                    : 'bg-dark-800 text-dark-300 hover:bg-dark-700 hover:text-white'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
           {/* Gallery Grid */}
           {isLoading ? (
             <div className="flex justify-center items-center py-20">
@@ -71,7 +84,7 @@ export default function GalleryPage() {
           ) : filteredImages.length === 0 ? (
             <div className="text-center py-20 bg-dark-800/50 rounded-2xl border border-dark-700">
               <ImageIcon className="w-12 h-12 mx-auto mb-4 text-dark-600" />
-              <p className="text-dark-400 text-lg">No photos found in this category.</p>
+              <p className="text-dark-400 text-lg">No photos found.</p>
             </div>
           ) : (
             <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
@@ -94,9 +107,6 @@ export default function GalleryPage() {
                       {image.caption && (
                         <p className="text-white font-medium">{image.caption}</p>
                       )}
-                      <span className="text-gold-500 text-xs font-bold uppercase tracking-wider mt-2">
-                        {categories.find(c => c.value === image.category)?.label || image.category}
-                      </span>
                     </div>
                   </div>
                 </motion.div>
