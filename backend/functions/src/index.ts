@@ -195,15 +195,15 @@ function generateRegistrationEmail(data: any, docId: string): string {
             </div>
             <div class="field">
               <div class="label">Phone Number</div>
-              <div class="value">${data.phoneNumber || "N/A"}</div>
+              <div class="value">${data.phone || data.phoneNumber || "N/A"}</div>
             </div>
             <div class="field">
               <div class="label">Date of Birth</div>
               <div class="value">${data.dateOfBirth || "N/A"}</div>
             </div>
             <div class="field">
-              <div class="label">Passport Name</div>
-              <div class="value">${data.passportName || "N/A"}</div>
+              <div class="label">Name (Passport Name)</div>
+              <div class="value">${data.fullName || data.passportName || "N/A"}</div>
             </div>
             <div class="field">
               <div class="label">Nationality</div>
@@ -223,7 +223,7 @@ function generateRegistrationEmail(data: any, docId: string): string {
             </div>
             <div class="field">
               <div class="label">Total Group Size</div>
-              <div class="value"><strong>${1 + (data.adultsCount || 0) + (data.childrenCount || 0)} person(s)</strong></div>
+              <div class="value"><strong>${(data.adultsCount || 0) + (data.childrenCount || 0)} person(s)</strong></div>
             </div>
           </div>
 

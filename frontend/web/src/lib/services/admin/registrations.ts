@@ -9,24 +9,9 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { Registration } from '@unik/shared/types';
 
 type RegistrationStatus = 'new' | 'contacted' | 'confirmed' | 'cancelled';
-
-interface Registration {
-  id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  dateOfBirth: string;
-  passportName: string;
-  nationality: string;
-  adultsCount: number;
-  childrenCount: number;
-  specialRequests?: string;
-  status: RegistrationStatus;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
 
 // Get all registrations
 export async function getRegistrations(): Promise<Registration[]> {

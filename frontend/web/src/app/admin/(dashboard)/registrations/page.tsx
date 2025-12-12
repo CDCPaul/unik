@@ -18,7 +18,7 @@ interface Registration {
   phoneLocalNumber?: string;
   dateOfBirth: string;
   gender?: string;
-  passportName: string;
+  passportName?: string; // legacy / optional
   nationality: string;
   nationalityCountryCode?: string;
   adultsCount: number;
@@ -115,7 +115,6 @@ export default function RegistrationsPage() {
       'Gender',
       'Departure Origin',
       'Favorite Players',
-      'Passport Name',
       'Nationality',
       'Nationality Country Code',
       'Adults',
@@ -136,7 +135,6 @@ export default function RegistrationsPage() {
       reg.gender || '',
       reg.departureOrigin || '',
       (reg.favoritePlayerNames || []).join(' | '),
-      reg.passportName,
       reg.nationality,
       reg.nationalityCountryCode || '',
       reg.adultsCount,
@@ -240,14 +238,16 @@ export default function RegistrationsPage() {
                   <tr key={reg.id} className="hover:bg-slate-50">
                     <td className="admin-table-cell">
                       <div className="font-medium">{reg.fullName}</div>
-                      <div className="text-slate-500 text-xs">{reg.passportName}</div>
+                      <div className="text-slate-500 text-xs">
+                        {reg.gender ? `Gender: ${reg.gender}` : ''}
+                      </div>
                     </td>
                     <td className="admin-table-cell">
                       <div className="text-slate-900">{reg.email}</div>
                       <div className="text-slate-500 text-xs">{reg.phone}</div>
                     </td>
                     <td className="admin-table-cell">
-                      <div className="text-slate-900">{1 + reg.adultsCount} Adults</div>
+                      <div className="text-slate-900">{reg.adultsCount} Adults</div>
                       {reg.childrenCount > 0 && (
                         <div className="text-slate-500 text-xs">{reg.childrenCount} Children</div>
                       )}

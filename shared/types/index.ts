@@ -301,7 +301,11 @@ export interface Registration {
   phoneLocalNumber?: string; // e.g., "9123456789"
   dateOfBirth: string;
   gender?: 'female' | 'male' | 'non-binary' | 'prefer-not-to-say';
-  passportName: string;
+  /**
+   * @deprecated We now collect "passport name" via `fullName` (and `firstName`/`lastName`).
+   * Kept optional for backward compatibility with existing records.
+   */
+  passportName?: string;
   nationality: string;
   nationalityCountryCode?: string; // e.g., "PH"
   adultsCount: number;
@@ -328,7 +332,7 @@ export interface RegistrationForm {
   email: string;
   phone: string;
   dateOfBirth: string;
-  passportName: string;
+  passportName?: string;
   nationality: string;
   adultsCount: number;
   childrenCount: number;

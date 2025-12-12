@@ -25,8 +25,7 @@ interface RegistrationForm {
   phone: string; // computed (hidden)
   phoneLocalNumber: string;
   dateOfBirth: string;
-  gender?: 'female' | 'male' | 'non-binary' | 'prefer-not-to-say';
-  passportName: string;
+  gender: 'female' | 'male';
   nationality: string;
   specialRequests: string;
 }
@@ -93,6 +92,8 @@ function RegisterPageInner() {
           const initialTour =
             (tourIdParam ? activeTours.find(t => t.id === tourIdParam) : null) ||
             findByProduct(productParam) ||
+            // Default to basketball product first
+            activeTours.find(t => t.productCategory === 'courtside' || t.productId?.startsWith('courtside')) ||
             activeTours[0];
 
           setSelectedTourId(initialTour.id);
@@ -211,8 +212,7 @@ function RegisterPageInner() {
         phoneCountryCode,
         phoneLocalNumber: data.phoneLocalNumber,
         dateOfBirth: data.dateOfBirth,
-        gender: data.gender || undefined,
-        passportName: data.passportName,
+        gender: data.gender,
         nationality: data.nationality,
         nationalityCountryCode: nationalityCountry.code,
         adultsCount,
@@ -424,7 +424,7 @@ function RegisterPageInner() {
                   {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-dark-400 mb-2">
-                      Name <span className="text-red-500">*</span>
+                      Name <span className="text-red-500">*</span> <span className="text-dark-500">(Passport Name)</span>
                     </label>
                     <input type="hidden" {...register('fullName', { required: 'Name is required' })} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -541,19 +541,19 @@ function RegisterPageInner() {
                   {/* Gender (Optional) */}
                   <div>
                     <label className="block text-sm font-medium text-dark-400 mb-2">
-                      Gender <span className="text-dark-500">(Optional)</span>
+                      Gender <span className="text-red-500">*</span>
                     </label>
                     <select
-                      {...register('gender')}
+                      {...register('gender', { required: 'Please select your gender' })}
                       className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
                       defaultValue=""
+                      required
                     >
-                      <option value="">Prefer not to say</option>
+                      <option value="">Please select</option>
                       <option value="female">Female</option>
                       <option value="male">Male</option>
-                      <option value="non-binary">Non-binary</option>
-                      <option value="prefer-not-to-say">Prefer not to say</option>
                     </select>
+                    {errors.gender && <p className="text-red-400 text-sm mt-1">{errors.gender.message}</p>}
                   </div>
 
                   {/* Date of Birth */}
@@ -612,22 +612,6 @@ function RegisterPageInner() {
                     <p className="text-xs text-dark-400 mt-2">We store date of birth in YYYY-MM-DD format.</p>
                     {errors.dateOfBirth && (
                       <p className="text-red-400 text-sm mt-1">{errors.dateOfBirth.message}</p>
-                    )}
-                  </div>
-
-                  {/* Passport Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-dark-400 mb-2">
-                      Passport Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      {...register('passportName', { required: 'Passport name is required' })}
-                      type="text"
-                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
-                      placeholder="As shown in passport"
-                    />
-                    {errors.passportName && (
-                      <p className="text-red-400 text-sm mt-1">{errors.passportName.message}</p>
                     )}
                   </div>
 
