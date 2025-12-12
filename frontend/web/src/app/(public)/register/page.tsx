@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'next/navigation';
@@ -31,7 +31,7 @@ interface RegistrationForm {
   specialRequests: string;
 }
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   const searchParams = useSearchParams();
   const { t, font } = useUiText();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -823,5 +823,15 @@ export default function RegisterPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+export default function RegisterPage() {
+  // Next.js requires `useSearchParams()` usage to be wrapped in a Suspense boundary
+  // to avoid prerender failures during static generation.
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageInner />
+    </Suspense>
   );
 }
