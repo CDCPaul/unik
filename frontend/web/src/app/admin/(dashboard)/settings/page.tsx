@@ -123,207 +123,210 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Site Information */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <Globe className="w-5 h-5 text-blue-600" />
-          <h2 className="text-lg font-semibold text-slate-900">Site Information</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Brand Name</label>
-            <input
-              type="text"
-              value={settings.brandName}
-              onChange={(e) => handleChange('brandName', e.target.value)}
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Site Description</label>
-            <input
-              type="text"
-              value={settings.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-        </div>
-
-        {/* Logo Upload */}
-        <div className="mt-6 pt-6 border-t border-slate-200">
-          <label className="block text-sm font-medium text-slate-700 mb-3">Logo</label>
-          <div className="flex items-start gap-6">
-            {/* Logo Preview */}
-            <div className="shrink-0">
-              {settings.logoUrl ? (
-                <div className="relative">
-                  <div className="w-32 h-20 border-2 border-slate-300 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center">
-                    <Image
-                      src={settings.logoUrl}
-                      alt="Logo Preview"
-                      width={128}
-                      height={80}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleRemoveLogo}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                    title="Remove Logo"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="w-32 h-20 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 flex items-center justify-center">
-                  <ImageIcon className="w-8 h-8 text-slate-400" />
-                </div>
-              )}
+      <div className="space-y-6">
+        {/* Site Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+        >
+            <div className="flex items-center gap-3 mb-6">
+              <Globe className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-slate-900">Site Information</h2>
             </div>
-
-            {/* Upload Controls */}
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                  {isUploadingLogo ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      {settings.logoUrl ? 'Change Logo' : 'Upload Logo'}
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    disabled={isUploadingLogo}
-                    className="hidden"
-                  />
-                </label>
-                {settings.logoUrl && (
-                  <a
-                    href={settings.logoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-slate-600 hover:text-slate-900 underline"
-                  >
-                    View Full Size
-                  </a>
-                )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Brand Name</label>
+                <input
+                  type="text"
+                  value={settings.brandName}
+                  onChange={(e) => handleChange('brandName', e.target.value)}
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
               </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Recommended: PNG or SVG format, max 5MB. Logo will appear in the navigation bar.
-              </p>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Site Description</label>
+                <input
+                  type="text"
+                  value={settings.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
             </div>
-          </div>
-        </div>
-      </motion.div>
 
-      {/* Contact Information */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <Mail className="w-5 h-5 text-green-600" />
-          <h2 className="text-lg font-semibold text-slate-900">Contact Information</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-            <input
-              type="email"
-              value={settings.contactEmail}
-              onChange={(e) => handleChange('contactEmail', e.target.value)}
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
-            <input
-              type="text"
-              value={settings.contactPhone}
-              onChange={(e) => handleChange('contactPhone', e.target.value)}
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Viber</label>
-            <input
-              type="text"
-              value={settings.contactViber}
-              onChange={(e) => handleChange('contactViber', e.target.value)}
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Office Address</label>
-            <input
-              type="text"
-              value={settings.officeAddress}
-              onChange={(e) => handleChange('officeAddress', e.target.value)}
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </motion.div>
+            {/* Logo Upload */}
+            <div className="mt-6 pt-6 border-t border-slate-200">
+              <label className="block text-sm font-medium text-slate-700 mb-3">Logo</label>
+              <div className="flex items-start gap-6">
+                {/* Logo Preview */}
+                <div className="shrink-0">
+                  {settings.logoUrl ? (
+                    <div className="relative">
+                      <div className="w-32 h-20 border-2 border-slate-300 rounded-lg overflow-hidden bg-slate-50 flex items-center justify-center">
+                        <Image
+                          src={settings.logoUrl}
+                          alt="Logo Preview"
+                          width={128}
+                          height={80}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                        title="Remove Logo"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-32 h-20 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-slate-400" />
+                    </div>
+                  )}
+                </div>
 
-      {/* Social Media */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <MapPin className="w-5 h-5 text-purple-600" />
-          <h2 className="text-lg font-semibold text-slate-900">Social Media</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Facebook URL</label>
-            <input
-              type="url"
-              value={settings.socialMedia.facebook}
-              onChange={(e) => handleSocialChange('facebook', e.target.value)}
-              placeholder="https://facebook.com/..."
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Instagram URL</label>
-            <input
-              type="url"
-              value={settings.socialMedia.instagram}
-              onChange={(e) => handleSocialChange('instagram', e.target.value)}
-              placeholder="https://instagram.com/..."
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Twitter URL</label>
-            <input
-              type="url"
-              value={settings.socialMedia.twitter}
-              onChange={(e) => handleSocialChange('twitter', e.target.value)}
-              placeholder="https://twitter.com/..."
-              className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </motion.div>
+                {/* Upload Controls */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                      {isUploadingLogo ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          {settings.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        disabled={isUploadingLogo}
+                        className="hidden"
+                      />
+                    </label>
+                    {settings.logoUrl && (
+                      <a
+                        href={settings.logoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-slate-600 hover:text-slate-900 underline"
+                      >
+                        View Full Size
+                      </a>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Recommended: PNG or SVG format, max 5MB. Logo will appear in the navigation bar.
+                  </p>
+                </div>
+              </div>
+            </div>
+        </motion.div>
+
+        {/* Contact Information */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+        >
+            <div className="flex items-center gap-3 mb-6">
+              <Mail className="w-5 h-5 text-green-600" />
+              <h2 className="text-lg font-semibold text-slate-900">Contact Information</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={settings.contactEmail}
+                  onChange={(e) => handleChange('contactEmail', e.target.value)}
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
+                <input
+                  type="text"
+                  value={settings.contactPhone}
+                  onChange={(e) => handleChange('contactPhone', e.target.value)}
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Viber</label>
+                <input
+                  type="text"
+                  value={settings.contactViber}
+                  onChange={(e) => handleChange('contactViber', e.target.value)}
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Office Address</label>
+                <input
+                  type="text"
+                  value={settings.officeAddress}
+                  onChange={(e) => handleChange('officeAddress', e.target.value)}
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
+            </div>
+        </motion.div>
+
+        {/* Social Media */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+        >
+            <div className="flex items-center gap-3 mb-6">
+              <MapPin className="w-5 h-5 text-purple-600" />
+              <h2 className="text-lg font-semibold text-slate-900">Social Media</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Facebook URL</label>
+                <input
+                  type="url"
+                  value={settings.socialMedia.facebook}
+                  onChange={(e) => handleSocialChange('facebook', e.target.value)}
+                  placeholder="https://facebook.com/..."
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Instagram URL</label>
+                <input
+                  type="url"
+                  value={settings.socialMedia.instagram}
+                  onChange={(e) => handleSocialChange('instagram', e.target.value)}
+                  placeholder="https://instagram.com/..."
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Twitter URL</label>
+                <input
+                  type="url"
+                  value={settings.socialMedia.twitter}
+                  onChange={(e) => handleSocialChange('twitter', e.target.value)}
+                  placeholder="https://twitter.com/..."
+                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                />
+              </div>
+            </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

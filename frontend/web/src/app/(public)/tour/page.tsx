@@ -98,7 +98,7 @@ export default function TourPage() {
               transition={{ delay: 0.3 }}
               className="flex flex-wrap gap-4"
             >
-              <Link href="/register" className="btn-gold">
+            <Link href={`/register?tourId=${tour.id}`} className="btn-gold">
                 Book Now
               </Link>
               <Link href="#itinerary" className="btn-secondary">
@@ -109,13 +109,17 @@ export default function TourPage() {
         </div>
       </section>
 
-      {/* Game Info */}
+      {/* Game / Event Info */}
       <section className="py-16 bg-dark-800 border-y border-dark-700">
         <div className="container-custom">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <span className="text-gold-500 font-bold tracking-wider text-sm uppercase">Main Event</span>
-              <h2 className="text-3xl font-display font-bold text-white mt-2 mb-6">KBL All-Star Game 2026</h2>
+              <h2 className="text-3xl font-display font-bold text-white mt-2 mb-6">
+                {tour.productCategory === 'courtside'
+                  ? (tour.gameInfo.matchup || 'Main Event')
+                  : (tour.title || 'Main Event')}
+              </h2>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-lg bg-dark-700 text-gold-500">
@@ -131,7 +135,9 @@ export default function TourPage() {
                     <MapPin className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold text-lg">Venue</h3>
+                    <h3 className="text-white font-semibold text-lg">
+                      {tour.productCategory === 'courtside' ? 'Venue' : 'Location'}
+                    </h3>
                     <p className="text-dark-300">{tour.gameInfo.venue}</p>
                   </div>
                 </div>
@@ -140,8 +146,12 @@ export default function TourPage() {
                     <Info className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold text-lg">Matchup</h3>
-                    <p className="text-dark-300">{tour.gameInfo.matchup}</p>
+                    <h3 className="text-white font-semibold text-lg">
+                      {tour.productCategory === 'courtside' ? 'Matchup' : 'Event Info'}
+                    </h3>
+                    {tour.productCategory === 'courtside' && tour.gameInfo.matchup && (
+                      <p className="text-dark-300">{tour.gameInfo.matchup}</p>
+                    )}
                     <p className="text-dark-400 text-sm mt-1">{tour.gameInfo.description}</p>
                   </div>
                 </div>

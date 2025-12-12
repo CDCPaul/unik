@@ -42,12 +42,20 @@ export default function Navbar() {
     return item.children?.some((child: any) => pathname === child.href);
   };
 
+  // On tabbed Tour pages, keep navbar always solid (no transparent-at-top).
+  const forceSolidNavbar =
+    pathname?.startsWith('/tour/courtside') ||
+    pathname?.startsWith('/cbm') ||
+    pathname?.startsWith('/tour/cherry-blossom');
+
+  const navbarIsSolid = forceSolidNavbar || isScrolled;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500`}
       style={{
-        backgroundColor: isScrolled ? `${theme.navbarBg}f2` : 'transparent',
-        backdropFilter: isScrolled ? 'blur(12px)' : 'none',
+        backgroundColor: navbarIsSolid ? `${theme.navbarBg}f2` : 'transparent',
+        backdropFilter: navbarIsSolid ? 'blur(12px)' : 'none',
       }}
     >
       <nav className="container-custom">

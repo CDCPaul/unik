@@ -6,12 +6,14 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Ticket, ChevronUp } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useUiText } from '@/context/UiTextContext';
 
 export default function FloatingButton() {
   const [isVisible, setIsVisible] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const pathname = usePathname();
   const { theme } = useTheme();
+  const { t, font } = useUiText();
 
   // Hide on register page
   const isRegisterPage = pathname === '/register';
@@ -60,7 +62,7 @@ export default function FloatingButton() {
                   e.currentTarget.style.color = theme.mutedText;
                   e.currentTarget.style.backgroundColor = `${theme.cardBg}cc`;
                 }}
-                aria-label="Scroll to top"
+                aria-label={t('floating.scrollTopAria', 'Scroll to top')}
               >
                 <ChevronUp className="w-5 h-5" />
               </motion.button>
@@ -83,7 +85,9 @@ export default function FloatingButton() {
               }}
             >
               <Ticket className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              <span className="hidden sm:inline">Register Now</span>
+              <span className="hidden sm:inline" style={{ fontFamily: font('floating.registerNow') }}>
+                {t('floating.registerNow', 'Register Now')}
+              </span>
             </Link>
           </motion.div>
         </div>

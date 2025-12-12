@@ -105,7 +105,7 @@ export default function CourtsidePlayerDetailPage() {
                 )}
                 
                 {/* Jersey Number Overlay */}
-                <div className="absolute top-8 right-8 text-9xl font-display font-bold opacity-20"
+                <div className="absolute bottom-4 right-4 text-4xl md:text-6xl lg:text-9xl font-display font-bold opacity-20"
                   style={{ color: theme.headingText }}
                 >
                   #{player.number}
@@ -261,7 +261,7 @@ export default function CourtsidePlayerDetailPage() {
             <Link href="/tour/courtside" className="btn-gold">
               View Tour Details
             </Link>
-            <Link href="/register" className="btn-primary">
+            <Link href="/register?product=courtside" className="btn-primary">
               Book Now
             </Link>
           </div>

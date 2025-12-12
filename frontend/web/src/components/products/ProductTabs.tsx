@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '@/context/ThemeContext';
@@ -13,6 +14,22 @@ interface ProductTabsProps {
 export default function ProductTabs({ basePath, tabs }: ProductTabsProps) {
   const pathname = usePathname();
   const { theme } = useTheme();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // On tabbed Tour pages, keep tabs bar always solid (no transparent-at-top).
+  const forceSolidTabs =
+    pathname?.startsWith('/tour/courtside') ||
+    pathname?.startsWith('/cbm') ||
+    pathname?.startsWith('/tour/cherry-blossom');
+
+  const tabsAreSolid = forceSolidTabs || isScrolled;
 
   const visibleTabs = tabs
     .filter(tab => tab.isVisible)
@@ -27,10 +44,11 @@ export default function ProductTabs({ basePath, tabs }: ProductTabsProps) {
 
   return (
     <div 
-      className="border-b sticky top-20 z-40 backdrop-blur-lg"
+      className="border-b sticky top-20 z-40 transition-all duration-300"
       style={{ 
-        backgroundColor: `${theme.navbarBg}f5`,
-        borderBottomColor: theme.cardBg 
+        backgroundColor: tabsAreSolid ? `${theme.navbarBg}f2` : 'transparent',
+        backdropFilter: tabsAreSolid ? 'blur(12px)' : 'none',
+        borderBottomColor: tabsAreSolid ? theme.cardBg : 'transparent',
       }}
     >
       <div className="container-custom">
@@ -65,4 +83,6 @@ export default function ProductTabs({ basePath, tabs }: ProductTabsProps) {
     </div>
   );
 }
+
+
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, DollarSign, Plane, Clock, Info, RefreshCw } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Plane, Clock, Info, RefreshCw, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { getTours } from '@/lib/services/tours';
 import type { TourPackage } from '@unik/shared/types';
@@ -45,6 +45,8 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
     }
     loadData();
   }, [productCategory]);
+
+  // (Navbar behavior is handled in Navbar/ProductTabs; keep hero overlay consistent.)
 
   // Get current tour based on active tab
   const currentTour = tours.find(t => {
@@ -111,8 +113,114 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
         </div>
       )}
 
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <div
+            className="absolute inset-0 z-10"
+            style={{
+              background: `linear-gradient(to right, ${theme.pageBg}, ${theme.pageBg}cc, transparent)`,
+            }}
+          />
+          {currentTour.heroImageUrl ? (
+            <img 
+              src={currentTour.heroImageUrl} 
+              alt="Hero Background" 
+              className="w-full h-full object-cover md:object-cover md:scale-100 scale-110"
+            />
+          ) : currentTour.thumbnailUrl ? (
+            <img 
+              src={currentTour.thumbnailUrl} 
+              alt="Hero Background" 
+              className="w-full h-full object-cover md:object-cover md:scale-100 scale-110"
+            />
+          ) : (
+            <div
+              className="w-full h-full"
+              style={{ background: `linear-gradient(135deg, ${theme.pageBg}, ${theme.footerBg})` }}
+            />
+          )}
+        </div>
+
+        <div className="container-custom relative z-20 pt-20">
+          <div className="max-w-3xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <span
+                className="inline-block py-1 px-3 rounded-full font-medium text-sm mb-6"
+                style={{
+                  backgroundColor: `${theme.goldColor}1a`,
+                  border: `1px solid ${theme.goldColor}4d`,
+                  color: theme.goldColor,
+                }}
+              >
+                Official Tour Package
+              </span>
+              <h1 
+                className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6"
+                style={{ color: theme.headingText, fontFamily: 'var(--font-playfair), serif' }}
+              >
+                {currentTour.title}
+              </h1>
+              <p className="text-xl mb-8 max-w-2xl" style={{ color: theme.bodyText }}>
+                {currentTour.subtitle}
+              </p>
+              
+              <div className="flex flex-wrap gap-4">
+                <Link 
+                  href={productCategory === 'courtside' ? '/tour/courtside' : '/cbm'} 
+                  className="btn-primary"
+                >
+                  View Tour Details
+                </Link>
+                <Link href={`/register?tourId=${currentTour.id}`} className="btn-secondary">
+                  Book Now <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Quick Info */}
+            {currentTour && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                {currentTour.departures && currentTour.departures.length > 0 && (
+                  <div className="flex items-center gap-3" style={{ color: theme.headingText }}>
+                    <Calendar className="w-5 h-5" style={{ color: theme.goldColor }} />
+                    <div>
+                      <div className="text-xs uppercase tracking-wider" style={{ color: theme.mutedText }}>Date</div>
+                      <div className="font-semibold">
+                        {currentTour.departures[0].departureDate} - {currentTour.departures[0].returnDate}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {currentTour.gameInfo?.venue && (
+                  <div className="flex items-center gap-3" style={{ color: theme.headingText }}>
+                    <MapPin className="w-5 h-5" style={{ color: theme.goldColor }} />
+                    <div>
+                      <div className="text-xs uppercase tracking-wider" style={{ color: theme.mutedText }}>
+                        {productCategory === 'courtside' ? 'Venue' : 'Location'}
+                      </div>
+                      <div className="font-semibold">{currentTour.gameInfo.venue}</div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* Page Header */}
-      <section className="pt-32 pb-12" style={{ backgroundColor: theme.pageBg }}>
+      <section className="pt-12 pb-12" style={{ backgroundColor: theme.pageBg }}>
         <div className="container-custom">
           <div className="max-w-4xl">
             <motion.div
@@ -182,7 +290,9 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
             <div>
               <span className="font-bold tracking-wider text-sm uppercase" style={{ color: theme.goldColor }}>Main Event</span>
               <h2 className="text-3xl font-display font-bold mt-2 mb-6" style={{ color: theme.headingText }}>
-                {currentTour.gameInfo.matchup}
+                {productCategory === 'courtside'
+                  ? (currentTour.gameInfo.matchup || 'Main Event')
+                  : (currentTour.title || 'Main Event')}
               </h2>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
@@ -199,7 +309,9 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
                     <MapPin className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg" style={{ color: theme.headingText }}>Venue</h3>
+                    <h3 className="font-semibold text-lg" style={{ color: theme.headingText }}>
+                      {productCategory === 'courtside' ? 'Venue' : 'Location'}
+                    </h3>
                     <p style={{ color: theme.bodyText }}>{currentTour.gameInfo.venue}</p>
                   </div>
                 </div>
@@ -208,7 +320,9 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
                     <Info className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg" style={{ color: theme.headingText }}>About</h3>
+                    <h3 className="font-semibold text-lg" style={{ color: theme.headingText }}>
+                      {productCategory === 'courtside' ? 'About' : 'Event Info'}
+                    </h3>
                     <p className="text-sm mt-1" style={{ color: theme.bodyText }}>{currentTour.gameInfo.description}</p>
                   </div>
                 </div>
@@ -243,7 +357,10 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
                   
                   // Fallback to placeholder
                   return (
-                    <div className="absolute inset-0 bg-linear-to-br from-blue-900 to-[var(--theme-page-bg)] flex items-center justify-center">
+                    <div
+                      className="absolute inset-0 flex items-center justify-center"
+                      style={{ background: `linear-gradient(135deg, ${theme.cardBg}, ${theme.pageBg})` }}
+                    >
                       <span className="text-4xl font-display font-bold" style={{ color: `${theme.headingText}20` }}>
                         {productCategory === 'courtside' ? 'KBL' : 'MARATHON'}
                       </span>

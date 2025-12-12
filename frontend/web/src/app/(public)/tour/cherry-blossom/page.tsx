@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 
-export default function CherryBlossomMarathonPage() {
+export default function TourCherryBlossomAlias() {
   redirect('/cbm');
 }
-
 
 

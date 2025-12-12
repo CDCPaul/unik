@@ -142,6 +142,148 @@ export interface CompanyInfo {
     instagram?: string;
     twitter?: string;
   };
+  heroTitle?: {
+    text: string;
+    fontFamily: 'serif' | 'sans-serif' | 'display' | 'monospace';
+  };
+  homePageMedia?: {
+    heroBackgroundByProduct?: Partial<Record<'default' | 'courtside' | 'cherry-blossom', string>>;
+  };
+  homePageText?: {
+    // Hero
+    heroBadgeText?: string;
+    heroSubtitleText?: string; // If empty, fallback to featured tour subtitle
+    primaryCtaText?: string;
+    secondaryCtaText?: string;
+    tbaText?: string;
+    // Hero Quick Info
+    quickInfoDateLabel?: string;
+    quickInfoVenueLabel?: string;
+    // Featured Players section
+    featuredPlayersHeading?: string;
+    featuredPlayersSubheading?: string;
+    featuredPlayersCtaText?: string;
+    // Gallery section
+    galleryHeading?: string;
+    gallerySubheading?: string;
+    galleryCtaText?: string;
+    // Bottom CTA section
+    ctaHeading?: string;
+    ctaBody?: string;
+    ctaButtonText?: string;
+  };
+  updatedAt?: Date;
+}
+
+// ========================================
+// Home Page Builder (B안) Types
+// ========================================
+
+export type HomeProductKey = 'default' | 'courtside' | 'cherry-blossom';
+
+export type HomeSectionType =
+  | 'playersGrid'
+  | 'galleryPreview'
+  | 'highlightsFromItinerary'
+  | 'cta'
+  | 'spacer';
+
+export interface HomeHeroConfig {
+  badgeText?: string;
+  titleText?: string;
+  subtitleText?: string;
+  badgeFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  titleFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  subtitleFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  primaryCtaText?: string;
+  secondaryCtaText?: string;
+  primaryCtaFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  secondaryCtaFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  bgDesktopUrl?: string;
+  bgMobileUrl?: string;
+}
+
+export interface HomeSectionBase {
+  id: string;
+  type: HomeSectionType;
+  enabled: boolean;
+  order: number;
+}
+
+export interface HomePlayersGridSection extends HomeSectionBase {
+  type: 'playersGrid';
+  props?: {
+    heading?: string;
+    subheading?: string;
+    ctaText?: string;
+    maxItems?: number;
+    headingFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+    subheadingFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+    ctaFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  };
+}
+
+export interface HomeGalleryPreviewSection extends HomeSectionBase {
+  type: 'galleryPreview';
+  props?: {
+    heading?: string;
+    subheading?: string;
+    ctaText?: string;
+    maxItems?: number;
+    headingFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+    subheadingFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+    ctaFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  };
+}
+
+export interface HomeHighlightsFromItinerarySection extends HomeSectionBase {
+  type: 'highlightsFromItinerary';
+  props?: {
+    heading?: string;
+    subheading?: string;
+    maxItems?: number;
+    onlyHighlighted?: boolean;
+    headingFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+    subheadingFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  };
+}
+
+export interface HomeCtaSection extends HomeSectionBase {
+  type: 'cta';
+  props?: {
+    heading?: string;
+    body?: string;
+    buttonText?: string;
+    headingFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+    bodyFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+    buttonFontFamily?: 'inherit' | 'serif' | 'sans-serif' | 'display' | 'monospace' | 'korean-sans';
+  };
+}
+
+export interface HomeSpacerSection extends HomeSectionBase {
+  type: 'spacer';
+  props?: {
+    height?: 'sm' | 'md' | 'lg';
+  };
+}
+
+export type HomeSection =
+  | HomePlayersGridSection
+  | HomeGalleryPreviewSection
+  | HomeHighlightsFromItinerarySection
+  | HomeCtaSection
+  | HomeSpacerSection;
+
+export interface HomeConfig {
+  version: 1;
+  productKey: HomeProductKey;
+  hero: HomeHeroConfig;
+  sections: HomeSection[];
+  updatedAt?: Date;
+}
+
+export interface HomeConfigsDoc {
+  configs?: Partial<Record<HomeProductKey, HomeConfig>>;
   updatedAt?: Date;
 }
 
@@ -151,11 +293,17 @@ export type RegistrationStatus = 'new' | 'contacted' | 'confirmed' | 'cancelled'
 export interface Registration {
   id: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string;
+  phoneCountryCode?: string; // e.g., "+63"
+  phoneLocalNumber?: string; // e.g., "9123456789"
   dateOfBirth: string;
+  gender?: 'female' | 'male' | 'non-binary' | 'prefer-not-to-say';
   passportName: string;
   nationality: string;
+  nationalityCountryCode?: string; // e.g., "PH"
   adultsCount: number;
   childrenCount: number;
   
@@ -164,6 +312,9 @@ export interface Registration {
   tourTitle: string; // Tour title for display
   departureId: string; // Selected departure ID
   departureDate: string; // Selected departure date
+  departureOrigin?: string; // e.g., "Manila (MNL)" / "Cebu (CEB)"
+  favoritePlayerIds?: string[]; // Optional multi-select
+  favoritePlayerNames?: string[]; // Denormalized for easy admin viewing
   
   specialRequests?: string;
   status: RegistrationStatus;

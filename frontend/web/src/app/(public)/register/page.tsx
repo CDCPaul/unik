@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'next/navigation';
 import { 
   User, Mail, Phone, Calendar, FileText, Globe, 
   Users, MessageSquare, Send, CheckCircle, AlertCircle,
@@ -10,19 +11,29 @@ import {
 } from 'lucide-react';
 import { createRegistration } from '@/lib/services/registrations';
 import { getTours } from '@/lib/services/tours';
-import type { TourPackage, TourDeparture } from '@unik/shared/types';
+import { getPlayers } from '@/lib/services/players';
+import type { Player, TourPackage, TourDeparture } from '@unik/shared/types';
+import { useUiText } from '@/context/UiTextContext';
+import { COUNTRIES } from '@/lib/data/countries';
+import { DIAL_CODES } from '@/lib/data/dialCodes';
 
 interface RegistrationForm {
-  fullName: string;
+  firstName: string;
+  lastName: string;
+  fullName: string; // computed (hidden)
   email: string;
-  phone: string;
+  phone: string; // computed (hidden)
+  phoneLocalNumber: string;
   dateOfBirth: string;
+  gender?: 'female' | 'male' | 'non-binary' | 'prefer-not-to-say';
   passportName: string;
   nationality: string;
   specialRequests: string;
 }
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const { t, font } = useUiText();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,13 +44,25 @@ export default function RegisterPage() {
   const [tours, setTours] = useState<TourPackage[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string>('');
   const [selectedDepartureId, setSelectedDepartureId] = useState<string>('');
+  const [selectedDepartureOrigin, setSelectedDepartureOrigin] = useState<string>('');
   const [isLoadingTours, setIsLoadingTours] = useState(true);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [favoritePlayerIds, setFavoritePlayerIds] = useState<string[]>([]);
+  const [dobMonth, setDobMonth] = useState<string>('');
+  const [dobDay, setDobDay] = useState<string>('');
+  const [dobYear, setDobYear] = useState<string>('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState<string>('+63');
+  const [nationalityCountry, setNationalityCountry] = useState<{ code: string; name: string }>(() => {
+    const ph = COUNTRIES.find(c => c.code === 'PH');
+    return ph ? { code: ph.code, name: ph.name } : { code: 'PH', name: 'Philippines' };
+  });
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<RegistrationForm>();
 
   useEffect(() => {
@@ -48,12 +71,39 @@ export default function RegisterPage() {
         const allTours = await getTours();
         const activeTours = allTours.filter(t => t.isActive);
         setTours(activeTours);
-        
-        // Auto-select first tour and first departure
+
+        // Preselect tour/departure via query params (fallback to first active tour)
         if (activeTours.length > 0) {
-          setSelectedTourId(activeTours[0].id);
-          if (activeTours[0].departures && activeTours[0].departures.length > 0) {
-            setSelectedDepartureId(activeTours[0].departures[0].id);
+          const tourIdParam = searchParams.get('tourId');
+          const productParam = searchParams.get('product'); // 'courtside' | 'cherry-blossom'
+          const departureIdParam = searchParams.get('departureId');
+
+          const findByProduct = (product: string | null) => {
+            if (!product) return null;
+            const normalized = product.toLowerCase();
+            return (
+              activeTours.find(t => t.productCategory === normalized) ||
+              activeTours.find(t => t.productId?.startsWith(normalized)) ||
+              (normalized.includes('cherry')
+                ? activeTours.find(t => t.productId?.includes('cherry') || t.productCategory?.includes('cherry'))
+                : null)
+            );
+          };
+
+          const initialTour =
+            (tourIdParam ? activeTours.find(t => t.id === tourIdParam) : null) ||
+            findByProduct(productParam) ||
+            activeTours[0];
+
+          setSelectedTourId(initialTour.id);
+
+          const departures = initialTour.departures || [];
+          if (departures.length > 0) {
+            const initialDeparture =
+              (departureIdParam ? departures.find(d => d.id === departureIdParam) : null) || departures[0];
+            setSelectedDepartureId(initialDeparture.id);
+          } else {
+            setSelectedDepartureId('');
           }
         }
       } catch (error) {
@@ -63,11 +113,72 @@ export default function RegisterPage() {
       }
     }
     loadTours();
-  }, []);
+  }, [searchParams]);
 
   const selectedTour = tours.find(t => t.id === selectedTourId);
   const availableDepartures = selectedTour?.departures || [];
   const selectedDeparture = availableDepartures.find(d => d.id === selectedDepartureId);
+
+  const departureOrigins = (() => {
+    const routes = selectedTour?.flightRoutes || [];
+    const origins = routes.map(r => r.origin).filter(Boolean);
+    return Array.from(new Set(origins));
+  })();
+
+  const availablePlayersForTour = (() => {
+    const key = selectedTour?.productCategory;
+    if (!key) return [];
+    if (key === 'courtside') {
+      return players
+        .filter(p => !p.productIds?.length || p.productIds.includes('courtside'))
+        .slice()
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+    return [];
+  })();
+
+  useEffect(() => {
+    async function loadPlayers() {
+      try {
+        const data = await getPlayers();
+        setPlayers(data);
+      } catch (e) {
+        console.error('Failed to load players:', e);
+      }
+    }
+    loadPlayers();
+  }, []);
+
+  // Keep Departure Origin in sync with selected tour
+  useEffect(() => {
+    if (!selectedTour) return;
+    if (departureOrigins.length === 1) {
+      setSelectedDepartureOrigin(departureOrigins[0]);
+    } else if (departureOrigins.length === 0) {
+      setSelectedDepartureOrigin('');
+    } else if (selectedDepartureOrigin && !departureOrigins.includes(selectedDepartureOrigin)) {
+      setSelectedDepartureOrigin('');
+    }
+    setFavoritePlayerIds([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTourId]);
+
+  // DOB dropdowns -> set hidden ISO date for form submission
+  useEffect(() => {
+    if (!dobYear || !dobMonth || !dobDay) {
+      setValue('dateOfBirth', '');
+      return;
+    }
+    const mm = String(dobMonth).padStart(2, '0');
+    const dd = String(dobDay).padStart(2, '0');
+    setValue('dateOfBirth', `${dobYear}-${mm}-${dd}`, { shouldValidate: true });
+  }, [dobYear, dobMonth, dobDay, setValue]);
+
+  // Name + Phone + Nationality computed fields
+  useEffect(() => {
+    // Keep form values aligned with our controlled dropdowns/inputs.
+    setValue('nationality', nationalityCountry.name);
+  }, [nationalityCountry, setValue]);
 
   const onSubmit = async (data: RegistrationForm) => {
     if (!selectedTourId || !selectedDepartureId) {
@@ -81,23 +192,38 @@ export default function RegisterPage() {
       return;
     }
 
+    if (selectedTour?.productCategory === 'courtside' && departureOrigins.length > 1 && !selectedDepartureOrigin) {
+      setError('Please select a departure city.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
+      const favoritePlayers = availablePlayersForTour.filter(p => favoritePlayerIds.includes(p.id));
       await createRegistration({
         fullName: data.fullName,
+        firstName: data.firstName,
+        lastName: data.lastName,
         email: data.email,
         phone: data.phone,
+        phoneCountryCode,
+        phoneLocalNumber: data.phoneLocalNumber,
         dateOfBirth: data.dateOfBirth,
+        gender: data.gender || undefined,
         passportName: data.passportName,
         nationality: data.nationality,
+        nationalityCountryCode: nationalityCountry.code,
         adultsCount,
         childrenCount,
         tourId: selectedTourId,
         tourTitle: selectedTour?.title || '',
         departureId: selectedDepartureId,
         departureDate: `${selectedDeparture.departureDate} - ${selectedDeparture.returnDate}`,
+        departureOrigin: selectedDepartureOrigin || undefined,
+        favoritePlayerIds: favoritePlayerIds.length ? favoritePlayerIds : undefined,
+        favoritePlayerNames: favoritePlayers.length ? favoritePlayers.map(p => `#${p.number} ${p.name}`) : undefined,
         specialRequests: data.specialRequests || '',
       });
       
@@ -105,6 +231,14 @@ export default function RegisterPage() {
       reset();
       setAdultsCount(1);
       setChildrenCount(0);
+      setSelectedDepartureOrigin('');
+      setFavoritePlayerIds([]);
+      setDobMonth('');
+      setDobDay('');
+      setDobYear('');
+      setPhoneCountryCode('+63');
+      const ph = COUNTRIES.find(c => c.code === 'PH');
+      setNationalityCountry(ph ? { code: ph.code, name: ph.name } : { code: 'PH', name: 'Philippines' });
     } catch (err) {
       console.error('Registration error:', err);
       setError('Something went wrong. Please try again or contact us directly.');
@@ -172,11 +306,11 @@ export default function RegisterPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl font-display font-bold text-white mb-4">
-              Register for Tour
+            <h1 className="text-4xl font-display font-bold text-white mb-4" style={{ fontFamily: font('register.title') }}>
+              {t('register.title', 'Register for Tour')}
             </h1>
-            <p className="text-dark-400 text-lg">
-              Fill out the form below to secure your spot on the ultimate basketball experience.
+            <p className="text-dark-400 text-lg" style={{ fontFamily: font('register.subtitle') }}>
+              {t('register.subtitle', 'Fill out the form below to secure your spot on the ultimate basketball experience.')}
             </p>
           </motion.div>
 
@@ -254,6 +388,29 @@ export default function RegisterPage() {
                     </select>
                   </div>
                 )}
+
+                {/* Departure City (Courtside only, when multiple origins exist) */}
+                {selectedTour?.productCategory === 'courtside' && departureOrigins.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Departure City {departureOrigins.length > 1 && <span className="text-red-500">*</span>}
+                    </label>
+                    <select
+                      value={selectedDepartureOrigin}
+                      onChange={(e) => setSelectedDepartureOrigin(e.target.value)}
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      required={departureOrigins.length > 1}
+                    >
+                      {departureOrigins.length > 1 && <option value="">Select a city</option>}
+                      {departureOrigins.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-dark-400 mt-2">This helps us prepare your flight options (e.g., Manila or Cebu).</p>
+                  </div>
+                )}
               </div>
 
               {/* Personal Information */}
@@ -264,20 +421,53 @@ export default function RegisterPage() {
                 </h3>
 
                 <div className="grid md:grid-cols-2 gap-6">
-                  {/* Full Name */}
+                  {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-dark-400 mb-2">
-                      Full Name <span className="text-red-500">*</span>
+                      Name <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      {...register('fullName', { required: 'Full name is required' })}
-                      type="text"
-                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
-                      placeholder="John Doe"
-                    />
-                    {errors.fullName && (
-                      <p className="text-red-400 text-sm mt-1">{errors.fullName.message}</p>
-                    )}
+                    <input type="hidden" {...register('fullName', { required: 'Name is required' })} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <input
+                          {...register('firstName', { required: 'First name is required' })}
+                          type="text"
+                          className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                          placeholder="First name"
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setValue('firstName', v, { shouldValidate: true });
+                            // fullName = "Last, First"
+                            const ln = (document.querySelector('input[name=\"lastName\"]') as HTMLInputElement | null)?.value || '';
+                            const full = `${ln}`.trim()
+                              ? `${ln.trim()}, ${v.trim()}`
+                              : v.trim();
+                            setValue('fullName', full, { shouldValidate: true });
+                          }}
+                        />
+                        {errors.firstName && <p className="text-red-400 text-sm mt-1">{errors.firstName.message}</p>}
+                      </div>
+                      <div>
+                        <input
+                          {...register('lastName', { required: 'Last name is required' })}
+                          type="text"
+                          className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                          placeholder="Last name"
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setValue('lastName', v, { shouldValidate: true });
+                            const fn = (document.querySelector('input[name=\"firstName\"]') as HTMLInputElement | null)?.value || '';
+                            const full = `${v}`.trim()
+                              ? `${v.trim()}, ${fn.trim()}`
+                              : fn.trim();
+                            setValue('fullName', full, { shouldValidate: true });
+                          }}
+                        />
+                        {errors.lastName && <p className="text-red-400 text-sm mt-1">{errors.lastName.message}</p>}
+                      </div>
+                    </div>
+                    <p className="text-xs text-dark-400 mt-2">Please enter first and last name only (no middle name).</p>
+                    {errors.fullName && <p className="text-red-400 text-sm mt-1">{errors.fullName.message}</p>}
                   </div>
 
                   {/* Email */}
@@ -307,15 +497,63 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-dark-400 mb-2">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      {...register('phone', { required: 'Phone number is required' })}
-                      type="tel"
-                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
-                      placeholder="+63 912 345 6789"
-                    />
-                    {errors.phone && (
-                      <p className="text-red-400 text-sm mt-1">{errors.phone.message}</p>
+                    <input type="hidden" {...register('phone', { required: 'Phone number is required' })} />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <select
+                        value={phoneCountryCode}
+                        onChange={(e) => {
+                          const code = e.target.value;
+                          setPhoneCountryCode(code);
+                          const local = (document.querySelector('input[name=\"phoneLocalNumber\"]') as HTMLInputElement | null)?.value || '';
+                          setValue('phone', `${code} ${local}`.trim(), { shouldValidate: true });
+                        }}
+                        className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors sm:col-span-1"
+                      >
+                        {DIAL_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.code}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        {...register('phoneLocalNumber', { required: 'Local number is required' })}
+                        type="tel"
+                        inputMode="tel"
+                        className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors sm:col-span-2"
+                        placeholder="9123456789"
+                        onChange={(e) => {
+                          const local = e.target.value.replace(/[^\d]/g, '');
+                          // keep only digits in UI value
+                          if (e.target.value !== local) e.target.value = local;
+                          setValue('phoneLocalNumber', local, { shouldValidate: true });
+                          setValue('phone', `${phoneCountryCode} ${local}`.trim(), { shouldValidate: true });
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-dark-400 mt-2">Enter digits only (no spaces or dashes).</p>
+                    {(errors.phoneLocalNumber || errors.phone) && (
+                      <p className="text-red-400 text-sm mt-1">
+                        {errors.phoneLocalNumber?.message || errors.phone?.message}
+                      </p>
                     )}
+                  </div>
+
+                  {/* Gender (Optional) */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Gender <span className="text-dark-500">(Optional)</span>
+                    </label>
+                    <select
+                      {...register('gender')}
+                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      defaultValue=""
+                    >
+                      <option value="">Prefer not to say</option>
+                      <option value="female">Female</option>
+                      <option value="male">Male</option>
+                      <option value="non-binary">Non-binary</option>
+                      <option value="prefer-not-to-say">Prefer not to say</option>
+                    </select>
                   </div>
 
                   {/* Date of Birth */}
@@ -323,11 +561,55 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-dark-400 mb-2">
                       Date of Birth <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      {...register('dateOfBirth', { required: 'Date of birth is required' })}
-                      type="date"
-                      className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
-                    />
+                    <input type="hidden" {...register('dateOfBirth', { required: 'Date of birth is required' })} />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <select
+                        value={dobMonth}
+                        onChange={(e) => setDobMonth(e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      >
+                        <option value="">Month</option>
+                        {Array.from({ length: 12 }).map((_, i) => {
+                          const v = String(i + 1);
+                          return (
+                            <option key={v} value={v}>
+                              {new Date(2000, i, 1).toLocaleString('en-US', { month: 'long' })}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <select
+                        value={dobDay}
+                        onChange={(e) => setDobDay(e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      >
+                        <option value="">Day</option>
+                        {Array.from({ length: 31 }).map((_, i) => {
+                          const v = String(i + 1);
+                          return (
+                            <option key={v} value={v}>
+                              {v}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <select
+                        value={dobYear}
+                        onChange={(e) => setDobYear(e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
+                      >
+                        <option value="">Year</option>
+                        {Array.from({ length: 100 }).map((_, i) => {
+                          const y = String(new Date().getFullYear() - i);
+                          return (
+                            <option key={y} value={y}>
+                              {y}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <p className="text-xs text-dark-400 mt-2">We store date of birth in YYYY-MM-DD format.</p>
                     {errors.dateOfBirth && (
                       <p className="text-red-400 text-sm mt-1">{errors.dateOfBirth.message}</p>
                     )}
@@ -354,18 +636,77 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-dark-400 mb-2">
                       Nationality <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      {...register('nationality', { required: 'Nationality is required' })}
-                      type="text"
+                    <input type="hidden" {...register('nationality', { required: 'Nationality is required' })} />
+                    <select
+                      value={nationalityCountry.code}
+                      onChange={(e) => {
+                        const next = COUNTRIES.find((c) => c.code === e.target.value) || COUNTRIES[0];
+                        setNationalityCountry(next);
+                        setValue('nationality', next.name, { shouldValidate: true });
+                      }}
                       className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-colors"
-                      placeholder="Filipino"
-                    />
-                    {errors.nationality && (
-                      <p className="text-red-400 text-sm mt-1">{errors.nationality.message}</p>
-                    )}
+                      required
+                    >
+                      {COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.nationality && <p className="text-red-400 text-sm mt-1">{errors.nationality.message}</p>}
                   </div>
                 </div>
               </div>
+
+              {/* Favorite Players (Optional) */}
+              {selectedTour?.productCategory === 'courtside' && availablePlayersForTour.length > 0 && (
+                <div className="space-y-6 pt-8 border-t border-dark-700">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <User className="w-5 h-5 text-gold-500" />
+                    Favorite Players <span className="text-dark-400 font-medium text-base">(Optional)</span>
+                  </h3>
+                  <p className="text-dark-400 text-sm">
+                    Choose any players you support. You can select multiple, or leave blank.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {availablePlayersForTour.map((p) => {
+                      const checked = favoritePlayerIds.includes(p.id);
+                      return (
+                        <label
+                          key={p.id}
+                          className="flex items-center gap-3 p-3 rounded-lg border border-dark-700 bg-dark-800 hover:bg-dark-700/60 transition-colors cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFavoritePlayerIds((prev) => Array.from(new Set([...prev, p.id])));
+                              } else {
+                                setFavoritePlayerIds((prev) => prev.filter((id) => id !== p.id));
+                              }
+                            }}
+                            className="h-4 w-4 accent-[var(--theme-gold-color)]"
+                          />
+                          <div className="min-w-0">
+                            <div className="text-white font-medium truncate">
+                              #{p.number} {p.name}
+                            </div>
+                            <div className="text-xs text-dark-400 truncate">{p.team}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {favoritePlayerIds.length > 0 && (
+                    <div className="text-sm text-dark-300">
+                      Selected: <span className="text-white font-semibold">{favoritePlayerIds.length}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Group Size */}
               <div className="space-y-6 pt-8 border-t border-dark-700">

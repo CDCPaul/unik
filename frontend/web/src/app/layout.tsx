@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { Outfit, Playfair_Display } from 'next/font/google';
+import { Outfit, Playfair_Display, Noto_Sans_KR } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { NavigationProvider } from '@/context/NavigationContext';
 import { SettingsProvider } from '@/context/SettingsContext';
+import { UiTextProvider } from '@/context/UiTextContext';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -14,6 +15,12 @@ const outfit = Outfit({
 const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-playfair',
+  display: 'swap',
+});
+
+const notoSansKr = Noto_Sans_KR({
+  subsets: ['latin'],
+  variable: '--font-noto-kr',
   display: 'swap',
 });
 
@@ -35,13 +42,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${outfit.variable} ${playfair.variable} ${notoSansKr.variable}`}>
       <body className="min-h-screen">
         <ThemeProvider>
           <SettingsProvider>
-            <NavigationProvider>
-              {children}
-            </NavigationProvider>
+            <UiTextProvider>
+              <NavigationProvider>
+                {children}
+              </NavigationProvider>
+            </UiTextProvider>
           </SettingsProvider>
         </ThemeProvider>
       </body>

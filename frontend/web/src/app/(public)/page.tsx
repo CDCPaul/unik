@@ -1,56 +1,103 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Star, Calendar, MapPin } from 'lucide-react';
-import Link from 'next/link';
-import { getTours } from '@/lib/services/tours';
-import { getPlayers } from '@/lib/services/players';
+import { useEffect, useMemo, useState } from 'react';
+import type { GalleryImage, HomeConfig, HomeProductKey, Player, TourPackage } from '@unik/shared/types';
+import HomeRenderer from '@/components/homebuilder/HomeRenderer';
+import { useSettings } from '@/context/SettingsContext';
 import { getGalleryImages } from '@/lib/services/gallery';
-import type { TourPackage, Player, GalleryImage } from '@unik/shared/types';
+import { subscribeHomeConfig } from '@/lib/services/homeConfigs';
+import { getPlayers } from '@/lib/services/players';
+import { getTours } from '@/lib/services/tours';
 
-// Helper function to get tour detail URL
-function getTourDetailUrl(tour: TourPackage): string {
-  if (tour.productCategory === 'courtside') {
-    return '/tour/courtside';
-  } else if (tour.productCategory === 'cherry-blossom') {
-    return '/tour/cherry-blossom';
-  }
-  // Legacy support
-  if (tour.productId?.startsWith('courtside')) {
-    return '/tour/courtside';
-  } else if (tour.productId === 'cherry-blossom') {
-    return '/cherry-blossom-marathon';
-  }
-  return '/tour/courtside'; // Default
+function buildFallbackHomeConfig(productKey: HomeProductKey, tour: TourPackage, settings: any | null): HomeConfig {
+  const homeText = settings?.homePageText;
+  const heroTitle = settings?.heroTitle;
+
+  return {
+    version: 1,
+    productKey,
+    hero: {
+      badgeText: homeText?.heroBadgeText || 'Official Tour Package',
+      titleText: heroTitle?.text || '',
+      titleFontFamily: heroTitle?.fontFamily || 'display',
+      subtitleText: homeText?.heroSubtitleText || '',
+      primaryCtaText: homeText?.primaryCtaText || 'View Tour Details',
+      secondaryCtaText: homeText?.secondaryCtaText || 'Book Now',
+      bgDesktopUrl: '',
+      bgMobileUrl: '',
+    },
+    sections: [
+      {
+        id: 'playersGrid',
+        type: 'playersGrid',
+        enabled: true,
+        order: 10,
+        props: {
+          heading: homeText?.featuredPlayersHeading || 'Filipino Stars',
+          subheading: homeText?.featuredPlayersSubheading || '',
+          ctaText: homeText?.featuredPlayersCtaText || 'View All Players',
+          maxItems: 4,
+        },
+      },
+      {
+        id: 'galleryPreview',
+        type: 'galleryPreview',
+        enabled: true,
+        order: 20,
+        props: {
+          heading: homeText?.galleryHeading || 'Tour Gallery',
+          subheading: homeText?.gallerySubheading || '',
+          ctaText: homeText?.galleryCtaText || 'View Full Gallery',
+          maxItems: 6,
+        },
+      },
+      {
+        id: 'cta',
+        type: 'cta',
+        enabled: true,
+        order: 30,
+        props: {
+          heading: homeText?.ctaHeading || "Don't Miss the Action!",
+          body: homeText?.ctaBody || '',
+          buttonText: homeText?.ctaButtonText || 'Register Now',
+        },
+      },
+    ],
+    // keep to satisfy type, even if not set
+    updatedAt: tour.updatedAt,
+  } as HomeConfig;
 }
 
 export default function HomePage() {
+  const { settings } = useSettings();
   const [tour, setTour] = useState<TourPackage | null>(null);
-  const [featuredPlayers, setFeaturedPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [homeConfig, setHomeConfig] = useState<HomeConfig | null>(null);
+
+  const featuredProductKey: HomeProductKey = useMemo(() => {
+    if (!tour) return 'default';
+    if (tour.productCategory === 'courtside' || tour.productId?.startsWith('courtside')) return 'courtside';
+    if (tour.productCategory === 'cherry-blossom' || tour.productId?.includes('cherry')) return 'cherry-blossom';
+    return 'default';
+  }, [tour]);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [toursData, playersData, galleryData] = await Promise.all([
-          getTours(),
-          getPlayers(),
-          getGalleryImages()
-        ]);
-        
-        // Get tour featured on home page
-        const homeTour = toursData.find(t => t.isFeaturedOnHome && t.isActive) 
-          || toursData.find(t => t.isFeatured && t.isActive) 
-          || toursData.find(t => t.isActive)
-          || toursData[0];
-        
+        const [toursData, playersData, galleryData] = await Promise.all([getTours(), getPlayers(), getGalleryImages()]);
+
+        const homeTour =
+          toursData.find((t) => t.isFeaturedOnHome && t.isActive) ||
+          toursData.find((t) => t.isFeatured && t.isActive) ||
+          toursData.find((t) => t.isActive) ||
+          toursData[0] ||
+          null;
+
         setTour(homeTour);
-        // Featured players: prioritize All-Stars, then take top 4
-        const sortedPlayers = playersData.sort((a, b) => (b.isAllStar ? 1 : 0) - (a.isAllStar ? 1 : 0));
-        setFeaturedPlayers(sortedPlayers.slice(0, 4));
-        setGalleryImages(galleryData.slice(0, 6)); // Take first 6 images
+        setPlayers(playersData);
+        setGalleryImages(galleryData);
       } catch (error) {
         console.error('Failed to load home data:', error);
       } finally {
@@ -60,209 +107,23 @@ export default function HomePage() {
     loadData();
   }, []);
 
-  return (
-    <>
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-linear-to-r from-dark-900 via-dark-900/80 to-transparent z-10" />
-          <img 
-            src={tour?.heroImageUrl || tour?.thumbnailUrl || '/images/hero-placeholder.jpg'} 
-            alt="Hero Background" 
-            className="w-full h-full object-cover"
-          />
-        </div>
+  useEffect(() => {
+    if (!tour) return;
+    const unsubscribe = subscribeHomeConfig(
+      featuredProductKey,
+      (cfg) => setHomeConfig(cfg),
+      (err) => {
+        console.error('Failed to load home config:', err);
+        setHomeConfig(null);
+      }
+    );
+    return () => unsubscribe();
+  }, [tour, featuredProductKey]);
 
-        <div className="container-custom relative z-20 pt-20">
-          <div className="max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              {!isLoading && tour && (
-                <>
-                  <span className="inline-block py-1 px-3 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-400 font-medium text-sm mb-6">
-                    Official Tour Package
-                  </span>
-                  <h1 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight mb-6">
-                    {tour.title}
-                  </h1>
-                  <p className="text-xl text-dark-200 mb-8 max-w-2xl">
-                    {tour.subtitle}
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-4">
-                    <Link 
-                      href={getTourDetailUrl(tour)} 
-                      className="btn-primary"
-                    >
-                      View Tour Details
-                    </Link>
-                    <Link href="/register" className="btn-secondary">
-                      Book Now <ArrowRight className="w-4 h-4 ml-2" />
-                    </Link>
-                  </div>
-                </>
-              )}
-            </motion.div>
+  // Avoid showing a "placeholder hero background" that then shifts on config load.
+  if (isLoading || !tour) return null;
 
-            {/* Quick Info */}
-            {tour && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="mt-12 flex flex-wrap gap-8 p-6 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gold-500/10 text-gold-500">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-dark-400 uppercase tracking-wider">Date</p>
-                    <p className="text-white font-medium">
-                      {tour.departures && tour.departures.length > 0 
-                        ? `${tour.departures[0].departureDate} - ${tour.departures[0].returnDate}` 
-                        : tour.dates 
-                        ? `${tour.dates.departure} - ${tour.dates.return}` 
-                        : 'TBA'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gold-500/10 text-gold-500">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-dark-400 uppercase tracking-wider">Venue</p>
-                    <p className="text-white font-medium">{tour.gameInfo.venue}</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </div>
-      </section>
+  const effectiveConfig = homeConfig || buildFallbackHomeConfig(featuredProductKey, tour, settings);
 
-      {/* Featured Players */}
-      <section className="py-24 bg-dark-900">
-        <div className="container-custom">
-          <div className="flex items-end justify-between mb-12">
-            <div>
-              <h2 className="section-heading mb-2">Filipino Stars</h2>
-              <p className="text-dark-400">Meet the pride of Philippines in KBL.</p>
-            </div>
-            <Link href="/tour/courtside/players" className="hidden md:flex items-center gap-2 text-gold-500 hover:text-gold-400 transition-colors">
-              View All Players <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredPlayers.map((player, index) => (
-              <motion.div
-                key={player.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group cursor-pointer"
-              >
-                <Link href={`/tour/courtside/players/${player.id}`}>
-                  <div className="card overflow-hidden">
-                    <div className="aspect-3/4 relative overflow-hidden bg-dark-800">
-                      {player.thumbnailUrl ? (
-                        <img 
-                          src={player.thumbnailUrl} 
-                          alt={player.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Star className="w-12 h-12 text-dark-600" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-linear-to-t from-dark-950 via-transparent to-transparent opacity-80" />
-                      
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <div className="text-gold-500 text-xs font-bold uppercase mb-1">{player.position}</div>
-                        <h3 className="text-white font-bold text-lg">{player.name}</h3>
-                        <p className="text-dark-400 text-xs">{player.team}</p>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-          
-          <div className="mt-8 text-center md:hidden">
-            <Link href="/tour/courtside/players" className="btn-secondary w-full justify-center">
-              View All Players
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Gallery Preview */}
-      <section className="py-24 bg-dark-950">
-        <div className="container-custom">
-          <div className="text-center mb-16">
-            <h2 className="section-heading mb-4">Tour Gallery</h2>
-            <p className="text-dark-400">Sneak peek of what awaits you in Korea.</p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {galleryImages.map((image, index) => (
-              <motion.div
-                key={image.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className={`rounded-xl overflow-hidden relative group aspect-square ${
-                  index === 0 ? 'col-span-2 row-span-2' : ''
-                }`}
-              >
-                <img 
-                  src={image.url} 
-                  alt={image.caption || 'Gallery Image'} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
-                {image.caption && (
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-white text-sm font-medium">{image.caption}</p>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
-          
-          <div className="mt-12 text-center">
-            <Link href="/gallery" className="btn-secondary">
-              View Full Gallery
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 bg-premium-gradient relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/images/cta-pattern.svg')] opacity-10" />
-        <div className="container-custom relative z-10 text-center">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-6">
-            Don't Miss the Action!
-          </h2>
-          <p className="text-lg text-dark-200 mb-10 max-w-2xl mx-auto">
-            Secure your spot now for the KBL All-Star 2026 Tour. Limited seats available for this exclusive experience.
-          </p>
-          <Link href="/register" className="btn-primary text-lg px-8 py-4 shadow-xl shadow-primary-500/20">
-            Register Now
-          </Link>
-        </div>
-      </section>
-    </>
-  );
+  return <HomeRenderer config={effectiveConfig} tour={tour} players={players} galleryImages={galleryImages} />;
 }

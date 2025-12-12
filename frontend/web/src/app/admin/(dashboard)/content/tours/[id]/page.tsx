@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Save, Plus, Trash2, Upload, Loader2, Calendar, MapPin, Plane, ArrowLeft } from 'lucide-react';
 import { getTour, updateTour, createTour, uploadTourImage } from '@/lib/services/admin/tours';
@@ -49,6 +49,7 @@ const defaultTour: Omit<TourPackage, 'id' | 'createdAt' | 'updatedAt'> = {
 export default function TourDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const tourId = params.id as string;
   const isNew = tourId === 'new';
 
@@ -59,11 +60,18 @@ export default function TourDetailPage() {
 
   useEffect(() => {
     if (isNew) {
-      setTour(defaultTour as TourPackage);
+      const productKey = searchParams.get('productKey');
+      if (productKey === 'cherry-blossom') {
+        setTour({ ...(defaultTour as any), productCategory: 'cherry-blossom', tourType: 'special-event' } as TourPackage);
+      } else if (productKey === 'courtside') {
+        setTour({ ...(defaultTour as any), productCategory: 'courtside' } as TourPackage);
+      } else {
+        setTour(defaultTour as TourPackage);
+      }
     } else {
       loadTour();
     }
-  }, [tourId]);
+  }, [tourId, isNew, searchParams]);
 
   const loadTour = async () => {
     setIsLoading(true);
@@ -533,11 +541,15 @@ export default function TourDetailPage() {
       <div className="admin-card p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Calendar className="w-5 h-5 text-blue-600" />
-          <h2 className="text-lg font-semibold text-slate-900">Game Information</h2>
+          <h2 className="text-lg font-semibold text-slate-900">
+            {tour.productCategory === 'cherry-blossom' ? 'Event Information' : 'Game Information'}
+          </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Game Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {tour.productCategory === 'cherry-blossom' ? 'Event Date' : 'Game Date'}
+            </label>
             <input
               type="date"
               value={tour.gameInfo.date}
@@ -546,33 +558,39 @@ export default function TourDetailPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Venue</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {tour.productCategory === 'cherry-blossom' ? 'Location / Venue' : 'Venue'}
+            </label>
             <input
               type="text"
               value={tour.gameInfo.venue}
               onChange={(e) => setTour({ ...tour, gameInfo: { ...tour.gameInfo, venue: e.target.value } })}
               className="admin-input bg-white text-black"
-              placeholder="e.g., Jamsil Indoor Gymnasium, Seoul"
+              placeholder={tour.productCategory === 'cherry-blossom' ? 'e.g., Busan (Start/Finish area)' : 'e.g., Jamsil Indoor Gymnasium, Seoul'}
             />
           </div>
+          {tour.productCategory !== 'cherry-blossom' && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Matchup</label>
+              <input
+                type="text"
+                value={tour.gameInfo.matchup}
+                onChange={(e) => setTour({ ...tour, gameInfo: { ...tour.gameInfo, matchup: e.target.value } })}
+                className="admin-input bg-white text-black"
+                placeholder="Filipino All-Stars vs Korean All-Stars"
+              />
+            </div>
+          )}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Matchup</label>
-            <input
-              type="text"
-              value={tour.gameInfo.matchup}
-              onChange={(e) => setTour({ ...tour, gameInfo: { ...tour.gameInfo, matchup: e.target.value } })}
-              className="admin-input bg-white text-black"
-              placeholder="Filipino All-Stars vs Korean All-Stars"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {tour.productCategory === 'cherry-blossom' ? 'Event Description' : 'Description'}
+            </label>
             <textarea
               value={tour.gameInfo.description}
               onChange={(e) => setTour({ ...tour, gameInfo: { ...tour.gameInfo, description: e.target.value } })}
               className="admin-input bg-white text-black"
               rows={2}
-              placeholder="Brief description of the game"
+              placeholder={tour.productCategory === 'cherry-blossom' ? 'Brief description of the marathon event' : 'Brief description of the game'}
             />
           </div>
         </div>

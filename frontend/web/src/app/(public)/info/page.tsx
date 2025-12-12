@@ -6,6 +6,7 @@ import {
   AlertCircle, ChevronDown, MapPin, Clock, Languages
 } from 'lucide-react';
 import { useState } from 'react';
+import { useUiText } from '@/context/UiTextContext';
 
 const infoSections = [
   {
@@ -102,6 +103,130 @@ const faqs = [
 
 export default function InfoPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const { t, font } = useUiText();
+
+  const infoSections = [
+    {
+      id: 'visa',
+      icon: FileText,
+      title: t('info.section.visa.title', 'Visa Requirements'),
+      content: t(
+        'info.section.visa.html',
+        `
+      <p class="mb-4">Philippine passport holders can enter South Korea visa-free for up to 30 days for tourism purposes, provided they have:</p>
+      <ul class="list-disc list-inside space-y-2 text-dark-300">
+        <li>A valid passport with at least 6 months validity</li>
+        <li>Return/onward flight tickets</li>
+        <li>Proof of accommodation (hotel booking)</li>
+        <li>Sufficient funds for the trip</li>
+        <li>No previous immigration violations</li>
+      </ul>
+      <p class="mt-4 text-gold-400">Note: Visa requirements may change. Please verify with the Korean Embassy before traveling.</p>
+    `
+      ),
+    },
+    {
+      id: 'weather',
+      icon: Thermometer,
+      title: t('info.section.weather.title', 'Weather & Packing'),
+      content: t(
+        'info.section.weather.html',
+        `
+      <p class="mb-4">January in Seoul is cold with temperatures ranging from -6°C to 1°C (21°F to 34°F). Pack accordingly:</p>
+      <ul class="list-disc list-inside space-y-2 text-dark-300">
+        <li>Heavy winter coat or padded jacket</li>
+        <li>Thermal underwear and layers</li>
+        <li>Warm boots with good grip (for ice/snow)</li>
+        <li>Gloves, scarf, and winter hat</li>
+        <li>Hand warmers (available in convenience stores)</li>
+        <li>Comfortable shoes for walking tours</li>
+      </ul>
+    `
+      ),
+    },
+    {
+      id: 'money',
+      icon: CreditCard,
+      title: t('info.section.money.title', 'Money & Payments'),
+      content: t(
+        'info.section.money.html',
+        `
+      <p class="mb-4">The currency in South Korea is the Korean Won (KRW). Tips for handling money:</p>
+      <ul class="list-disc list-inside space-y-2 text-dark-300">
+        <li>Exchange PHP to KRW before departure or at the airport</li>
+        <li>Credit cards are widely accepted in Seoul</li>
+        <li>Many places accept international cards (Visa, Mastercard)</li>
+        <li>Carry some cash for small purchases and street food</li>
+        <li>T-money card recommended for public transportation</li>
+      </ul>
+      <p class="mt-4 text-dark-400">Exchange Rate (approx): 1 PHP = 23-25 KRW</p>
+    `
+      ),
+    },
+    {
+      id: 'communication',
+      icon: Phone,
+      title: t('info.section.communication.title', 'Communication'),
+      content: t(
+        'info.section.communication.html',
+        `
+      <p class="mb-4">Stay connected during your trip:</p>
+      <ul class="list-disc list-inside space-y-2 text-dark-300">
+        <li>Rent a pocket WiFi or buy a Korean SIM card at the airport</li>
+        <li>Free WiFi available in most hotels, cafes, and public areas</li>
+        <li>KakaoTalk is the main messaging app in Korea</li>
+        <li>Google Maps works well for navigation</li>
+        <li>Papago or Google Translate for language assistance</li>
+      </ul>
+    `
+      ),
+    },
+  ];
+
+  const faqs = [
+    {
+      question: t('info.faq.1.q', 'What happens if my visa is denied?'),
+      answer: t(
+        'info.faq.1.a',
+        'If you have a visa-free entry to Korea as a Philippine passport holder, this generally should not be an issue. However, if for any reason you are denied entry, please contact us immediately and we will assist with the refund process according to our policy.'
+      ),
+    },
+    {
+      question: t('info.faq.2.q', 'Is travel insurance included?'),
+      answer: t(
+        'info.faq.2.a',
+        'Travel insurance is NOT included in the package but is highly recommended. We suggest purchasing comprehensive travel insurance that covers medical emergencies, trip cancellation, and lost luggage.'
+      ),
+    },
+    {
+      question: t('info.faq.3.q', 'Can I extend my stay after the tour?'),
+      answer: t(
+        'info.faq.3.a',
+        'Yes! You can extend your stay in Korea. Just let us know in advance so we can arrange a one-way transfer to the airport on your preferred departure date instead.'
+      ),
+    },
+    {
+      question: t('info.faq.4.q', 'What is the payment schedule?'),
+      answer: t(
+        'info.faq.4.a',
+        'A 50% deposit is required to secure your booking. The remaining balance is due 30 days before the departure date. We accept bank transfers and major credit cards.'
+      ),
+    },
+    {
+      question: t('info.faq.5.q', 'Are the game seats guaranteed?'),
+      answer: t(
+        'info.faq.5.a',
+        'Yes, your KBL All-Star Game tickets are guaranteed and included in the package. Exact seat locations will be provided closer to the event date.'
+      ),
+    },
+    {
+      question: t('info.faq.6.q', 'What if I have dietary restrictions?'),
+      answer: t(
+        'info.faq.6.a',
+        'Please inform us of any dietary restrictions or allergies during registration. We will do our best to accommodate your needs during included meals.'
+      ),
+    },
+  ];
 
   return (
     <>
@@ -116,15 +241,24 @@ export default function InfoPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <span className="text-gold-500 font-medium uppercase tracking-wider">
-              Essential Information
+            <span className="text-gold-500 font-medium uppercase tracking-wider" style={{ fontFamily: font('info.hero.kicker') }}>
+              {t('info.hero.kicker', 'Essential Information')}
             </span>
-            <h1 className="section-heading mt-4 mb-6">
-              Travel Information
+            <h1 className="section-heading mt-4 mb-6" style={{ fontFamily: font('info.hero.title') }}>
+              {t('info.hero.title', 'Travel Information')}
             </h1>
-            <p className="text-dark-400 text-lg">
-              Everything you need to know before your trip to Korea.
-              Prepare well for an amazing experience.
+            <p className="text-dark-400 text-lg" style={{ fontFamily: font('info.hero.subtitle') }}>
+              {t(
+                'info.hero.subtitle',
+                'Everything you need to know before your trip to Korea.\nPrepare well for an amazing experience.'
+              )
+                .split('\n')
+                .map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    {i < 1 && <br />}
+                  </span>
+                ))}
             </p>
           </motion.div>
         </div>
@@ -136,15 +270,15 @@ export default function InfoPage() {
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
             <div className="flex items-center gap-2 text-dark-300">
               <Clock className="w-5 h-5 text-gold-500" />
-              <span>GMT+9 (1 hour ahead of PH)</span>
+              <span>{t('info.quickFacts.timezone', 'GMT+9 (1 hour ahead of PH)')}</span>
             </div>
             <div className="flex items-center gap-2 text-dark-300">
               <MapPin className="w-5 h-5 text-gold-500" />
-              <span>~4 hour flight from Manila</span>
+              <span>{t('info.quickFacts.flight', '~4 hour flight from Manila')}</span>
             </div>
             <div className="flex items-center gap-2 text-dark-300">
               <Languages className="w-5 h-5 text-gold-500" />
-              <span>Korean (English in tourist areas)</span>
+              <span>{t('info.quickFacts.language', 'Korean (English in tourist areas)')}</span>
             </div>
           </div>
         </div>
@@ -185,9 +319,9 @@ export default function InfoPage() {
         <div className="container-custom">
           <div className="text-center mb-16">
             <span className="text-gold-500 font-medium uppercase tracking-wider">
-              Got Questions?
+              {t('info.faq.kicker', 'Got Questions?')}
             </span>
-            <h2 className="section-heading mt-4">Frequently Asked Questions</h2>
+            <h2 className="section-heading mt-4">{t('info.faq.title', 'Frequently Asked Questions')}</h2>
           </div>
 
           <div className="max-w-3xl mx-auto space-y-4">
@@ -233,12 +367,19 @@ export default function InfoPage() {
                 <AlertCircle className="w-6 h-6 text-amber-400" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-white mb-3">Important Notice</h3>
+                <h3 className="text-xl font-semibold text-white mb-3">{t('info.notice.title', 'Important Notice')}</h3>
                 <p className="text-dark-400 leading-relaxed">
-                  All information provided is accurate as of the time of publication. 
-                  Travel requirements and conditions may change without notice. 
-                  We recommend checking with relevant authorities and keeping up to date 
-                  with travel advisories before your departure.
+                  {t(
+                    'info.notice.body',
+                    'All information provided is accurate as of the time of publication.\nTravel requirements and conditions may change without notice.\nWe recommend checking with relevant authorities and keeping up to date with travel advisories before your departure.'
+                  )
+                    .split('\n')
+                    .map((line, i) => (
+                      <span key={i}>
+                        {line}
+                        <br />
+                      </span>
+                    ))}
                 </p>
               </div>
             </div>

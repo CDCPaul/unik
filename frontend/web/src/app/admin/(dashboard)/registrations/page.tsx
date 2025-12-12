@@ -10,13 +10,21 @@ type RegistrationStatus = 'new' | 'contacted' | 'confirmed' | 'cancelled';
 interface Registration {
   id: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone: string;
+  phoneCountryCode?: string;
+  phoneLocalNumber?: string;
   dateOfBirth: string;
+  gender?: string;
   passportName: string;
   nationality: string;
+  nationalityCountryCode?: string;
   adultsCount: number;
   childrenCount: number;
+  departureOrigin?: string;
+  favoritePlayerNames?: string[];
   specialRequests?: string;
   status: RegistrationStatus;
   createdAt?: Date;
@@ -95,14 +103,42 @@ export default function RegistrationsPage() {
   });
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Date of Birth', 'Passport Name', 'Nationality', 'Adults', 'Children', 'Special Requests', 'Status', 'Created At'];
+    const headers = [
+      'Name',
+      'First Name',
+      'Last Name',
+      'Email',
+      'Phone',
+      'Phone Country Code',
+      'Phone Local Number',
+      'Date of Birth',
+      'Gender',
+      'Departure Origin',
+      'Favorite Players',
+      'Passport Name',
+      'Nationality',
+      'Nationality Country Code',
+      'Adults',
+      'Children',
+      'Special Requests',
+      'Status',
+      'Created At',
+    ];
     const rows = filteredRegistrations.map(reg => [
       reg.fullName,
+      reg.firstName || '',
+      reg.lastName || '',
       reg.email,
       reg.phone,
+      reg.phoneCountryCode || '',
+      reg.phoneLocalNumber || '',
       reg.dateOfBirth,
+      reg.gender || '',
+      reg.departureOrigin || '',
+      (reg.favoritePlayerNames || []).join(' | '),
       reg.passportName,
       reg.nationality,
+      reg.nationalityCountryCode || '',
       reg.adultsCount,
       reg.childrenCount,
       reg.specialRequests || '',

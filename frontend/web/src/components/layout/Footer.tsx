@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useUiText } from '@/context/UiTextContext';
 
 const footerLinks = {
   navigation: [
@@ -24,6 +25,7 @@ const footerLinks = {
 export default function Footer() {
   const { settings, isLoading } = useSettings();
   const { theme } = useTheme();
+  const { t, font } = useUiText();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -121,8 +123,11 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h3 className="font-semibold mb-4 uppercase tracking-wider text-sm" style={{ color: theme.headingText }}>
-              Navigation
+            <h3
+              className="font-semibold mb-4 uppercase tracking-wider text-sm"
+              style={{ color: theme.headingText, fontFamily: font('footer.heading.navigation') }}
+            >
+              {t('footer.heading.navigation', 'Navigation')}
             </h3>
             <ul className="space-y-3">
               {footerLinks.navigation.map((link) => (
@@ -134,7 +139,15 @@ export default function Footer() {
                     onMouseEnter={(e) => e.currentTarget.style.color = theme.headingText}
                     onMouseLeave={(e) => e.currentTarget.style.color = theme.mutedText}
                   >
-                    {link.label}
+                    {link.href === '/'
+                      ? t('footer.link.home', link.label)
+                      : link.href === '/players'
+                      ? t('footer.link.players', link.label)
+                      : link.href === '/tour'
+                      ? t('footer.link.tour', link.label)
+                      : link.href === '/info'
+                      ? t('footer.link.info', link.label)
+                      : link.label}
                   </Link>
                 </li>
               ))}
@@ -143,8 +156,11 @@ export default function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="font-semibold mb-4 uppercase tracking-wider text-sm" style={{ color: theme.headingText }}>
-              Support
+            <h3
+              className="font-semibold mb-4 uppercase tracking-wider text-sm"
+              style={{ color: theme.headingText, fontFamily: font('footer.heading.support') }}
+            >
+              {t('footer.heading.support', 'Support')}
             </h3>
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
@@ -156,7 +172,15 @@ export default function Footer() {
                     onMouseEnter={(e) => e.currentTarget.style.color = theme.headingText}
                     onMouseLeave={(e) => e.currentTarget.style.color = theme.mutedText}
                   >
-                    {link.label}
+                    {link.href === '/register'
+                      ? t('footer.link.register', link.label)
+                      : link.href === '/contact'
+                      ? t('footer.link.contact', link.label)
+                      : link.href === '/info#faq'
+                      ? t('footer.link.faq', link.label)
+                      : link.href === '/info#visa'
+                      ? t('footer.link.visa', link.label)
+                      : link.label}
                   </Link>
                 </li>
               ))}
@@ -165,8 +189,11 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="font-semibold mb-4 uppercase tracking-wider text-sm" style={{ color: theme.headingText }}>
-              Contact Us
+            <h3
+              className="font-semibold mb-4 uppercase tracking-wider text-sm"
+              style={{ color: theme.headingText, fontFamily: font('footer.heading.contact') }}
+            >
+              {t('footer.heading.contact', 'Contact Us')}
             </h3>
             <ul className="space-y-4">
               {mounted && settings && (
@@ -223,7 +250,7 @@ export default function Footer() {
                 onMouseEnter={(e) => e.currentTarget.style.color = theme.headingText}
                 onMouseLeave={(e) => e.currentTarget.style.color = theme.mutedText}
               >
-                Privacy Policy
+                {t('footer.link.privacy', 'Privacy Policy')}
               </Link>
               <Link 
                 href="/terms" 
@@ -232,7 +259,7 @@ export default function Footer() {
                 onMouseEnter={(e) => e.currentTarget.style.color = theme.headingText}
                 onMouseLeave={(e) => e.currentTarget.style.color = theme.mutedText}
               >
-                Terms of Service
+                {t('footer.link.terms', 'Terms of Service')}
               </Link>
             </div>
           </div>

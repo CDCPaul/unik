@@ -1,32 +1,25 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Users, MapPin, Image } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import Link from 'next/link';
 
-const contentSections = [
+const products = [
   {
-    title: 'Players',
-    description: '10 Filipino All-Stars profiles and stats',
-    icon: Users,
-    href: '/admin/content/players',
-    color: 'bg-blue-500',
+    title: 'Courtside (KBL)',
+    description: 'Manage Courtside tour, players, and gallery',
+    icon: MapPin,
+    href: '/admin/content/courtside',
+    color: 'bg-blue-600',
     badge: 'KBL All-Star 2026',
   },
   {
-    title: 'Tour Package',
-    description: 'Edit tour details, itinerary, and pricing',
+    title: 'Cherry Blossom Marathon',
+    description: 'Manage CBM tour, itinerary, schedule, and gallery',
     icon: MapPin,
-    href: '/admin/content/tours',
-    color: 'bg-green-500',
-    badge: 'Jan 15-18, 2026',
-  },
-  {
-    title: 'Gallery',
-    description: 'Upload and manage photos',
-    icon: Image,
-    href: '/admin/content/gallery',
-    color: 'bg-purple-500',
+    href: '/admin/content/cherry-blossom',
+    color: 'bg-pink-600',
+    badge: 'CBM',
   },
 ];
 
@@ -36,12 +29,12 @@ export default function ContentPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Content Management</h1>
-        <p className="text-slate-500 mt-1">Manage all website content for KBL All-Star 2026 Tour</p>
+        <p className="text-slate-500 mt-1">Choose a product to manage its content</p>
       </div>
 
       {/* Content Sections Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {contentSections.map((section, index) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {products.map((section, index) => (
           <motion.div
             key={section.title}
             initial={{ opacity: 0, y: 20 }}
@@ -72,18 +65,11 @@ export default function ContentPage() {
         ))}
       </div>
 
-      {/* Info Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="admin-card p-6 bg-blue-50 border-blue-200"
-      >
-        <h3 className="font-medium text-blue-900 mb-2">🏀 KBL All-Star 2026</h3>
-        <p className="text-sm text-blue-700">
-          Filipino Basketball Pride: 10 Filipino players vs 10 Korean players at Jamsil Arena, Seoul on January 17, 2026.
-        </p>
-      </motion.div>
+      <div className="admin-card p-4 bg-slate-50 border-slate-200">
+        <div className="text-sm text-slate-600">
+          Tip: This is now <span className="font-semibold">product-scoped</span>. Courtside and CBM can be managed independently.
+        </div>
+      </div>
     </div>
   );
 }

@@ -17,6 +17,35 @@ export const defaultSettings: CompanyInfo = {
     instagram: '',
     twitter: '',
   },
+  heroTitle: {
+    text: '',
+    fontFamily: 'display',
+  },
+  homePageMedia: {
+    heroBackgroundByProduct: {
+      default: '',
+      courtside: '',
+      'cherry-blossom': '',
+    },
+  },
+  homePageText: {
+    heroBadgeText: 'Official Tour Package',
+    heroSubtitleText: '',
+    primaryCtaText: 'View Tour Details',
+    secondaryCtaText: 'Book Now',
+    tbaText: 'TBA',
+    quickInfoDateLabel: 'Date',
+    quickInfoVenueLabel: 'Venue',
+    featuredPlayersHeading: 'Filipino Stars',
+    featuredPlayersSubheading: 'Meet the pride of Philippines in KBL.',
+    featuredPlayersCtaText: 'View All Players',
+    galleryHeading: 'Tour Gallery',
+    gallerySubheading: 'Sneak peek of what awaits you in Korea.',
+    galleryCtaText: 'View Full Gallery',
+    ctaHeading: "Don't Miss the Action!",
+    ctaBody: 'Secure your spot now for the KBL All-Star 2026 Tour. Limited seats available for this exclusive experience.',
+    ctaButtonText: 'Register Now',
+  },
 };
 
 // Get settings
@@ -56,6 +85,22 @@ export async function uploadLogo(file: File): Promise<string> {
     return downloadURL;
   } catch (error) {
     console.error('Error uploading logo:', error);
+    throw error;
+  }
+}
+
+// Upload home hero background image (optionally per product)
+export async function uploadHomeHeroBackground(
+  file: File,
+  productKey: 'default' | 'courtside' | 'cherry-blossom'
+): Promise<string> {
+  try {
+    const safeName = file.name.replace(/[^\w.\-]+/g, '_');
+    const storageRef = ref(storage, `settings/home-hero/${productKey}/${Date.now()}_${safeName}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  } catch (error) {
+    console.error('Error uploading home hero background:', error);
     throw error;
   }
 }

@@ -1,21 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { getGalleryImages } from '@/lib/services/gallery';
 import type { GalleryImage } from '@unik/shared/types';
-import { RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
 const categories = [
   { value: 'all', label: 'All Photos' },
-  { value: 'game', label: 'Game Action' },
   { value: 'tour', label: 'Tour Scenes' },
   { value: 'accommodation', label: 'Accommodation' },
   { value: 'food', label: 'Food & Dining' },
+  { value: 'other', label: 'Other' },
 ];
 
-export default function CourtsideGallery() {
+export default function CherryBlossomGallery() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -25,11 +25,9 @@ export default function CourtsideGallery() {
     async function loadData() {
       try {
         const allImages = await getGalleryImages();
-        // Filter for Courtside images (or all if no productId set)
-        const courtsideImages = allImages.filter(img => 
-          !img.productId || img.productId === 'courtside'
-        );
-        setImages(courtsideImages);
+        // Filter for Cherry Blossom images (or all if no productId set)
+        const cbmImages = allImages.filter((img) => !img.productId || img.productId === 'cherry-blossom');
+        setImages(cbmImages);
       } catch (error) {
         console.error('Failed to load gallery:', error);
       } finally {
@@ -39,19 +37,17 @@ export default function CourtsideGallery() {
     loadData();
   }, []);
 
-  const filteredImages = activeCategory === 'all'
-    ? images
-    : images.filter(img => img.category === activeCategory);
+  const filteredImages = activeCategory === 'all' ? images : images.filter((img) => img.category === activeCategory);
 
   return (
     <section className="py-20">
       <div className="container-custom">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-display font-bold mb-4" style={{ color: theme.headingText }}>
-            Courtside Gallery
+            Cherry Blossom Gallery
           </h1>
           <p className="text-lg" style={{ color: theme.mutedText }}>
-            Explore photos from previous Courtside tours
+            Explore photos from Cherry Blossom Marathon tours
           </p>
         </div>
 
@@ -70,9 +66,7 @@ export default function CourtsideGallery() {
                 borderColor: activeCategory === category.value ? theme.goldColor : theme.secondaryBtnBorder,
               }}
               onMouseEnter={(e) => {
-                if (activeCategory !== category.value) {
-                  e.currentTarget.style.filter = 'brightness(1.2)';
-                }
+                if (activeCategory !== category.value) e.currentTarget.style.filter = 'brightness(1.2)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.filter = 'brightness(1)';
@@ -89,10 +83,7 @@ export default function CourtsideGallery() {
             <RefreshCw className="w-10 h-10 animate-spin" style={{ color: theme.goldColor }} />
           </div>
         ) : filteredImages.length === 0 ? (
-          <div 
-            className="text-center py-20 rounded-2xl border"
-            style={{ backgroundColor: theme.cardBg, borderColor: theme.secondaryBtnBorder }}
-          >
+          <div className="text-center py-20 rounded-2xl border" style={{ backgroundColor: theme.cardBg, borderColor: theme.secondaryBtnBorder }}>
             <ImageIcon className="w-12 h-12 mx-auto mb-4" style={{ color: theme.mutedText }} />
             <p className="text-lg" style={{ color: theme.mutedText }}>
               No photos found in this category.
@@ -108,25 +99,17 @@ export default function CourtsideGallery() {
                 transition={{ delay: index * 0.05 }}
                 className="break-inside-avoid"
               >
-                <div 
-                  className="relative group rounded-xl overflow-hidden"
-                  style={{ backgroundColor: theme.cardBg }}
-                >
+                <div className="relative group rounded-xl overflow-hidden" style={{ backgroundColor: theme.cardBg }}>
                   <img
                     src={image.url}
                     alt={image.caption || 'Gallery image'}
                     className="w-full h-auto transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div 
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    style={{ backgroundColor: `${theme.pageBg}40` }}
-                  />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: `${theme.pageBg}40` }} />
                   {image.caption && (
-                    <div 
+                    <div
                       className="absolute bottom-0 left-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      style={{
-                        background: `linear-gradient(to top, ${theme.pageBg}, transparent)`
-                      }}
+                      style={{ background: `linear-gradient(to top, ${theme.pageBg}, transparent)` }}
                     >
                       <p className="text-sm font-medium" style={{ color: theme.headingText }}>
                         {image.caption}
@@ -142,6 +125,5 @@ export default function CourtsideGallery() {
     </section>
   );
 }
-
 
 
