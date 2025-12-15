@@ -43,6 +43,11 @@ export interface ItineraryDay {
   };
   highlight?: boolean;
   imageUrl?: string; // Image for highlight day (displayed in Main Event section)
+  /**
+   * Optional per-day gallery images for the itinerary page.
+   * Max 3 images recommended (enforced in admin UI).
+   */
+  galleryImageUrls?: string[];
 }
 
 export interface FlightRoute {

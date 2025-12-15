@@ -7,7 +7,7 @@ import type { TabItem } from '@unik/shared/types';
 
 const defaultTabs: TabItem[] = [
   { id: 'overview', label: 'Overview', path: 'overview', isVisible: true, order: 0 },
-  { id: 'schedule', label: 'Schedule', path: 'schedule', isVisible: true, order: 1 },
+  { id: 'itinerary', label: 'Itinerary', path: 'itinerary', isVisible: true, order: 1 },
   { id: 'players', label: 'Players', path: 'players', isVisible: true, order: 2 },
   { id: 'gallery', label: 'Gallery', path: 'gallery', isVisible: true, order: 3 },
 ];
@@ -26,7 +26,8 @@ export default function CourtsideLayout({
     const courtsideItem = tourItem?.children?.find(child => child.href === '/tour/courtside');
     
     if (courtsideItem?.tabs && courtsideItem.tabs.length > 0) {
-      setTabs(courtsideItem.tabs);
+      // Force-remove schedule tab (content moved to itinerary)
+      setTabs(courtsideItem.tabs.filter(t => t.id !== 'schedule' && t.path !== 'schedule'));
     }
   }, [navItems]);
 

@@ -1,9 +1,7 @@
-'use client';
-
-import TourSchedule from '@/components/products/TourSchedule';
+import { redirect } from 'next/navigation';
 
 export default function CherryBlossomSchedulePage() {
-  return <TourSchedule productCategory="cherry-blossom" />;
+  redirect('/cbm/itinerary');
 }
 
 

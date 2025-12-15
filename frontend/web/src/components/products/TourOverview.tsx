@@ -54,6 +54,12 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
     return `${d0.departureDate} - ${d0.returnDate}`;
   };
 
+  const getItineraryUrl = (tour: TourPackage) => {
+    if (tour.productCategory === 'courtside' || tour.productId?.startsWith('courtside')) return '/tour/courtside/itinerary';
+    if (tour.productCategory === 'cherry-blossom' || tour.productId?.includes('cherry')) return '/cbm/itinerary';
+    return '/tour/courtside/itinerary';
+  };
+
   const getOverviewDateLines = (tour: TourPackage) => {
     const d0 = tour.departures?.[0];
     if (d0) {
@@ -312,17 +318,9 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
                 color: theme.goldColor,
               }}
             >
-              {currentTour.tourType === 'special-event' && <span className="text-xs font-bold">⭐ SPECIAL EVENT</span>}
-              {currentTour.departures && currentTour.departures.length > 0 ? (
-                <span className="text-sm font-medium">
-                  {getDepartureBadgeText(currentTour)}
-                  {currentTour.departures.length > 1 && <span className="ml-2">+{currentTour.departures.length - 1} more dates</span>}
-                </span>
-              ) : currentTour.dates ? (
-                <span className="text-sm font-medium">{currentTour.dates.departure} - {currentTour.dates.return}</span>
-              ) : (
-                <span className="text-sm font-medium">Tour Dates TBA</span>
-              )}
+              <span className="text-xs font-bold">
+                {currentTour.tourType === 'special-event' ? '⭐ SPECIAL EVENT' : 'REGULAR TOUR'}
+              </span>
             </motion.div>
             
             <motion.h1
@@ -354,7 +352,7 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
               <Link href="/register" className="btn-gold">
                 Book Now
               </Link>
-              <Link href="#itinerary" className="btn-secondary">
+              <Link href={getItineraryUrl(currentTour)} className="btn-secondary">
                 View Itinerary
               </Link>
             </motion.div>

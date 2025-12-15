@@ -1,7 +1,5 @@
-'use client';
-
-import TourSchedule from '@/components/products/TourSchedule';
+import { redirect } from 'next/navigation';
 
 export default function CourtsideSchedulePage() {
-  return <TourSchedule productCategory="courtside" />;
+  redirect('/tour/courtside/itinerary');
 }

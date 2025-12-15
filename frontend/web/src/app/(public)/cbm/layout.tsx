@@ -7,9 +7,8 @@ import type { TabItem } from '@unik/shared/types';
 
 const defaultTabs: TabItem[] = [
   { id: 'overview', label: 'Overview', path: 'overview', isVisible: true, order: 0 },
-  { id: 'schedule', label: 'Schedule', path: 'schedule', isVisible: true, order: 1 },
-  { id: 'itinerary', label: 'Itinerary', path: 'itinerary', isVisible: true, order: 2 },
-  { id: 'gallery', label: 'Gallery', path: 'gallery', isVisible: true, order: 3 },
+  { id: 'itinerary', label: 'Itinerary', path: 'itinerary', isVisible: true, order: 1 },
+  { id: 'gallery', label: 'Gallery', path: 'gallery', isVisible: true, order: 2 },
 ];
 
 export default function CbmLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +20,8 @@ export default function CbmLayout({ children }: { children: React.ReactNode }) {
     const tourItem = navItems.find((item) => item.href === '/tour');
     const cbmItem = tourItem?.children?.find((child) => child.href === '/cbm');
     if (cbmItem?.tabs && cbmItem.tabs.length > 0) {
-      setTabs(cbmItem.tabs);
+      // Force-remove schedule tab (content moved to itinerary)
+      setTabs(cbmItem.tabs.filter(t => t.id !== 'schedule' && t.path !== 'schedule'));
     }
   }, [navItems]);
 

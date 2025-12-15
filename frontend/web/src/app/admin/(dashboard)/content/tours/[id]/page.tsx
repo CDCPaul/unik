@@ -1061,6 +1061,91 @@ export default function TourDetailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Itinerary Day Gallery Images (max 3) */}
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Itinerary Photos (Optional, up to 3)
+                </label>
+                <div className="space-y-3">
+                  {(day.galleryImageUrls && day.galleryImageUrls.length > 0) && (
+                    <div className="flex flex-wrap gap-3">
+                      {day.galleryImageUrls.slice(0, 3).map((url, imgIndex) => (
+                        <div key={`${day.day}-${imgIndex}`} className="w-32">
+                          <div className="w-32 h-20 border-2 border-slate-300 rounded-lg overflow-hidden bg-slate-50">
+                            <img src={url} alt={`Day ${day.day} image ${imgIndex + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = (day.galleryImageUrls || []).filter((_, i) => i !== imgIndex);
+                              updateItineraryDay(dayIndex, { galleryImageUrls: next });
+                            }}
+                            className="mt-1 text-xs text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <label
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-colors text-sm ${
+                        (day.galleryImageUrls?.length || 0) >= 3
+                          ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                          : 'bg-slate-900 text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload Photos
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={(day.galleryImageUrls?.length || 0) >= 3}
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (!files.length) return;
+                          const current = day.galleryImageUrls || [];
+                          const remaining = Math.max(0, 3 - current.length);
+                          const toUpload = files.slice(0, remaining);
+
+                          for (const file of toUpload) {
+                            if (!file.type.startsWith('image/')) {
+                              alert('Please upload an image file');
+                              continue;
+                            }
+                            if (file.size > 5 * 1024 * 1024) {
+                              alert('Image size must be less than 5MB');
+                              continue;
+                            }
+                            try {
+                              const url = await uploadTourImage(file, tour.id || 'temp');
+                              const next = [...(current || []), url].slice(0, 3);
+                              // Update both local `current` reference and state
+                              current.push(url);
+                              updateItineraryDay(dayIndex, { galleryImageUrls: next });
+                            } catch (error) {
+                              alert('Failed to upload image');
+                            }
+                          }
+                          e.target.value = '';
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <span className="text-xs text-slate-500">
+                      {(day.galleryImageUrls?.length || 0)}/3 uploaded
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    These photos appear on the public itinerary page (right-side slideshow for each day).
+                  </p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
