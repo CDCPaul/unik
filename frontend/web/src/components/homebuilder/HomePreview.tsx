@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Calendar, MapPin, Star } from 'lucide-react';
+import { ArrowRight, Calendar, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { GalleryImage, HomeConfig, HomeProductKey, Player, TourPackage, ItineraryDay } from '@unik/shared/types';
 import { useTheme } from '@/context/ThemeContext';
@@ -17,9 +17,9 @@ function fontFamilyFromKey(key?: HomeConfig['hero']['titleFontFamily']) {
 }
 
 function getTourDetailUrl(tour: TourPackage): string {
-  if (tour.productCategory === 'courtside' || tour.productId?.startsWith('courtside')) return '/tour/courtside';
-  if (tour.productCategory === 'cherry-blossom' || tour.productId?.includes('cherry')) return '/tour/cherry-blossom';
-  return '/tour/courtside';
+  if (tour.productCategory === 'courtside' || tour.productId?.startsWith('courtside')) return '/tour/courtside/itinerary';
+  if (tour.productCategory === 'cherry-blossom' || tour.productId?.includes('cherry')) return '/cbm/itinerary';
+  return '/tour/courtside/itinerary';
 }
 
 export default function HomePreview({
@@ -63,6 +63,60 @@ export default function HomePreview({
     return filtered.filter(d => d.imageUrl).slice(0, (sortedSections.find(s => s.type === 'highlightsFromItinerary') as any)?.props?.maxItems || 3);
   })();
 
+  const parseNightsFromDuration = (durationText: string): number | null => {
+    const m = durationText.match(/(\d+)\s*Nights?/i);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const diffDaysInclusive = (startISO: string, endISO: string): number => {
+    const [sy, sm, sd] = startISO.split('-').map(Number);
+    const [ey, em, ed] = endISO.split('-').map(Number);
+    if (![sy, sm, sd, ey, em, ed].every(Number.isFinite)) return 0;
+    const start = Date.UTC(sy, sm - 1, sd);
+    const end = Date.UTC(ey, em - 1, ed);
+    const days = Math.floor((end - start) / (24 * 60 * 60 * 1000)) + 1;
+    return Math.max(days, 0);
+  };
+
+  const homeDateLines = (() => {
+    const d0 = tour?.departures?.[0];
+    if (tour && d0) {
+      const originsFromRoutes = (tour.flightRoutes || []).map(r => r.origin).filter(Boolean);
+      const originsFromOverrides = (d0.datesByOrigin || []).map(x => x.origin).filter(Boolean);
+      const origins = Array.from(new Set([...originsFromRoutes, ...originsFromOverrides]));
+
+      if (origins.length > 1 && d0.datesByOrigin && d0.datesByOrigin.length > 0) {
+        return origins.map((origin) => {
+          const m = d0.datesByOrigin?.find(x => x.origin === origin);
+          const dep = m?.departureDate || d0.departureDate;
+          const ret = m?.returnDate || d0.returnDate;
+          return { label: origin, text: `${dep} - ${ret}` };
+        });
+      }
+      return [{ label: 'Date', text: `${d0.departureDate} - ${d0.returnDate}` }];
+    }
+
+    if (tour?.dates) return [{ label: 'Date', text: `${tour.dates.departure} - ${tour.dates.return}` }];
+    return [{ label: 'Date', text: 'TBA' }];
+  })();
+
+  const homeDurationLines = (() => {
+    const nights = parseNightsFromDuration(tour?.duration || '') ?? null;
+    return homeDateLines.map((l) => {
+      const parts = l.text.split(' - ');
+      const dep = parts[0]?.trim();
+      const ret = parts[1]?.trim();
+      const tripDays = dep && ret ? diffDaysInclusive(dep, ret) : 0;
+      const n = nights ?? (tripDays > 0 ? Math.max(tripDays - 1, 0) : 0);
+      return {
+        label: l.label,
+        text: tripDays > 0 ? `${n} Nights ${tripDays} Days` : (tour?.duration || 'TBA'),
+      };
+    });
+  })();
+
   return (
     <div className={wrapperClass} style={{ backgroundColor: theme.pageBg }}>
       {/* Hero */}
@@ -100,29 +154,38 @@ export default function HomePreview({
             </motion.div>
 
             {tour && (
-              <div className="mt-10 flex flex-wrap gap-8 p-6 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl">
-                <div className="flex items-center gap-3">
+              <div className="mt-10 w-fit max-w-full flex flex-wrap gap-6 px-6 py-5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl">
+                <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-gold-500/10 text-gold-500">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="text-xs text-dark-400 uppercase tracking-wider">Date</p>
-                    <p className="text-white font-medium">
-                      {tour.departures?.[0]
-                        ? `${tour.departures[0].departureDate} - ${tour.departures[0].returnDate}`
-                        : tour.dates
-                        ? `${tour.dates.departure} - ${tour.dates.return}`
-                        : 'TBA'}
-                    </p>
+                    <div className="space-y-1">
+                      {homeDateLines.map((l) => (
+                        <div key={`${l.label}-${l.text}`} className="flex flex-wrap items-baseline gap-2">
+                          {l.label !== 'Date' && <span className="text-white font-semibold">{l.label}</span>}
+                          <span className="text-white font-medium">{l.text}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+
+                <div className="flex items-start gap-3">
                   <div className="p-2 rounded-lg bg-gold-500/10 text-gold-500">
-                    <MapPin className="w-5 h-5" />
+                    <Star className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-dark-400 uppercase tracking-wider">Venue</p>
-                    <p className="text-white font-medium">{tour.gameInfo?.venue || 'Venue'}</p>
+                    <p className="text-xs text-dark-400 uppercase tracking-wider">Duration</p>
+                    <div className="space-y-1">
+                      {homeDurationLines.map((l) => (
+                        <div key={`dur-${l.label}-${l.text}`} className="flex flex-wrap items-baseline gap-2">
+                          {l.label !== 'Date' && <span className="text-white font-semibold">{l.label}</span>}
+                          <span className="text-white font-medium">{l.text}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -4,6 +4,7 @@
   "private": true,
   "description": "KBL ALL STAR Tour - Philippines to Korea Travel Package",
   "scripts": {
+    "dev": "pnpm -r --parallel --filter @unik/web --filter @unik/functions dev",
     "dev:web": "pnpm --filter @unik/web dev",
     "dev:admin": "pnpm --filter @unik/admin dev",
     "build:web": "pnpm --filter @unik/web build",

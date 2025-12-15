@@ -15,8 +15,21 @@ import { db } from '../firebase';
 import { COLLECTIONS } from '@unik/shared/firebase/config';
 import type { Registration, RegistrationStatus } from '@unik/shared/types';
 
+export type CreateRegistrationInput =
+  Omit<Registration, 'id' | 'createdAt' | 'updatedAt' | 'status'> & {
+    /**
+     * Allow pricing snapshot fields even if older `Registration` typings are used
+     * elsewhere during incremental migration.
+     */
+    pricingOrigin?: string;
+    unitPriceAdult?: number;
+    unitPriceChild?: number;
+    priceCurrency?: 'PHP' | 'USD' | 'KRW';
+    totalPrice?: number;
+  };
+
 // Create a new registration
-export async function createRegistration(data: Omit<Registration, 'id' | 'createdAt' | 'updatedAt' | 'status'>) {
+export async function createRegistration(data: CreateRegistrationInput) {
   const docRef = await addDoc(collection(db, COLLECTIONS.registrations), {
     ...data,
     status: 'new' as RegistrationStatus,

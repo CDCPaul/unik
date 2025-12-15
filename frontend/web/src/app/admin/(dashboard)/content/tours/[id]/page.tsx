@@ -58,6 +58,63 @@ export default function TourDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  const flightOrigins = (() => {
+    if (!tour?.flightRoutes?.length) return [];
+    const origins = tour.flightRoutes.map(r => r.origin).filter(Boolean);
+    return Array.from(new Set(origins));
+  })();
+
+  const getOriginPricing = (origin: string) => {
+    return tour?.pricingByOrigin?.find(p => p.origin === origin);
+  };
+
+  const originPricingEnabled = !!tour?.pricingByOrigin?.length;
+
+  const enableOriginPricing = () => {
+    if (!tour) return;
+    if (flightOrigins.length === 0) {
+      alert('No flight origins found. Add at least one Flight Route origin above to enable origin-based pricing.');
+      return;
+    }
+    const current = tour.pricingByOrigin ? [...tour.pricingByOrigin] : [];
+    const next = flightOrigins.map((origin) => {
+      const existing = current.find(p => p.origin === origin);
+      return (
+        existing || {
+          origin,
+          adult: tour.pricing.adult,
+          child: tour.pricing.child,
+          currency: tour.pricing.currency,
+        }
+      );
+    });
+    setTour({ ...tour, pricingByOrigin: next });
+  };
+
+  const disableOriginPricing = () => {
+    if (!tour) return;
+    setTour({ ...tour, pricingByOrigin: undefined });
+  };
+
+  const upsertOriginPricing = (origin: string, patch: Partial<NonNullable<TourPackage['pricingByOrigin']>[number]>) => {
+    if (!tour) return;
+    const current = tour.pricingByOrigin ? [...tour.pricingByOrigin] : [];
+    const idx = current.findIndex(p => p.origin === origin);
+    const base =
+      idx >= 0
+        ? current[idx]
+        : {
+            origin,
+            adult: tour.pricing.adult,
+            child: tour.pricing.child,
+            currency: tour.pricing.currency,
+          };
+    const next = { ...base, ...patch };
+    if (idx >= 0) current[idx] = next;
+    else current.push(next);
+    setTour({ ...tour, pricingByOrigin: current });
+  };
+
   useEffect(() => {
     if (isNew) {
       const productKey = searchParams.get('productKey');
@@ -164,6 +221,31 @@ export default function TourDetailPage() {
     const newDepartures = [...tour.departures];
     newDepartures[index] = { ...newDepartures[index], ...updates };
     setTour({ ...tour, departures: newDepartures });
+  };
+
+  const upsertDepartureOriginDates = (
+    departureIndex: number,
+    origin: string,
+    patch: Partial<NonNullable<TourDeparture['datesByOrigin']>[number]>
+  ) => {
+    if (!tour || !tour.departures) return;
+    const departures = [...tour.departures];
+    const dep = departures[departureIndex];
+    const current = dep.datesByOrigin ? [...dep.datesByOrigin] : [];
+    const idx = current.findIndex(d => d.origin === origin);
+    const base =
+      idx >= 0
+        ? current[idx]
+        : {
+            origin,
+            departureDate: dep.departureDate,
+            returnDate: dep.returnDate,
+          };
+    const next = { ...base, ...patch };
+    if (idx >= 0) current[idx] = next;
+    else current.push(next);
+    departures[departureIndex] = { ...dep, datesByOrigin: current };
+    setTour({ ...tour, departures });
   };
 
   const deleteDeparture = (index: number) => {
@@ -403,7 +485,7 @@ export default function TourDetailPage() {
           
           <div className="flex items-start gap-4">
             {tour.heroImageUrl && (
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-64 h-36 border-2 border-slate-300 rounded-lg overflow-hidden bg-slate-50">
                   <img
                     src={tour.heroImageUrl}
@@ -531,6 +613,50 @@ export default function TourDetailPage() {
                     />
                   </div>
                 </div>
+
+                {/* Origin-specific Dates (optional) */}
+                {flightOrigins.length > 1 && (
+                  <div className="pt-3 border-t border-slate-200">
+                    <div className="flex items-baseline justify-between gap-4 mb-2">
+                      <h4 className="text-xs font-semibold text-slate-700">Origin-specific Dates (Optional)</h4>
+                      <p className="text-xs text-slate-500">
+                        Use this only if outbound/return calendar dates differ by departure city.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {flightOrigins.map((origin) => {
+                        const od = departure.datesByOrigin?.find(d => d.origin === origin);
+                        return (
+                          <div key={origin} className="rounded-md border border-slate-200 bg-white p-3">
+                            <div className="text-xs font-semibold text-slate-800 mb-2">{origin}</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1">Departure Date</label>
+                                <input
+                                  type="date"
+                                  value={od?.departureDate || departure.departureDate}
+                                  onChange={(e) =>
+                                    upsertDepartureOriginDates(index, origin, { departureDate: e.target.value })
+                                  }
+                                  className="admin-input text-sm bg-white text-black"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1">Return Date</label>
+                                <input
+                                  type="date"
+                                  value={od?.returnDate || departure.returnDate}
+                                  onChange={(e) => upsertDepartureOriginDates(index, origin, { returnDate: e.target.value })}
+                                  className="admin-input text-sm bg-white text-black"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -876,7 +1002,7 @@ export default function TourDetailPage() {
                   </label>
                   <div className="flex items-start gap-4">
                     {day.imageUrl && (
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         <div className="w-32 h-20 border-2 border-slate-300 rounded-lg overflow-hidden bg-slate-50">
                           <img
                             src={day.imageUrl}
@@ -974,6 +1100,88 @@ export default function TourDetailPage() {
               <option value="KRW">KRW</option>
             </select>
           </div>
+        </div>
+
+        {/* Origin-based Pricing (optional) */}
+        <div className="pt-4 border-t border-slate-200 space-y-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <h3 className="text-sm font-semibold text-slate-900">Origin-based Pricing (Optional)</h3>
+            <p className="text-xs text-slate-500">
+              If set, public pages will show all origins and registration will price by selected origin.
+            </p>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={originPricingEnabled}
+              onChange={(e) => {
+                if (e.target.checked) enableOriginPricing();
+                else disableOriginPricing();
+              }}
+            />
+            Enable origin-based pricing
+          </label>
+
+          {flightOrigins.length === 0 ? (
+            <p className="text-sm text-slate-600">
+              No flight origins found. Add at least one Flight Route origin above to enable origin-based pricing.
+            </p>
+          ) : !originPricingEnabled ? (
+            <p className="text-sm text-slate-600">
+              Origin-based pricing is currently disabled. Turn it on above to set different prices per departure city.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {flightOrigins.map((origin) => {
+                const p = getOriginPricing(origin);
+                const currency = (p?.currency || tour.pricing.currency) as any;
+                return (
+                  <div key={origin} className="rounded-lg border border-slate-200 bg-white p-4">
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <div className="text-sm font-semibold text-slate-900">{origin}</div>
+                      <div className="text-xs text-slate-500">
+                        Fallback: {tour.pricing.currency} {tour.pricing.adult.toLocaleString()} / {tour.pricing.child.toLocaleString()}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Adult Price</label>
+                        <input
+                          type="number"
+                          value={typeof p?.adult === 'number' ? p.adult : tour.pricing.adult}
+                          onChange={(e) => upsertOriginPricing(origin, { adult: parseFloat(e.target.value) || 0 })}
+                          className="admin-input bg-white text-black"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Child Price</label>
+                        <input
+                          type="number"
+                          value={typeof p?.child === 'number' ? p.child : tour.pricing.child}
+                          onChange={(e) => upsertOriginPricing(origin, { child: parseFloat(e.target.value) || 0 })}
+                          className="admin-input bg-white text-black"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Currency</label>
+                        <select
+                          value={currency}
+                          onChange={(e) => upsertOriginPricing(origin, { currency: e.target.value as any })}
+                          className="admin-input bg-white text-black"
+                        >
+                          <option value="PHP">PHP</option>
+                          <option value="USD">USD</option>
+                          <option value="KRW">KRW</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

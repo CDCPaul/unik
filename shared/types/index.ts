@@ -66,6 +66,16 @@ export interface TourDeparture {
   id: string;
   departureDate: string; // e.g., "2026-01-15"
   returnDate: string; // e.g., "2026-01-18"
+  /**
+   * Optional per-origin date overrides (when departure city changes the actual
+   * outbound/return calendar dates due to flight times).
+   * If present, UI should prefer matching origin entry and fallback to the base dates.
+   */
+  datesByOrigin?: Array<{
+    origin: string; // must match FlightRoute.origin
+    departureDate: string;
+    returnDate: string;
+  }>;
   availableSeats: number;
   status: 'available' | 'limited' | 'sold-out';
   specialNote?: string; // e.g., "Includes All-Star Game"
@@ -108,6 +118,16 @@ export interface TourPackage {
     child: number;
     currency: 'PHP' | 'USD' | 'KRW';
   };
+  /**
+   * Optional origin-based pricing (e.g., "Manila (MNL)" vs "Cebu (CEB)").
+   * If present, UI should prefer a matching origin entry and fallback to `pricing`.
+   */
+  pricingByOrigin?: Array<{
+    origin: string; // must match FlightRoute.origin
+    adult: number;
+    child: number;
+    currency?: 'PHP' | 'USD' | 'KRW'; // defaults to pricing.currency
+  }>;
   thumbnailUrl: string;
   galleryUrls: string[];
   heroImageUrl?: string; // Hero image for home page (1920x1080 recommended)
@@ -316,6 +336,15 @@ export interface Registration {
   nationalityCountryCode?: string; // e.g., "PH"
   adultsCount: number;
   childrenCount: number;
+  /**
+   * Optional pricing snapshot captured at registration time.
+   * Helps reporting when pricing varies by origin or changes over time.
+   */
+  pricingOrigin?: string; // e.g., "Manila (MNL)" / "Cebu (CEB)"
+  unitPriceAdult?: number;
+  unitPriceChild?: number;
+  priceCurrency?: 'PHP' | 'USD' | 'KRW';
+  totalPrice?: number;
   
   // Tour selection
   tourId: string; // Selected tour package ID

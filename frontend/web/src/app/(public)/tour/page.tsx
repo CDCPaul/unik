@@ -11,6 +11,25 @@ export default function TourPage() {
   const [tour, setTour] = useState<TourPackage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getDepartureBadgeText = (t: TourPackage) => {
+    if (!t.departures || t.departures.length === 0) return 'TBA';
+    const d0 = t.departures[0];
+    const originsFromRoutes = (t.flightRoutes || []).map(r => r.origin).filter(Boolean);
+    const originsFromOverrides = (d0.datesByOrigin || []).map(x => x.origin).filter(Boolean);
+    const origins = Array.from(new Set([...originsFromRoutes, ...originsFromOverrides]));
+
+    if (origins.length > 1 && d0.datesByOrigin && d0.datesByOrigin.length > 0) {
+      const parts = origins.map((o) => {
+        const m = d0.datesByOrigin?.find(x => x.origin === o);
+        const dep = m?.departureDate || d0.departureDate;
+        const ret = m?.returnDate || d0.returnDate;
+        return `${o}: ${dep} - ${ret}`;
+      });
+      return parts.join(' • ');
+    }
+    return `${d0.departureDate} - ${d0.returnDate}`;
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -67,7 +86,7 @@ export default function TourPage() {
               <Calendar className="w-4 h-4" />
               <span className="text-sm font-medium">
                 {tour.departures && tour.departures.length > 0 
-                  ? `${tour.departures[0].departureDate} - ${tour.departures[0].returnDate}` 
+                  ? getDepartureBadgeText(tour)
                   : tour.dates 
                   ? `${tour.dates.departure} - ${tour.dates.return}` 
                   : 'TBA'}
@@ -363,22 +382,64 @@ export default function TourPage() {
               Don't miss this chance to support Filipino players in Korea and experience the thrill of the KBL All-Star Game.
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-6 max-w-lg mx-auto mb-10">
-              <div className="bg-dark-800/80 p-6 rounded-xl border border-dark-600">
-                <p className="text-dark-400 text-sm uppercase tracking-wider mb-2">Adult (12+)</p>
-                <div className="text-3xl font-bold text-white">
-                  <span className="text-sm align-top text-gold-500 mr-1">{tour.pricing.currency}</span>
-                  {tour.pricing.adult.toLocaleString()}
+            {tour.pricingByOrigin && tour.pricingByOrigin.length > 0 ? (
+              <div className="max-w-2xl mx-auto mb-10">
+                <p className="text-dark-400 text-sm uppercase tracking-wider mb-4">Pricing by Departure City</p>
+                <div className="space-y-4">
+                  {(() => {
+                    const originsFromRoutes = (tour.flightRoutes || []).map(r => r.origin).filter(Boolean);
+                    const originsFromPricing = (tour.pricingByOrigin || []).map(p => p.origin).filter(Boolean);
+                    const origins = Array.from(new Set([...originsFromRoutes, ...originsFromPricing]));
+
+                    return origins.map((origin) => {
+                      const p = tour.pricingByOrigin?.find(x => x.origin === origin);
+                      const currency = (p?.currency || tour.pricing.currency);
+                    return (
+                      <div key={origin} className="bg-dark-800/80 p-6 rounded-xl border border-dark-600 text-left">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+                          <div className="text-white font-bold text-lg">{origin}</div>
+                          <div className="text-dark-400 text-xs">Adult / Child</div>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-dark-400 text-xs uppercase tracking-wider mb-1">Adult (12+)</p>
+                            <div className="text-2xl font-bold text-white">
+                              <span className="text-sm align-top text-gold-500 mr-1">{currency}</span>
+                              {(p?.adult ?? tour.pricing.adult).toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-dark-400 text-xs uppercase tracking-wider mb-1">Child (&lt;12)</p>
+                            <div className="text-2xl font-bold text-white">
+                              <span className="text-sm align-top text-gold-500 mr-1">{currency}</span>
+                              {(p?.child ?? tour.pricing.child).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                    });
+                  })()}
                 </div>
               </div>
-              <div className="bg-dark-800/80 p-6 rounded-xl border border-dark-600">
-                <p className="text-dark-400 text-sm uppercase tracking-wider mb-2">Child (&lt;12)</p>
-                <div className="text-3xl font-bold text-white">
-                  <span className="text-sm align-top text-gold-500 mr-1">{tour.pricing.currency}</span>
-                  {tour.pricing.child.toLocaleString()}
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-6 max-w-lg mx-auto mb-10">
+                <div className="bg-dark-800/80 p-6 rounded-xl border border-dark-600">
+                  <p className="text-dark-400 text-sm uppercase tracking-wider mb-2">Adult (12+)</p>
+                  <div className="text-3xl font-bold text-white">
+                    <span className="text-sm align-top text-gold-500 mr-1">{tour.pricing.currency}</span>
+                    {tour.pricing.adult.toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-dark-800/80 p-6 rounded-xl border border-dark-600">
+                  <p className="text-dark-400 text-sm uppercase tracking-wider mb-2">Child (&lt;12)</p>
+                  <div className="text-3xl font-bold text-white">
+                    <span className="text-sm align-top text-gold-500 mr-1">{tour.pricing.currency}</span>
+                    {tour.pricing.child.toLocaleString()}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <Link href="/register" className="btn-primary text-lg px-8 py-4 shadow-xl shadow-primary-500/20">
               Book Your Spot Now

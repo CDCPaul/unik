@@ -24,6 +24,11 @@ interface Registration {
   adultsCount: number;
   childrenCount: number;
   departureOrigin?: string;
+  pricingOrigin?: string;
+  unitPriceAdult?: number;
+  unitPriceChild?: number;
+  priceCurrency?: 'PHP' | 'USD' | 'KRW' | string;
+  totalPrice?: number;
   favoritePlayerNames?: string[];
   specialRequests?: string;
   status: RegistrationStatus;
@@ -114,6 +119,11 @@ export default function RegistrationsPage() {
       'Date of Birth',
       'Gender',
       'Departure Origin',
+      'Pricing Origin',
+      'Unit Price Adult',
+      'Unit Price Child',
+      'Price Currency',
+      'Total Price',
       'Favorite Players',
       'Nationality',
       'Nationality Country Code',
@@ -134,6 +144,11 @@ export default function RegistrationsPage() {
       reg.dateOfBirth,
       reg.gender || '',
       reg.departureOrigin || '',
+      reg.pricingOrigin || '',
+      reg.unitPriceAdult ?? '',
+      reg.unitPriceChild ?? '',
+      reg.priceCurrency || '',
+      reg.totalPrice ?? '',
       (reg.favoritePlayerNames || []).join(' | '),
       reg.nationality,
       reg.nationalityCountryCode || '',
@@ -229,6 +244,7 @@ export default function RegistrationsPage() {
                   <th className="admin-table-header">Name</th>
                   <th className="admin-table-header">Contact</th>
                   <th className="admin-table-header">Travelers</th>
+                  <th className="admin-table-header">Departure / Price</th>
                   <th className="admin-table-header">Date</th>
                   <th className="admin-table-header">Status</th>
                 </tr>
@@ -251,6 +267,16 @@ export default function RegistrationsPage() {
                       {reg.childrenCount > 0 && (
                         <div className="text-slate-500 text-xs">{reg.childrenCount} Children</div>
                       )}
+                    </td>
+                    <td className="admin-table-cell">
+                      <div className="text-slate-900 text-sm">
+                        {reg.pricingOrigin || reg.departureOrigin || '-'}
+                      </div>
+                      <div className="text-slate-500 text-xs">
+                        {typeof reg.totalPrice === 'number'
+                          ? `${reg.priceCurrency || ''} ${reg.totalPrice.toLocaleString()}`
+                          : '-'}
+                      </div>
                     </td>
                     <td className="admin-table-cell text-slate-500">{formatDate(reg.createdAt)}</td>
                     <td className="admin-table-cell">

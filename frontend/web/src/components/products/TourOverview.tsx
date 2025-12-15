@@ -18,6 +18,73 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
 
+  const parseNightsFromDuration = (durationText: string): number | null => {
+    const m = durationText.match(/(\d+)\s*Nights?/i);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const diffDaysInclusive = (startISO: string, endISO: string): number => {
+    const [sy, sm, sd] = startISO.split('-').map(Number);
+    const [ey, em, ed] = endISO.split('-').map(Number);
+    if (![sy, sm, sd, ey, em, ed].every(Number.isFinite)) return 0;
+    const start = Date.UTC(sy, sm - 1, sd);
+    const end = Date.UTC(ey, em - 1, ed);
+    const days = Math.floor((end - start) / (24 * 60 * 60 * 1000)) + 1;
+    return Math.max(days, 0);
+  };
+
+  const getDepartureBadgeText = (tour: TourPackage) => {
+    if (!tour.departures || tour.departures.length === 0) return 'Tour Dates TBA';
+    const d0 = tour.departures[0];
+    const originsFromRoutes = (tour.flightRoutes || []).map(r => r.origin).filter(Boolean);
+    const originsFromOverrides = (d0.datesByOrigin || []).map(x => x.origin).filter(Boolean);
+    const origins = Array.from(new Set([...originsFromRoutes, ...originsFromOverrides]));
+
+    if (origins.length > 1 && d0.datesByOrigin && d0.datesByOrigin.length > 0) {
+      const parts = origins.map((o) => {
+        const m = d0.datesByOrigin?.find(x => x.origin === o);
+        const dep = m?.departureDate || d0.departureDate;
+        const ret = m?.returnDate || d0.returnDate;
+        return `${o}: ${dep} - ${ret}`;
+      });
+      return parts.join(' • ');
+    }
+    return `${d0.departureDate} - ${d0.returnDate}`;
+  };
+
+  const getOverviewDateLines = (tour: TourPackage) => {
+    const d0 = tour.departures?.[0];
+    if (d0) {
+      const originsFromRoutes = (tour.flightRoutes || []).map(r => r.origin).filter(Boolean);
+      const originsFromOverrides = (d0.datesByOrigin || []).map(x => x.origin).filter(Boolean);
+      const origins = Array.from(new Set([...originsFromRoutes, ...originsFromOverrides]));
+
+      if (origins.length > 1 && d0.datesByOrigin && d0.datesByOrigin.length > 0) {
+        return origins.map((origin) => {
+          const m = d0.datesByOrigin?.find(x => x.origin === origin);
+          const dep = m?.departureDate || d0.departureDate;
+          const ret = m?.returnDate || d0.returnDate;
+          return { label: origin, dep, ret, text: `${dep} - ${ret}` };
+        });
+      }
+      return [{ label: 'Date', dep: d0.departureDate, ret: d0.returnDate, text: `${d0.departureDate} - ${d0.returnDate}` }];
+    }
+
+    if (tour.dates) return [{ label: 'Date', dep: tour.dates.departure, ret: tour.dates.return, text: `${tour.dates.departure} - ${tour.dates.return}` }];
+    return [{ label: 'Date', dep: '', ret: '', text: 'TBA' }];
+  };
+
+  const getOverviewDurationLines = (tour: TourPackage) => {
+    const nights = parseNightsFromDuration(tour.duration) ?? null;
+    return getOverviewDateLines(tour).map((l) => {
+      const tripDays = l.dep && l.ret ? diffDaysInclusive(l.dep, l.ret) : 0;
+      const n = nights ?? (tripDays > 0 ? Math.max(tripDays - 1, 0) : 0);
+      return { label: l.label, text: tripDays > 0 ? `${n} Nights ${tripDays} Days` : tour.duration };
+    });
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -189,30 +256,42 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4"
+                className="mt-12 w-fit max-w-full flex flex-wrap gap-6 px-6 py-5 rounded-2xl border"
+                style={{ backgroundColor: `${theme.pageBg}80`, borderColor: `${theme.headingText}10`, backdropFilter: 'blur(12px)' }}
               >
-                {currentTour.departures && currentTour.departures.length > 0 && (
-                  <div className="flex items-center gap-3" style={{ color: theme.headingText }}>
-                    <Calendar className="w-5 h-5" style={{ color: theme.goldColor }} />
-                    <div>
-                      <div className="text-xs uppercase tracking-wider" style={{ color: theme.mutedText }}>Date</div>
-                      <div className="font-semibold">
-                        {currentTour.departures[0].departureDate} - {currentTour.departures[0].returnDate}
-                      </div>
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: `${theme.goldColor}10`, color: theme.goldColor }}>
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs uppercase tracking-wider" style={{ color: theme.mutedText }}>Date</div>
+                    <div className="space-y-1 mt-1">
+                      {getOverviewDateLines(currentTour).map((l) => (
+                        <div key={`${l.label}-${l.text}`} className="flex flex-wrap items-baseline gap-2">
+                          {l.label !== 'Date' && <span className="font-semibold" style={{ color: theme.headingText }}>{l.label}</span>}
+                          <span className="font-semibold" style={{ color: theme.headingText }}>{l.text}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                )}
-                {currentTour.gameInfo?.venue && (
-                  <div className="flex items-center gap-3" style={{ color: theme.headingText }}>
-                    <MapPin className="w-5 h-5" style={{ color: theme.goldColor }} />
-                    <div>
-                      <div className="text-xs uppercase tracking-wider" style={{ color: theme.mutedText }}>
-                        {productCategory === 'courtside' ? 'Venue' : 'Location'}
-                      </div>
-                      <div className="font-semibold">{currentTour.gameInfo.venue}</div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: `${theme.goldColor}10`, color: theme.goldColor }}>
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs uppercase tracking-wider" style={{ color: theme.mutedText }}>Duration</div>
+                    <div className="space-y-1 mt-1">
+                      {getOverviewDurationLines(currentTour).map((l) => (
+                        <div key={`dur-${l.label}-${l.text}`} className="flex flex-wrap items-baseline gap-2">
+                          {l.label !== 'Date' && <span className="font-semibold" style={{ color: theme.headingText }}>{l.label}</span>}
+                          <span className="font-semibold" style={{ color: theme.headingText }}>{l.text}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                )}
+                </div>
               </motion.div>
             )}
           </div>
@@ -236,7 +315,7 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
               {currentTour.tourType === 'special-event' && <span className="text-xs font-bold">⭐ SPECIAL EVENT</span>}
               {currentTour.departures && currentTour.departures.length > 0 ? (
                 <span className="text-sm font-medium">
-                  {currentTour.departures[0].departureDate} - {currentTour.departures[0].returnDate}
+                  {getDepartureBadgeText(currentTour)}
                   {currentTour.departures.length > 1 && <span className="ml-2">+{currentTour.departures.length - 1} more dates</span>}
                 </span>
               ) : currentTour.dates ? (
@@ -393,22 +472,74 @@ export default function TourOverview({ productCategory }: TourOverviewProps) {
               {currentTour.subtitle}
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-6 max-w-lg mx-auto mb-10">
-              <div className="p-6 rounded-xl border" style={{ backgroundColor: `${theme.cardBg}80`, borderColor: theme.secondaryBtnBorder }}>
-                <p className="text-sm uppercase tracking-wider mb-2" style={{ color: theme.mutedText }}>Adult (12+)</p>
-                <div className="text-3xl font-bold" style={{ color: theme.headingText }}>
-                  <span className="text-sm align-top mr-1" style={{ color: theme.goldColor }}>{currentTour.pricing.currency}</span>
-                  {currentTour.pricing.adult.toLocaleString()}
+            {currentTour.pricingByOrigin && currentTour.pricingByOrigin.length > 0 ? (
+              <div className="max-w-2xl mx-auto mb-10">
+                <p className="text-sm uppercase tracking-wider mb-4" style={{ color: theme.mutedText }}>
+                  Pricing by Departure City
+                </p>
+                <div className="space-y-4">
+                  {(() => {
+                    const originsFromRoutes = (currentTour.flightRoutes || []).map(r => r.origin).filter(Boolean);
+                    const originsFromPricing = (currentTour.pricingByOrigin || []).map(p => p.origin).filter(Boolean);
+                    const origins = Array.from(new Set([...originsFromRoutes, ...originsFromPricing]));
+
+                    return origins.map((origin) => {
+                      const p = currentTour.pricingByOrigin?.find(x => x.origin === origin);
+                      const currency = (p?.currency || currentTour.pricing.currency);
+                    return (
+                      <div
+                        key={origin}
+                        className="rounded-xl border p-6"
+                        style={{ backgroundColor: `${theme.cardBg}80`, borderColor: theme.secondaryBtnBorder }}
+                      >
+                        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+                          <div className="text-lg font-bold" style={{ color: theme.headingText }}>
+                            {origin}
+                          </div>
+                          <div className="text-xs" style={{ color: theme.mutedText }}>
+                            Adult / Child
+                          </div>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: theme.mutedText }}>Adult (12+)</p>
+                            <div className="text-2xl font-bold" style={{ color: theme.headingText }}>
+                              <span className="text-sm align-top mr-1" style={{ color: theme.goldColor }}>{currency}</span>
+                              {(p?.adult ?? currentTour.pricing.adult).toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase tracking-wider mb-1" style={{ color: theme.mutedText }}>Child (&lt;12)</p>
+                            <div className="text-2xl font-bold" style={{ color: theme.headingText }}>
+                              <span className="text-sm align-top mr-1" style={{ color: theme.goldColor }}>{currency}</span>
+                              {(p?.child ?? currentTour.pricing.child).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                    });
+                  })()}
                 </div>
               </div>
-              <div className="p-6 rounded-xl border" style={{ backgroundColor: `${theme.cardBg}80`, borderColor: theme.secondaryBtnBorder }}>
-                <p className="text-sm uppercase tracking-wider mb-2" style={{ color: theme.mutedText }}>Child (&lt;12)</p>
-                <div className="text-3xl font-bold" style={{ color: theme.headingText }}>
-                  <span className="text-sm align-top mr-1" style={{ color: theme.goldColor }}>{currentTour.pricing.currency}</span>
-                  {currentTour.pricing.child.toLocaleString()}
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-6 max-w-lg mx-auto mb-10">
+                <div className="p-6 rounded-xl border" style={{ backgroundColor: `${theme.cardBg}80`, borderColor: theme.secondaryBtnBorder }}>
+                  <p className="text-sm uppercase tracking-wider mb-2" style={{ color: theme.mutedText }}>Adult (12+)</p>
+                  <div className="text-3xl font-bold" style={{ color: theme.headingText }}>
+                    <span className="text-sm align-top mr-1" style={{ color: theme.goldColor }}>{currentTour.pricing.currency}</span>
+                    {currentTour.pricing.adult.toLocaleString()}
+                  </div>
+                </div>
+                <div className="p-6 rounded-xl border" style={{ backgroundColor: `${theme.cardBg}80`, borderColor: theme.secondaryBtnBorder }}>
+                  <p className="text-sm uppercase tracking-wider mb-2" style={{ color: theme.mutedText }}>Child (&lt;12)</p>
+                  <div className="text-3xl font-bold" style={{ color: theme.headingText }}>
+                    <span className="text-sm align-top mr-1" style={{ color: theme.goldColor }}>{currentTour.pricing.currency}</span>
+                    {currentTour.pricing.child.toLocaleString()}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <Link href="/register" className="btn-primary text-lg px-8 py-4 shadow-xl shadow-primary-500/20">
               Book Your Spot Now

@@ -9,7 +9,7 @@ import {
   Users, MessageSquare, Send, CheckCircle, AlertCircle,
   Minus, Plus, MapPin
 } from 'lucide-react';
-import { createRegistration } from '@/lib/services/registrations';
+import { createRegistration, type CreateRegistrationInput } from '@/lib/services/registrations';
 import { getTours } from '@/lib/services/tours';
 import { getPlayers } from '@/lib/services/players';
 import type { Player, TourPackage, TourDeparture } from '@unik/shared/types';
@@ -126,6 +126,55 @@ function RegisterPageInner() {
     return Array.from(new Set(origins));
   })();
 
+  const selectedTravelDates = (() => {
+    if (!selectedDeparture) return null;
+    if (selectedDepartureOrigin) {
+      const m = selectedDeparture.datesByOrigin?.find(d => d.origin === selectedDepartureOrigin);
+      if (m) return { departureDate: m.departureDate, returnDate: m.returnDate, origin: selectedDepartureOrigin };
+    }
+    return { departureDate: selectedDeparture.departureDate, returnDate: selectedDeparture.returnDate, origin: selectedDepartureOrigin || undefined };
+  })();
+
+  const selectedPricing = (() => {
+    if (!selectedTour) return null;
+    const byOrigin = selectedTour.pricingByOrigin || [];
+    const fallback = {
+      origin: selectedDepartureOrigin || undefined,
+      adult: selectedTour.pricing.adult,
+      child: selectedTour.pricing.child,
+      currency: selectedTour.pricing.currency,
+    };
+
+    // If we have origin-based pricing, prefer a matching origin.
+    if (byOrigin.length > 0) {
+      const originToUse =
+        selectedDepartureOrigin ||
+        (departureOrigins.length === 1 ? departureOrigins[0] : '') ||
+        (byOrigin.length === 1 ? byOrigin[0].origin : '');
+
+      if (!originToUse) {
+        return { ...fallback, requiresOriginSelection: true as const };
+      }
+
+      const match = byOrigin.find(p => p.origin === originToUse);
+      if (match) {
+        return {
+          origin: match.origin,
+          adult: match.adult,
+          child: match.child,
+          currency: match.currency || selectedTour.pricing.currency,
+          requiresOriginSelection: false as const,
+        };
+      }
+    }
+
+    return { ...fallback, requiresOriginSelection: false as const };
+  })();
+
+  const totalPrice = selectedPricing
+    ? adultsCount * selectedPricing.adult + childrenCount * selectedPricing.child
+    : 0;
+
   const availablePlayersForTour = (() => {
     const key = selectedTour?.productCategory;
     if (!key) return [];
@@ -203,7 +252,7 @@ function RegisterPageInner() {
 
     try {
       const favoritePlayers = availablePlayersForTour.filter(p => favoritePlayerIds.includes(p.id));
-      await createRegistration({
+      const payload: CreateRegistrationInput = {
         fullName: data.fullName,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -217,15 +266,23 @@ function RegisterPageInner() {
         nationalityCountryCode: nationalityCountry.code,
         adultsCount,
         childrenCount,
+        pricingOrigin: selectedPricing?.origin || selectedDepartureOrigin || undefined,
+        unitPriceAdult: selectedPricing?.adult ?? selectedTour?.pricing.adult ?? 0,
+        unitPriceChild: selectedPricing?.child ?? selectedTour?.pricing.child ?? 0,
+        priceCurrency: (selectedPricing?.currency ?? selectedTour?.pricing.currency ?? 'PHP') as any,
+        totalPrice,
         tourId: selectedTourId,
         tourTitle: selectedTour?.title || '',
         departureId: selectedDepartureId,
-        departureDate: `${selectedDeparture.departureDate} - ${selectedDeparture.returnDate}`,
+        departureDate: selectedTravelDates
+          ? `${selectedTravelDates.departureDate} - ${selectedTravelDates.returnDate}`
+          : `${selectedDeparture.departureDate} - ${selectedDeparture.returnDate}`,
         departureOrigin: selectedDepartureOrigin || undefined,
         favoritePlayerIds: favoritePlayerIds.length ? favoritePlayerIds : undefined,
         favoritePlayerNames: favoritePlayers.length ? favoritePlayers.map(p => `#${p.number} ${p.name}`) : undefined,
         specialRequests: data.specialRequests || '',
-      });
+      };
+      await createRegistration(payload);
       
       setIsSuccess(true);
       reset();
@@ -381,11 +438,24 @@ function RegisterPageInner() {
                     >
                       {availableDepartures.map(departure => (
                         <option key={departure.id} value={departure.id}>
-                          {new Date(departure.departureDate).toLocaleDateString()} - {new Date(departure.returnDate).toLocaleDateString()}
+                          {(() => {
+                            const origin = selectedDepartureOrigin;
+                            const m = origin ? departure.datesByOrigin?.find(d => d.origin === origin) : undefined;
+                            const dep = m?.departureDate || departure.departureDate;
+                            const ret = m?.returnDate || departure.returnDate;
+                            const baseText = `${new Date(dep).toLocaleDateString()} - ${new Date(ret).toLocaleDateString()}`;
+                            const varies = !origin && (departure.datesByOrigin?.length || 0) > 0;
+                            return varies ? `${baseText} (dates vary by city)` : baseText;
+                          })()}
                           {departure.specialNote && ` - ${departure.specialNote}`}
                         </option>
                       ))}
                     </select>
+                    {selectedTravelDates && selectedDepartureOrigin && selectedDeparture?.datesByOrigin?.length ? (
+                      <p className="text-xs text-dark-400 mt-2">
+                        Selected city schedule: {selectedDepartureOrigin} → {selectedTravelDates.departureDate} - {selectedTravelDates.returnDate}
+                      </p>
+                    ) : null}
                   </div>
                 )}
 
@@ -671,7 +741,7 @@ function RegisterPageInner() {
                                 setFavoritePlayerIds((prev) => prev.filter((id) => id !== p.id));
                               }
                             }}
-                            className="h-4 w-4 accent-[var(--theme-gold-color)]"
+                            className="h-4 w-4 accent-(--theme-gold-color)"
                           />
                           <div className="min-w-0">
                             <div className="text-white font-medium truncate">
@@ -754,6 +824,50 @@ function RegisterPageInner() {
                     Total: <span className="text-gold-500">{adultsCount + childrenCount} person(s)</span>
                   </p>
                 </div>
+
+                {/* Pricing Summary */}
+                {selectedTour && (
+                  <div className="p-4 bg-dark-800 rounded-lg border border-dark-700">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-white font-semibold">Pricing</p>
+                        <p className="text-xs text-dark-400 mt-1">
+                          {selectedPricing?.origin ? `Departure: ${selectedPricing.origin}` : 'Departure: N/A'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-dark-400">Total Amount</p>
+                        <p className="text-white font-bold text-lg">
+                          <span className="text-gold-500 mr-1">{selectedPricing?.currency || selectedTour.pricing.currency}</span>
+                          {totalPrice.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedPricing?.requiresOriginSelection ? (
+                      <p className="text-xs text-red-400 mt-3">
+                        Please select a departure city to see the correct price.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <p className="text-xs text-dark-400">Adult Unit Price</p>
+                          <p className="text-white font-semibold">
+                            {selectedPricing?.currency || selectedTour.pricing.currency}{' '}
+                            {(selectedPricing?.adult ?? selectedTour.pricing.adult).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-dark-400">Child Unit Price</p>
+                          <p className="text-white font-semibold">
+                            {selectedPricing?.currency || selectedTour.pricing.currency}{' '}
+                            {(selectedPricing?.child ?? selectedTour.pricing.child).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Special Requests */}

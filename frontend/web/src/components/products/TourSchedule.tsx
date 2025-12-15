@@ -18,6 +18,20 @@ export default function TourSchedule({ productCategory, tourType }: TourSchedule
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
 
+  const flightOrigins = (() => {
+    const routes = selectedTour?.flightRoutes || [];
+    const origins = routes.map(r => r.origin).filter(Boolean);
+    return Array.from(new Set(origins));
+  })();
+
+  const getDatesForOrigin = (dep: TourDeparture, origin: string) => {
+    const match = dep.datesByOrigin?.find(d => d.origin === origin);
+    return {
+      departureDate: match?.departureDate || dep.departureDate,
+      returnDate: match?.returnDate || dep.returnDate,
+    };
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -119,11 +133,36 @@ export default function TourSchedule({ productCategory, tourType }: TourSchedule
                         <Calendar className="w-5 h-5" style={{ color: theme.goldColor }} />
                         <span className="text-sm font-medium" style={{ color: theme.mutedText }}>Departure & Return</span>
                       </div>
-                      <p className="text-xl font-bold" style={{ color: theme.headingText }}>
-                        {new Date(departure.departureDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        {' - '}
-                        {new Date(departure.returnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
+                      {flightOrigins.length > 1 && departure.datesByOrigin && departure.datesByOrigin.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-xs uppercase tracking-wider" style={{ color: theme.mutedText }}>
+                            Dates vary by departure city
+                          </div>
+                          <div className="space-y-1">
+                            {flightOrigins.map((origin) => {
+                              const d = getDatesForOrigin(departure, origin);
+                              return (
+                                <div key={origin} className="flex flex-wrap items-baseline justify-between gap-2">
+                                  <span className="text-sm font-semibold" style={{ color: theme.headingText }}>
+                                    {origin}
+                                  </span>
+                                  <span className="text-sm" style={{ color: theme.bodyText }}>
+                                    {new Date(d.departureDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    {' - '}
+                                    {new Date(d.returnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xl font-bold" style={{ color: theme.headingText }}>
+                          {new Date(departure.departureDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {' - '}
+                          {new Date(departure.returnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      )}
                     </div>
 
                     {/* Duration */}

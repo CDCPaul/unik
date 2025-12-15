@@ -181,6 +181,23 @@ function generateRegistrationEmail(data: any, docId: string): string {
               <div class="label">Departure Date</div>
               <div class="value">${data.departureDate || "N/A"}</div>
             </div>
+            <div class="field">
+              <div class="label">Departure City</div>
+              <div class="value">${data.pricingOrigin || data.departureOrigin || "N/A"}</div>
+            </div>
+            <div class="field">
+              <div class="label">Total Price</div>
+              <div class="value">
+                <strong>${data.priceCurrency || "PHP"} ${typeof data.totalPrice === "number" ? Number(data.totalPrice).toLocaleString() : "N/A"}</strong>
+              </div>
+            </div>
+            <div class="field">
+              <div class="label">Unit Prices</div>
+              <div class="value">
+                Adult: ${typeof data.unitPriceAdult === "number" ? `${data.priceCurrency || "PHP"} ${Number(data.unitPriceAdult).toLocaleString()}` : "N/A"}<br/>
+                Child: ${typeof data.unitPriceChild === "number" ? `${data.priceCurrency || "PHP"} ${Number(data.unitPriceChild).toLocaleString()}` : "N/A"}
+              </div>
+            </div>
           </div>
 
           <div class="section">
