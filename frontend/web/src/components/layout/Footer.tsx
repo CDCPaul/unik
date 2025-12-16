@@ -7,6 +7,28 @@ import { useSettings } from '@/context/SettingsContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useUiText } from '@/context/UiTextContext';
 
+function ViberIcon({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  // Simple Viber mark as inline SVG (uses currentColor).
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      style={style}
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12 2c-5.52 0-10 3.94-10 8.8 0 2.63 1.35 5.01 3.56 6.63v3.26c0 .45.52.7.87.43l2.87-2.2c.88.2 1.8.31 2.7.31 5.52 0 10-3.94 10-8.8S17.52 2 12 2zm0 15.2c-.83 0-1.67-.1-2.48-.3a1 1 0 0 0-.85.18l-1.25.96v-1.42c0-.33-.16-.64-.43-.83C5.12 14.5 4 12.71 4 10.8 4 7.06 7.58 4 12 4s8 3.06 8 6.8-3.58 6.4-8 6.4zm3.9-4.7c-.24-.16-.57-.1-.73.15-.32.49-.75.9-1.26 1.2-1.25.75-2.73.86-4.08.32-.37-.15-.78.03-.93.4-.15.37.03.78.4.93.6.24 1.23.36 1.86.36 1.2 0 2.4-.34 3.45-.97.7-.42 1.28-1.01 1.73-1.7.16-.24.1-.57-.14-.73z" />
+      <path d="M9.1 7.6c-.4 0-.73.33-.73.73 0 .4.33.73.73.73.4 0 .73-.33.73-.73 0-.4-.33-.73-.73-.73zm2.9 0c-.4 0-.73.33-.73.73 0 .4.33.73.73.73.4 0 .73-.33.73-.73 0-.4-.33-.73-.73-.73zm2.9 0c-.4 0-.73.33-.73.73 0 .4.33.73.73.73.4 0 .73-.33.73-.73 0-.4-.33-.73-.73-.73z" />
+    </svg>
+  );
+}
+
 const footerLinks = {
   navigation: [
     { href: '/', label: 'Home' },
@@ -247,7 +269,7 @@ export default function Footer() {
                   </li>
                   {vibers.length > 0 && (
                     <li className="flex items-start gap-3">
-                      <Phone className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
+                      <ViberIcon className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
                       <div className="min-w-0">
                         {vibers.map((v) => (
                           <span key={v} className="block" style={{ color: theme.mutedText }}>

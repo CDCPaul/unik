@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Calendar, MapPin, Plane, Info, Utensils, RefreshCw } from 'lucide-react';
 import { getTours } from '@/lib/services/tours';
 import Link from 'next/link';
@@ -29,21 +29,65 @@ function ItineraryDayCarousel({
   const idx = getIndex(dayKey);
   const has = imageUrls.length > 0;
   const currentUrl = has ? imageUrls[idx % imageUrls.length] : '';
+  const [direction, setDirection] = useState(0);
+
+  const goPrev = () => {
+    if (!has || imageUrls.length <= 1) return;
+    setDirection(-1);
+    setIndex(dayKey, (idx - 1 + imageUrls.length) % imageUrls.length);
+  };
+
+  const goNext = () => {
+    if (!has || imageUrls.length <= 1) return;
+    setDirection(1);
+    setIndex(dayKey, (idx + 1) % imageUrls.length);
+  };
+
+  const swipeConfidenceThreshold = 8000;
+  const swipePower = (offset: number, velocity: number) => Math.abs(offset) * velocity;
+
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
+  };
 
   return (
     <div className="card overflow-hidden" style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}>
-      <div className="aspect-video rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-md relative">
+      <div
+        className="aspect-video rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-md relative"
+        style={{
+          // Let the browser keep vertical scrolling; horizontal swipe handled by Motion drag.
+          touchAction: has && imageUrls.length > 1 ? 'pan-y' : 'auto',
+        }}
+      >
         {has ? (
-          <motion.img
-            key={currentUrl}
-            src={currentUrl}
-            alt={title}
-            className="w-full h-full object-cover"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.25 }}
-          />
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.img
+              key={currentUrl}
+              src={currentUrl}
+              alt={title}
+              className="w-full h-full object-cover"
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              drag={imageUrls.length > 1 ? 'x' : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.9}
+              onDragEnd={(_, info) => {
+                if (imageUrls.length <= 1) return;
+                const swipe = swipePower(info.offset.x, info.velocity.x);
+                if (swipe > swipeConfidenceThreshold) {
+                  goPrev();
+                } else if (swipe < -swipeConfidenceThreshold) {
+                  goNext();
+                }
+              }}
+            />
+          </AnimatePresence>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-sm text-dark-400">
             No photos uploaded for this day.
@@ -54,7 +98,7 @@ function ItineraryDayCarousel({
           <>
             <button
               type="button"
-              onClick={() => setIndex(dayKey, (idx - 1 + imageUrls.length) % imageUrls.length)}
+              onClick={goPrev}
               className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 text-white border border-white/10 hover:bg-black/60"
               aria-label="Previous photo"
             >
@@ -62,7 +106,7 @@ function ItineraryDayCarousel({
             </button>
             <button
               type="button"
-              onClick={() => setIndex(dayKey, (idx + 1) % imageUrls.length)}
+              onClick={goNext}
               className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 text-white border border-white/10 hover:bg-black/60"
               aria-label="Next photo"
             >

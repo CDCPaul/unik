@@ -14,12 +14,17 @@ export default function SettingsPage() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const normalizeContactLists = (s: CompanyInfo): CompanyInfo => {
+    // IMPORTANT: keep empty strings while editing so "Add" rows show up.
     const contactEmails =
-      (s.contactEmails && s.contactEmails.length ? s.contactEmails : (s.contactEmail ? [s.contactEmail] : [])).filter(Boolean);
+      s.contactEmails && s.contactEmails.length ? s.contactEmails : (s.contactEmail ? [s.contactEmail] : []);
     const contactPhones =
-      (s.contactPhones && s.contactPhones.length ? s.contactPhones : (s.contactPhone ? [s.contactPhone] : [])).filter(Boolean);
+      s.contactPhones && s.contactPhones.length ? s.contactPhones : (s.contactPhone ? [s.contactPhone] : []);
     const contactVibers =
-      (s.contactVibers && s.contactVibers.length ? s.contactVibers : (s.contactViber ? [s.contactViber] : [])).filter(Boolean);
+      s.contactVibers && s.contactVibers.length ? s.contactVibers : (s.contactViber ? [s.contactViber] : []);
+
+    const firstNonEmptyEmail = contactEmails.find(v => (v || '').trim()) || s.contactEmail || '';
+    const firstNonEmptyPhone = contactPhones.find(v => (v || '').trim()) || s.contactPhone || '';
+    const firstNonEmptyViber = contactVibers.find(v => (v || '').trim()) || s.contactViber || '';
 
     return {
       ...s,
@@ -27,9 +32,9 @@ export default function SettingsPage() {
       contactPhones,
       contactVibers,
       // Keep legacy fields aligned to first value for other parts of the app
-      contactEmail: contactEmails[0] || s.contactEmail,
-      contactPhone: contactPhones[0] || s.contactPhone,
-      contactViber: contactVibers[0] || s.contactViber,
+      contactEmail: firstNonEmptyEmail,
+      contactPhone: firstNonEmptyPhone,
+      contactViber: firstNonEmptyViber,
     };
   };
 
