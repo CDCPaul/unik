@@ -13,6 +13,26 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
+  const normalizeContactLists = (s: CompanyInfo): CompanyInfo => {
+    const contactEmails =
+      (s.contactEmails && s.contactEmails.length ? s.contactEmails : (s.contactEmail ? [s.contactEmail] : [])).filter(Boolean);
+    const contactPhones =
+      (s.contactPhones && s.contactPhones.length ? s.contactPhones : (s.contactPhone ? [s.contactPhone] : [])).filter(Boolean);
+    const contactVibers =
+      (s.contactVibers && s.contactVibers.length ? s.contactVibers : (s.contactViber ? [s.contactViber] : [])).filter(Boolean);
+
+    return {
+      ...s,
+      contactEmails,
+      contactPhones,
+      contactVibers,
+      // Keep legacy fields aligned to first value for other parts of the app
+      contactEmail: contactEmails[0] || s.contactEmail,
+      contactPhone: contactPhones[0] || s.contactPhone,
+      contactViber: contactVibers[0] || s.contactViber,
+    };
+  };
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -20,7 +40,7 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     try {
       const data = await getSettings();
-      setSettings(data);
+      setSettings(normalizeContactLists(data));
     } catch (error) {
       console.error('Failed to load settings:', error);
       alert('Failed to load settings');
@@ -41,6 +61,25 @@ export default function SettingsPage() {
         [key]: value
       }
     }));
+  };
+
+  const updateListValue = (key: 'contactEmails' | 'contactPhones' | 'contactVibers', idx: number, value: string) => {
+    setSettings((prev) => {
+      const current = (prev[key] || []).slice();
+      current[idx] = value;
+      return normalizeContactLists({ ...prev, [key]: current } as CompanyInfo);
+    });
+  };
+
+  const addListValue = (key: 'contactEmails' | 'contactPhones' | 'contactVibers') => {
+    setSettings((prev) => normalizeContactLists({ ...prev, [key]: [...(prev[key] || []), ''] } as CompanyInfo));
+  };
+
+  const removeListValue = (key: 'contactEmails' | 'contactPhones' | 'contactVibers', idx: number) => {
+    setSettings((prev) => {
+      const next = (prev[key] || []).filter((_, i) => i !== idx);
+      return normalizeContactLists({ ...prev, [key]: next } as CompanyInfo);
+    });
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,34 +281,122 @@ export default function SettingsPage() {
               <Mail className="w-5 h-5 text-green-600" />
               <h2 className="text-lg font-semibold text-slate-900">Contact Information</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              {/* Emails */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-                <input
-                  type="email"
-                  value={settings.contactEmail}
-                  onChange={(e) => handleChange('contactEmail', e.target.value)}
-                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                />
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <label className="block text-sm font-medium text-slate-700">Emails</label>
+                  <button
+                    type="button"
+                    onClick={() => addListValue('contactEmails')}
+                    className="text-sm font-medium text-slate-900 hover:underline"
+                  >
+                    + Add Email
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {(settings.contactEmails || []).map((v, idx) => (
+                    <div key={`email-${idx}`} className="flex items-center gap-2">
+                      <input
+                        type="email"
+                        value={v}
+                        onChange={(e) => updateListValue('contactEmails', idx, e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeListValue('contactEmails', idx)}
+                        className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50"
+                        aria-label="Remove email"
+                        title="Remove"
+                      >
+                        <X className="w-4 h-4 text-slate-500" />
+                      </button>
+                    </div>
+                  ))}
+                  {(!settings.contactEmails || settings.contactEmails.length === 0) && (
+                    <p className="text-sm text-slate-500">No emails set.</p>
+                  )}
+                </div>
               </div>
+
+              {/* Phones */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
-                <input
-                  type="text"
-                  value={settings.contactPhone}
-                  onChange={(e) => handleChange('contactPhone', e.target.value)}
-                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                />
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <label className="block text-sm font-medium text-slate-700">Phone Numbers</label>
+                  <button
+                    type="button"
+                    onClick={() => addListValue('contactPhones')}
+                    className="text-sm font-medium text-slate-900 hover:underline"
+                  >
+                    + Add Phone
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {(settings.contactPhones || []).map((v, idx) => (
+                    <div key={`phone-${idx}`} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={v}
+                        onChange={(e) => updateListValue('contactPhones', idx, e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeListValue('contactPhones', idx)}
+                        className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50"
+                        aria-label="Remove phone"
+                        title="Remove"
+                      >
+                        <X className="w-4 h-4 text-slate-500" />
+                      </button>
+                    </div>
+                  ))}
+                  {(!settings.contactPhones || settings.contactPhones.length === 0) && (
+                    <p className="text-sm text-slate-500">No phone numbers set.</p>
+                  )}
+                </div>
               </div>
+
+              {/* Vibers */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Viber</label>
-                <input
-                  type="text"
-                  value={settings.contactViber}
-                  onChange={(e) => handleChange('contactViber', e.target.value)}
-                  className="w-full px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-                />
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <label className="block text-sm font-medium text-slate-700">Viber Numbers</label>
+                  <button
+                    type="button"
+                    onClick={() => addListValue('contactVibers')}
+                    className="text-sm font-medium text-slate-900 hover:underline"
+                  >
+                    + Add Viber
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {(settings.contactVibers || []).map((v, idx) => (
+                    <div key={`viber-${idx}`} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={v}
+                        onChange={(e) => updateListValue('contactVibers', idx, e.target.value)}
+                        className="flex-1 px-3 py-2 bg-white text-black border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeListValue('contactVibers', idx)}
+                        className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50"
+                        aria-label="Remove viber"
+                        title="Remove"
+                      >
+                        <X className="w-4 h-4 text-slate-500" />
+                      </button>
+                    </div>
+                  ))}
+                  {(!settings.contactVibers || settings.contactVibers.length === 0) && (
+                    <p className="text-sm text-slate-500">No Viber numbers set.</p>
+                  )}
+                </div>
               </div>
+
+              {/* Office Address */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Office Address</label>
                 <input

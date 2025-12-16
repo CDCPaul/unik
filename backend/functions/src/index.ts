@@ -28,7 +28,9 @@ async function getStaffEmail(): Promise<string> {
     
     if (settingsDoc.exists) {
       const data = settingsDoc.data();
-      return data?.contactEmail || "ticket@cebudirectclub.com"; // Fallback
+      // Prefer multi-email settings if present
+      const emails = Array.isArray(data?.contactEmails) ? data.contactEmails : [];
+      return emails[0] || data?.contactEmail || "ticket@cebudirectclub.com"; // Fallback
     }
     return "ticket@cebudirectclub.com"; // Default fallback
   } catch (error) {

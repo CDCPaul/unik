@@ -32,6 +32,19 @@ export default function Footer() {
     setMounted(true);
   }, []);
 
+  const emails =
+    mounted && settings
+      ? ((settings.contactEmails?.length ? settings.contactEmails : settings.contactEmail ? [settings.contactEmail] : []).filter(Boolean))
+      : [];
+  const phones =
+    mounted && settings
+      ? ((settings.contactPhones?.length ? settings.contactPhones : settings.contactPhone ? [settings.contactPhone] : []).filter(Boolean))
+      : [];
+  const vibers =
+    mounted && settings
+      ? ((settings.contactVibers?.length ? settings.contactVibers : settings.contactViber ? [settings.contactViber] : []).filter(Boolean))
+      : [];
+
   return (
     <footer style={{ backgroundColor: theme.footerBg, borderTopColor: theme.cardBg }} className="border-t">
       {/* Main Footer */}
@@ -200,28 +213,50 @@ export default function Footer() {
                 <>
                   <li className="flex items-start gap-3">
                     <Mail className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
-                    <a
-                      href={`mailto:${settings.contactEmail}`}
-                      className="transition-colors break-all"
-                      style={{ color: theme.mutedText }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = theme.headingText}
-                      onMouseLeave={(e) => e.currentTarget.style.color = theme.mutedText}
-                    >
-                      {settings.contactEmail}
-                    </a>
+                    <div className="min-w-0">
+                      {emails.map((email) => (
+                        <a
+                          key={email}
+                          href={`mailto:${email}`}
+                          className="block transition-colors break-all"
+                          style={{ color: theme.mutedText }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = theme.headingText)}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = theme.mutedText)}
+                        >
+                          {email}
+                        </a>
+                      ))}
+                    </div>
                   </li>
                   <li className="flex items-start gap-3">
                     <Phone className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
-                    <a
-                      href={`tel:${settings.contactPhone}`}
-                      className="transition-colors"
-                      style={{ color: theme.mutedText }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = theme.headingText}
-                      onMouseLeave={(e) => e.currentTarget.style.color = theme.mutedText}
-                    >
-                      {settings.contactPhone}
-                    </a>
+                    <div className="min-w-0">
+                      {phones.map((phone) => (
+                        <a
+                          key={phone}
+                          href={`tel:${phone}`}
+                          className="block transition-colors"
+                          style={{ color: theme.mutedText }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = theme.headingText)}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = theme.mutedText)}
+                        >
+                          {phone}
+                        </a>
+                      ))}
+                    </div>
                   </li>
+                  {vibers.length > 0 && (
+                    <li className="flex items-start gap-3">
+                      <Phone className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
+                      <div className="min-w-0">
+                        {vibers.map((v) => (
+                          <span key={v} className="block" style={{ color: theme.mutedText }}>
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    </li>
+                  )}
                   <li className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 shrink-0 mt-0.5" style={{ color: theme.goldColor }} />
                     <span style={{ color: theme.mutedText }}>

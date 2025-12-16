@@ -27,6 +27,19 @@ export default function ContactPage() {
     setMounted(true);
   }, []);
 
+  const emails =
+    mounted && settings
+      ? ((settings.contactEmails?.length ? settings.contactEmails : settings.contactEmail ? [settings.contactEmail] : []).filter(Boolean))
+      : [];
+  const phones =
+    mounted && settings
+      ? ((settings.contactPhones?.length ? settings.contactPhones : settings.contactPhone ? [settings.contactPhone] : []).filter(Boolean))
+      : [];
+  const vibers =
+    mounted && settings
+      ? ((settings.contactVibers?.length ? settings.contactVibers : settings.contactViber ? [settings.contactViber] : []).filter(Boolean))
+      : [];
+
   const {
     register,
     handleSubmit,
@@ -58,26 +71,27 @@ export default function ContactPage() {
     {
       icon: Mail,
       title: 'Email',
-      value: settings.contactEmail,
-      link: `mailto:${settings.contactEmail}`,
+      items: emails.map(v => ({ text: v, href: `mailto:${v}` })),
     },
     {
       icon: Phone,
       title: 'Phone',
-      value: settings.contactPhone,
-      link: `tel:${settings.contactPhone}`,
+      items: phones.map(v => ({ text: v, href: `tel:${v}` })),
+    },
+    {
+      icon: Phone,
+      title: 'Viber',
+      items: vibers.map(v => ({ text: v, href: `tel:${v}` })),
     },
     {
       icon: MapPin,
       title: 'Office',
-      value: settings.officeAddress,
-      link: null,
+      items: [{ text: settings.officeAddress, href: null }],
     },
     {
       icon: Clock,
       title: 'Hours',
-      value: 'Mon-Fri: 9AM - 6PM (PHT)',
-      link: null,
+      items: [{ text: 'Mon-Fri: 9AM - 6PM (PHT)', href: null }],
     },
   ] : [];
 
@@ -130,16 +144,23 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <div className="text-dark-400 text-sm mb-1">{item.title}</div>
-                      {item.link ? (
-                        <a 
-                          href={item.link}
-                          className="text-white hover:text-gold-400 transition-colors"
-                        >
-                          {item.value}
-                        </a>
-                      ) : (
-                        <span className="text-white">{item.value}</span>
-                      )}
+                      <div className="space-y-1">
+                        {item.items.map((row, idx) =>
+                          row.href ? (
+                            <a
+                              key={`${item.title}-${idx}`}
+                              href={row.href}
+                              className="block text-white hover:text-gold-400 transition-colors break-all"
+                            >
+                              {row.text}
+                            </a>
+                          ) : (
+                            <span key={`${item.title}-${idx}`} className="block text-white">
+                              {row.text}
+                            </span>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -161,6 +161,13 @@ export interface CompanyInfo {
   contactEmail: string;
   contactPhone: string;
   contactViber: string;
+  /**
+   * Multi-value contact fields (recommended).
+   * Keep legacy single fields above for backward compatibility.
+   */
+  contactEmails?: string[];
+  contactPhones?: string[];
+  contactVibers?: string[];
   officeAddress: string;
   socialMedia: {
     facebook?: string;

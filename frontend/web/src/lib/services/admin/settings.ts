@@ -11,6 +11,9 @@ export const defaultSettings: CompanyInfo = {
   contactEmail: 'ticket@cebudirectclub.com',
   contactPhone: '+63-XXX-XXX-XXXX',
   contactViber: '+63-XXX-XXX-XXXX',
+  contactEmails: ['ticket@cebudirectclub.com'],
+  contactPhones: ['+63-XXX-XXX-XXXX'],
+  contactVibers: ['+63-XXX-XXX-XXXX'],
   officeAddress: 'Cebu City, Philippines',
   socialMedia: {
     facebook: '',
@@ -68,8 +71,29 @@ export async function getSettings(): Promise<CompanyInfo> {
 // Save settings
 export async function saveSettings(settings: CompanyInfo): Promise<void> {
   const docRef = doc(db, 'settings', 'company');
+  // Normalize multi-contact fields (keep legacy single fields in sync)
+  const emails =
+    settings.contactEmails?.filter(Boolean).map(s => s.trim()).filter(Boolean) ||
+    (settings.contactEmail ? [settings.contactEmail] : []);
+  const phones =
+    settings.contactPhones?.filter(Boolean).map(s => s.trim()).filter(Boolean) ||
+    (settings.contactPhone ? [settings.contactPhone] : []);
+  const vibers =
+    settings.contactVibers?.filter(Boolean).map(s => s.trim()).filter(Boolean) ||
+    (settings.contactViber ? [settings.contactViber] : []);
+
+  const normalized: CompanyInfo = {
+    ...settings,
+    contactEmails: emails,
+    contactPhones: phones,
+    contactVibers: vibers,
+    contactEmail: emails[0] || settings.contactEmail || '',
+    contactPhone: phones[0] || settings.contactPhone || '',
+    contactViber: vibers[0] || settings.contactViber || '',
+  };
+
   // Remove undefined values
-  const data = JSON.parse(JSON.stringify(settings));
+  const data = JSON.parse(JSON.stringify(normalized));
   
   await setDoc(docRef, {
     ...data,
