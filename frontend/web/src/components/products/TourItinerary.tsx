@@ -53,9 +53,12 @@ function ItineraryDayCarousel({
   };
 
   return (
-    <div className="card overflow-hidden" style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}>
+    <div
+      className="card overflow-hidden h-full flex flex-col min-h-0"
+      style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}
+    >
       <div
-        className="aspect-video rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-md relative"
+        className="rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-md relative flex-1 min-h-[220px] sm:min-h-[280px] md:min-h-0"
         style={{
           // Let the browser keep vertical scrolling; horizontal swipe handled by Motion drag.
           touchAction: has && imageUrls.length > 1 ? 'pan-y' : 'auto',
@@ -655,11 +658,11 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.06 }}
-                className="grid md:grid-cols-2 gap-8 items-start"
+                className="grid md:grid-cols-2 gap-8 md:items-stretch md:min-h-[clamp(420px,34vw,520px)]"
               >
                 {/* Left: Day content (always left-aligned) */}
                 <div
-                  className={`card p-6 md:p-8 transition-all duration-300 ${
+                  className={`card p-6 md:p-8 transition-all duration-300 h-full flex flex-col min-h-0 ${
                     day.highlight ? 'border-2' : ''
                   }`}
                   style={{
@@ -687,7 +690,10 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
                     {day.title}
                   </h3>
 
-                  <ul className="space-y-2 mb-6" style={{ color: theme.bodyText }}>
+                  <ul
+                    className="space-y-2 mb-6 flex-1 min-h-0 overflow-auto pr-2"
+                    style={{ color: theme.bodyText }}
+                  >
                     {day.activities.map((activity, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="mt-1.5" style={{ color: theme.goldColor }}>
@@ -730,7 +736,7 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
                 </div>
 
                 {/* Right: Photos slider (max 3) */}
-                <div className="md:pt-2">
+                <div className="md:pt-2 h-full min-h-0">
                   <ItineraryDayCarousel
                     dayKey={dayKey}
                     title={`Day ${day.day}: ${day.title}`}
