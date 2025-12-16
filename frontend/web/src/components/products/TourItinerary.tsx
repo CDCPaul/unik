@@ -238,6 +238,9 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
     );
   }
 
+  const hasDepartures = !!selectedTour.departures && selectedTour.departures.length > 0;
+  const hasFlightRoutes = !!selectedTour.flightRoutes && selectedTour.flightRoutes.length > 0;
+
   return (
     <section className="pt-32 pb-16" style={{ backgroundColor: theme.pageBg, color: theme.bodyText }}>
       <div className="container-custom">
@@ -270,8 +273,244 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
           </div>
         )}
 
-        {/* Available Departure Dates (moved from Schedule tab) */}
-        {selectedTour.departures && selectedTour.departures.length > 0 && (
+        {/* Flights & Dates (merged: departure dates + flight information) */}
+        {hasDepartures && hasFlightRoutes ? (
+          <div className="space-y-6 mb-16">
+            <h3 className="text-2xl font-bold mb-2" style={{ color: theme.headingText }}>
+              Flights & Dates
+            </h3>
+            <p className="mb-6" style={{ color: theme.mutedText }}>
+              Choose your departure city to see the exact travel dates and flight schedule.
+            </p>
+
+            <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+              {selectedTour.flightRoutes.map((route, index) => {
+                const departuresSorted = (selectedTour.departures || [])
+                  .slice()
+                  .sort((a, b) => new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime());
+
+                const firstDep = departuresSorted[0];
+                const firstDates = firstDep ? getDatesForOrigin(firstDep, route.origin) : null;
+                const dateLine = firstDates
+                  ? `${new Date(firstDates.departureDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })} - ${new Date(firstDates.returnDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}`
+                  : '';
+
+                const durationLine = firstDates
+                  ? getDurationForDates(firstDates.departureDate, firstDates.returnDate)
+                  : selectedTour.duration;
+
+                return (
+                  <motion.div
+                    key={route.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 + index * 0.08 }}
+                    className="card p-8 relative overflow-hidden group"
+                    style={{ backgroundColor: theme.cardBg, borderColor: theme.cardBg }}
+                  >
+                    <div className="absolute top-0 right-0 p-4 rounded-bl-2xl" style={{ backgroundColor: `${theme.goldColor}10` }}>
+                      <Plane className="w-6 h-6" style={{ color: theme.goldColor }} />
+                    </div>
+
+                    <h3 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: theme.headingText }}>
+                      <span style={{ color: theme.goldColor }}>{route.origin.split(' ')[0]}</span>
+                      <span style={{ color: theme.mutedText }}>to</span>
+                      <span style={{ color: theme.headingText }}>{route.destination.split(' ')[0]}</span>
+                    </h3>
+
+                    {dateLine ? (
+                      <div className="mb-6">
+                        <div className="text-sm font-medium" style={{ color: theme.bodyText }}>
+                          {dateLine}
+                        </div>
+                        <div className="text-xs mt-1" style={{ color: theme.mutedText }}>
+                          {durationLine}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-6 text-xs" style={{ color: theme.mutedText }}>
+                        {selectedTour.duration}
+                      </div>
+                    )}
+
+                    <div className="space-y-8">
+                      {/* Outbound */}
+                      <div className="relative pl-8 border-l" style={{ borderColor: theme.secondaryBtnBorder }}>
+                        <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full" style={{ backgroundColor: theme.goldColor }} />
+                        <div className="mb-2 flex items-center gap-2">
+                          <span
+                            className="text-xs font-bold px-2 py-0.5 rounded"
+                            style={{ backgroundColor: `${theme.goldColor}10`, color: theme.goldColor }}
+                          >
+                            OUTBOUND
+                          </span>
+                          <span className="text-sm" style={{ color: theme.mutedText }}>
+                            {route.airline} • {route.outbound.flightNumber}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-lg" style={{ color: theme.headingText }}>
+                              {route.outbound.departureTime}
+                            </p>
+                            <p className="text-sm" style={{ color: theme.mutedText }}>
+                              {route.origin}
+                            </p>
+                          </div>
+                          <div className="flex-1 px-4 flex flex-col items-center">
+                            <div className="w-full h-px relative" style={{ backgroundColor: theme.secondaryBtnBorder }}>
+                              <Plane
+                                className="w-4 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90"
+                                style={{ color: theme.mutedText }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-lg" style={{ color: theme.headingText }}>
+                              {route.outbound.arrivalTime}
+                            </p>
+                            <p className="text-sm" style={{ color: theme.mutedText }}>
+                              {route.destination}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Inbound */}
+                      <div className="relative pl-8 border-l" style={{ borderColor: theme.secondaryBtnBorder }}>
+                        <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full" style={{ backgroundColor: theme.mutedText }} />
+                        <div className="mb-2 flex items-center gap-2">
+                          <span
+                            className="text-xs font-bold px-2 py-0.5 rounded"
+                            style={{ backgroundColor: theme.secondaryBtnBg, color: theme.mutedText }}
+                          >
+                            RETURN
+                          </span>
+                          <span className="text-sm" style={{ color: theme.mutedText }}>
+                            {route.airline} • {route.inbound.flightNumber}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-bold text-lg" style={{ color: theme.headingText }}>
+                              {route.inbound.departureTime}
+                            </p>
+                            <p className="text-sm" style={{ color: theme.mutedText }}>
+                              {route.destination}
+                            </p>
+                          </div>
+                          <div className="flex-1 px-4 flex flex-col items-center">
+                            <div className="w-full h-px relative" style={{ backgroundColor: theme.secondaryBtnBorder }}>
+                              <Plane
+                                className="w-4 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90"
+                                style={{ color: theme.mutedText }}
+                              />
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-lg" style={{ color: theme.headingText }}>
+                              {route.inbound.arrivalTime}
+                            </p>
+                            <p className="text-sm" style={{ color: theme.mutedText }}>
+                              {route.origin}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Booking options */}
+                    <div className="mt-8 space-y-3">
+                      {departuresSorted.length === 1 ? (
+                        (() => {
+                          const dep = departuresSorted[0];
+                          const dates = getDatesForOrigin(dep, route.origin);
+                          const isSoldOut = dep.status === 'sold-out';
+                          return (
+                            <Link
+                              href={`/register?tourId=${selectedTour.id}&departureId=${dep.id}&origin=${encodeURIComponent(route.origin)}`}
+                              className="w-full btn-primary justify-center"
+                              style={{
+                                opacity: isSoldOut ? 0.5 : 1,
+                                pointerEvents: isSoldOut ? 'none' : 'auto',
+                              }}
+                              aria-disabled={isSoldOut}
+                            >
+                              {isSoldOut ? 'Sold Out' : `Book ${route.origin}`}
+                              <span className="sr-only">
+                                {' '}
+                                {dates.departureDate} - {dates.returnDate}
+                              </span>
+                            </Link>
+                          );
+                        })()
+                      ) : (
+                        <div className="space-y-3">
+                          {departuresSorted.map((dep) => {
+                            const dates = getDatesForOrigin(dep, route.origin);
+                            const isSoldOut = dep.status === 'sold-out';
+                            return (
+                              <div
+                                key={`${route.id}-${dep.id}`}
+                                className="rounded-xl border p-4"
+                                style={{ borderColor: theme.secondaryBtnBorder, backgroundColor: `${theme.goldColor}06` }}
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                  <div>
+                                    <div className="text-sm font-semibold" style={{ color: theme.headingText }}>
+                                      {new Date(dates.departureDate).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                      })}{' '}
+                                      -{' '}
+                                      {new Date(dates.returnDate).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                      })}
+                                    </div>
+                                    <div className="text-xs mt-1" style={{ color: theme.mutedText }}>
+                                      {getDurationForDates(dates.departureDate, dates.returnDate)}
+                                      {dep.specialNote ? ` • ${dep.specialNote}` : ''}
+                                    </div>
+                                  </div>
+                                  <Link
+                                    href={`/register?tourId=${selectedTour.id}&departureId=${dep.id}&origin=${encodeURIComponent(route.origin)}`}
+                                    className="btn-primary justify-center px-4 py-2 text-sm"
+                                    style={{
+                                      opacity: isSoldOut ? 0.5 : 1,
+                                      pointerEvents: isSoldOut ? 'none' : 'auto',
+                                    }}
+                                    aria-disabled={isSoldOut}
+                                  >
+                                    {isSoldOut ? 'Sold Out' : 'Book'}
+                                  </Link>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Available Departure Dates (fallback when no flight routes exist) */}
+        {hasDepartures && !hasFlightRoutes && (
           <div className="space-y-6 mb-16">
             <h3 className="text-2xl font-bold mb-6" style={{ color: theme.headingText }}>
               Available Departure Dates
@@ -515,8 +754,8 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
           </p>
         </div>
 
-        {/* Flight Information (moved from Schedule tab) */}
-        {selectedTour.flightRoutes && selectedTour.flightRoutes.length > 0 && (
+        {/* Flight Information (fallback when there are no departures rendered above) */}
+        {!hasDepartures && selectedTour.flightRoutes && selectedTour.flightRoutes.length > 0 && (
           <div className="mt-20 space-y-6">
             <h3 className="text-2xl font-bold mb-6" style={{ color: theme.headingText }}>
               Flight Information

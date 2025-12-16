@@ -76,6 +76,10 @@ function RegisterPageInner() {
           const tourIdParam = searchParams.get('tourId');
           const productParam = searchParams.get('product'); // 'courtside' | 'cherry-blossom'
           const departureIdParam = searchParams.get('departureId');
+          const originParam =
+            searchParams.get('origin') ||
+            searchParams.get('departureOrigin') ||
+            searchParams.get('pricingOrigin');
 
           const findByProduct = (product: string | null) => {
             if (!product) return null;
@@ -97,6 +101,14 @@ function RegisterPageInner() {
             activeTours[0];
 
           setSelectedTourId(initialTour.id);
+
+          // Preselect departure city/origin if provided
+          if (originParam) {
+            const origins = Array.from(new Set((initialTour.flightRoutes || []).map(r => r.origin).filter(Boolean)));
+            if (origins.includes(originParam)) {
+              setSelectedDepartureOrigin(originParam);
+            }
+          }
 
           const departures = initialTour.departures || [];
           if (departures.length > 0) {
