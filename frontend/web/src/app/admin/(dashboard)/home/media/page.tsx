@@ -127,7 +127,6 @@ export default function AdminHomeMediaPage() {
 
               <div className="aspect-video rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center mb-4">
                 {url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={url} alt={`${productKey} ${device}`} className="w-full h-full object-cover" />
                 ) : (
                   <div className="text-slate-400 text-sm">Not set</div>
@@ -171,6 +170,7 @@ export default function AdminHomeMediaPage() {
     </div>
   );
 }
+
 
 
 

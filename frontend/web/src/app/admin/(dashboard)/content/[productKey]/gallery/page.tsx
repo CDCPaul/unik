@@ -67,7 +67,6 @@ export default function GalleryByProductPage() {
 
   useEffect(() => {
     void loadImages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productKey]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,6 +274,7 @@ export default function GalleryByProductPage() {
     </div>
   );
 }
+
 
 
 

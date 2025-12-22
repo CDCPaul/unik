@@ -20,6 +20,9 @@ export default function PlayersByProductPage() {
   const productKey = normalizeProductKey(String(params.productKey || ''));
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const courtsidePlayers = useMemo(() => {
+    return players.filter((p) => !p.productIds?.length || p.productIds.includes('courtside'));
+  }, [players]);
 
   useEffect(() => {
     async function load() {
@@ -62,10 +65,6 @@ export default function PlayersByProductPage() {
     );
   }
 
-  const courtsidePlayers = useMemo(() => {
-    return players.filter((p) => !p.productIds?.length || p.productIds.includes('courtside'));
-  }, [players]);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -86,6 +85,7 @@ export default function PlayersByProductPage() {
     </div>
   );
 }
+
 
 
 

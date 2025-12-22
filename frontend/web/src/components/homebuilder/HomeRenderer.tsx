@@ -137,7 +137,6 @@ export default function HomeRenderer({
           <div className="absolute inset-0 bg-linear-to-r from-dark-900 via-dark-900/80 to-transparent z-10" />
           <picture>
             <source media="(min-width: 768px)" srcSet={heroBgDesktop} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={heroBgMobile} alt="Hero Background" className="w-full h-full object-cover md:scale-100 scale-110" />
           </picture>
         </div>
@@ -279,7 +278,6 @@ export default function HomeRenderer({
                         <div className="card overflow-hidden">
                           <div className="aspect-3/4 relative overflow-hidden bg-dark-800">
                             {player.thumbnailUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={player.thumbnailUrl}
                                 alt={player.name}
@@ -341,7 +339,6 @@ export default function HomeRenderer({
                   {itineraryHighlights.map((day) => (
                     <div key={day.day} className="card overflow-hidden">
                       <div className="aspect-video bg-dark-800 relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={day.imageUrl!} alt={day.title} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-linear-to-t from-dark-950 via-transparent to-transparent opacity-80" />
                         <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -394,7 +391,6 @@ export default function HomeRenderer({
                       transition={{ delay: index * 0.04 }}
                       className={`rounded-xl overflow-hidden relative group aspect-square ${index === 0 ? 'col-span-2 row-span-2' : ''}`}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={image.url}
                         alt={image.caption || 'Gallery Image'}

@@ -16,6 +16,8 @@ import type { Player, TourPackage, TourDeparture } from '@unik/shared/types';
 import { useUiText } from '@/context/UiTextContext';
 import { COUNTRIES } from '@/lib/data/countries';
 import { DIAL_CODES } from '@/lib/data/dialCodes';
+import { logEvent } from 'firebase/analytics';
+import { initAnalytics } from '@/lib/firebase';
 
 interface RegistrationForm {
   firstName: string;
@@ -222,7 +224,6 @@ function RegisterPageInner() {
       setSelectedDepartureOrigin('');
     }
     setFavoritePlayerIds([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTourId]);
 
   // DOB dropdowns -> set hidden ISO date for form submission
@@ -295,6 +296,19 @@ function RegisterPageInner() {
         specialRequests: data.specialRequests || '',
       };
       await createRegistration(payload);
+
+      // Analytics (no PII)
+      void (async () => {
+        const analytics = await initAnalytics();
+        if (!analytics) return;
+        logEvent(analytics, 'registration_submitted', {
+          tour_id: selectedTourId,
+          departure_id: selectedDepartureId,
+          origin: selectedDepartureOrigin || selectedPricing?.origin || '',
+          adults: adultsCount,
+          children: childrenCount,
+        });
+      })();
       
       setIsSuccess(true);
       reset();

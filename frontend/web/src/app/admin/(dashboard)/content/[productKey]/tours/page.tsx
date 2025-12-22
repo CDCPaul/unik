@@ -61,7 +61,6 @@ export default function ToursByProductPage() {
 
   useEffect(() => {
     void loadTours();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productKey]);
 
   const handleDelete = async (id: string) => {
@@ -237,6 +236,7 @@ export default function ToursByProductPage() {
     </div>
   );
 }
+
 
 
 

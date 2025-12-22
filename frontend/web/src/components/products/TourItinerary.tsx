@@ -7,6 +7,8 @@ import { getTours } from '@/lib/services/tours';
 import Link from 'next/link';
 import type { TourPackage, TourDeparture } from '@unik/shared/types';
 import { useTheme } from '@/context/ThemeContext';
+import { logEvent } from 'firebase/analytics';
+import { initAnalytics } from '@/lib/firebase';
 
 interface TourItineraryProps {
   productCategory: 'courtside' | 'cherry-blossom';
@@ -243,6 +245,13 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
 
   const hasDepartures = !!selectedTour.departures && selectedTour.departures.length > 0;
   const hasFlightRoutes = !!selectedTour.flightRoutes && selectedTour.flightRoutes.length > 0;
+  const track = (name: string, params: Record<string, unknown>) => {
+    void (async () => {
+      const analytics = await initAnalytics();
+      if (!analytics) return;
+      logEvent(analytics, name, params);
+    })();
+  };
 
   return (
     <section className="pt-32 pb-16" style={{ backgroundColor: theme.pageBg, color: theme.bodyText }}>
@@ -447,6 +456,14 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
                                 pointerEvents: isSoldOut ? 'none' : 'auto',
                               }}
                               aria-disabled={isSoldOut}
+                              onClick={() => {
+                                if (isSoldOut) return;
+                                track('book_click', {
+                                  tour_id: selectedTour.id,
+                                  departure_id: dep.id,
+                                  origin: route.origin,
+                                });
+                              }}
                             >
                               {isSoldOut ? 'Sold Out' : `Book ${route.origin}`}
                               <span className="sr-only">
@@ -495,6 +512,14 @@ export default function TourItinerary({ productCategory, tourType }: TourItinera
                                       pointerEvents: isSoldOut ? 'none' : 'auto',
                                     }}
                                     aria-disabled={isSoldOut}
+                                    onClick={() => {
+                                      if (isSoldOut) return;
+                                      track('book_click', {
+                                        tour_id: selectedTour.id,
+                                        departure_id: dep.id,
+                                        origin: route.origin,
+                                      });
+                                    }}
                                   >
                                     {isSoldOut ? 'Sold Out' : 'Book'}
                                   </Link>

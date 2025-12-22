@@ -9,8 +9,8 @@
     "dev:admin": "pnpm --filter @unik/admin dev",
     "build:web": "pnpm --filter @unik/web build",
     "build:admin": "pnpm --filter @unik/admin build",
-    "build": "pnpm -r build",
-    "lint": "pnpm -r lint"
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint"
   },
   "keywords": [
     "kbl",

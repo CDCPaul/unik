@@ -123,7 +123,6 @@ export default function HomePreview({
       <section className="relative min-h-[540px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-linear-to-r from-dark-900 via-dark-900/80 to-transparent z-10" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={heroBgUrl} alt="Hero Background" className="w-full h-full object-cover" />
         </div>
 
@@ -232,7 +231,6 @@ export default function HomePreview({
                     <div key={p.id} className="card overflow-hidden">
                       <div className="aspect-3/4 relative overflow-hidden bg-dark-800">
                         {p.thumbnailUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={p.thumbnailUrl} alt={p.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -278,7 +276,6 @@ export default function HomePreview({
                     <div key={d.day} className="card overflow-hidden">
                       <div className="aspect-video bg-dark-800 relative">
                         {d.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={d.imageUrl} alt={d.title} className="w-full h-full object-cover" />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-dark-600">No image</div>
@@ -324,7 +321,6 @@ export default function HomePreview({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {gallery.slice(0, maxGallery).map((img, idx) => (
                     <div key={img.id} className={`rounded-xl overflow-hidden relative aspect-square ${idx === 0 ? 'col-span-2 row-span-2' : ''}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={img.url} alt={img.caption || 'Gallery'} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/20" />
                     </div>

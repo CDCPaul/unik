@@ -29,6 +29,7 @@ interface Registration {
   unitPriceChild?: number;
   priceCurrency?: 'PHP' | 'USD' | 'KRW' | string;
   totalPrice?: number;
+  favoritePlayerIds?: string[];
   favoritePlayerNames?: string[];
   specialRequests?: string;
   status: RegistrationStatus;
@@ -257,6 +258,16 @@ export default function RegistrationsPage() {
                       <div className="text-slate-500 text-xs">
                         {reg.gender ? `Gender: ${reg.gender}` : ''}
                       </div>
+                      {(reg.favoritePlayerNames && reg.favoritePlayerNames.length > 0) ||
+                      (reg.favoritePlayerIds && reg.favoritePlayerIds.length > 0) ? (
+                        <div className="text-slate-500 text-xs mt-1">
+                          <span className="font-medium text-slate-600">Favorite Players:</span>{' '}
+                          {(reg.favoritePlayerNames && reg.favoritePlayerNames.length > 0
+                            ? reg.favoritePlayerNames
+                            : reg.favoritePlayerIds || []
+                          ).join(', ')}
+                        </div>
+                      ) : null}
                     </td>
                     <td className="admin-table-cell">
                       <div className="text-slate-900">{reg.email}</div>
