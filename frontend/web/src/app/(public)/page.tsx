@@ -78,6 +78,7 @@ export default function HomePage() {
 
   const forcedProductKey: HomeProductKey | null = useMemo(() => {
     const v = (settings as any)?.homeFeaturedProductKey;
+    console.log('[HomePage] homeFeaturedProductKey from settings:', v);
     if (!v || v === 'auto') return null;
     if (v === 'courtside' || v === 'cherry-blossom' || v === 'default') return v;
     return null;
@@ -91,6 +92,10 @@ export default function HomePage() {
   }, [tour]);
 
   const effectiveProductKey: HomeProductKey = forcedProductKey || featuredProductKeyFromTour;
+  
+  useEffect(() => {
+    console.log('[HomePage] effectiveProductKey:', effectiveProductKey, '(forced:', forcedProductKey, ', fromTour:', featuredProductKeyFromTour, ')');
+  }, [effectiveProductKey, forcedProductKey, featuredProductKeyFromTour]);
 
   useEffect(() => {
     async function loadData() {

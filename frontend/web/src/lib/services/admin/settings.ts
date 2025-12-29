@@ -70,6 +70,7 @@ export async function getSettings(): Promise<CompanyInfo> {
 
 // Save settings
 export async function saveSettings(settings: CompanyInfo): Promise<void> {
+  console.log('[saveSettings] Starting save, homeFeaturedProductKey:', settings.homeFeaturedProductKey);
   const docRef = doc(db, 'settings', 'company');
   // Normalize multi-contact fields (keep legacy single fields in sync)
   const emails =
@@ -95,10 +96,12 @@ export async function saveSettings(settings: CompanyInfo): Promise<void> {
   // Remove undefined values
   const data = JSON.parse(JSON.stringify(normalized));
   
+  console.log('[saveSettings] Calling setDoc with homeFeaturedProductKey:', data.homeFeaturedProductKey);
   await setDoc(docRef, {
     ...data,
     updatedAt: serverTimestamp(),
   });
+  console.log('[saveSettings] setDoc completed successfully');
 }
 
 // Upload logo image

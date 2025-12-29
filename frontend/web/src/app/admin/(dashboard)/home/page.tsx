@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { LayoutTemplate, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { LayoutTemplate, Image as ImageIcon, Loader2, CheckCircle } from 'lucide-react';
 import type { CompanyInfo } from '@unik/shared/types';
 import { defaultSettings, getSettings, saveSettings } from '@/lib/services/admin/settings';
 
@@ -10,12 +10,15 @@ export default function AdminHomePage() {
   const [settings, setSettings] = useState<CompanyInfo>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
+    console.log('[AdminHome] Component mounted');
     async function load() {
       setIsLoading(true);
       try {
         const s = await getSettings();
+        console.log('[AdminHome] Loaded settings:', s.homeFeaturedProductKey);
         setSettings(s);
       } finally {
         setIsLoading(false);
@@ -27,15 +30,30 @@ export default function AdminHomePage() {
   const value = useMemo(() => settings.homeFeaturedProductKey || 'auto', [settings.homeFeaturedProductKey]);
 
   const setValue = async (next: 'auto' | 'courtside' | 'cherry-blossom') => {
+    console.log('[AdminHome] setValue called with:', next);
     setIsSaving(true);
-    let nextSettings: CompanyInfo | null = null;
-    setSettings((prev) => {
-      nextSettings = { ...prev, homeFeaturedProductKey: next };
-      return nextSettings;
-    });
+    setSaveSuccess(false);
+    
     try {
-      // use the computed next settings to avoid stale closures
-      if (nextSettings) await saveSettings(nextSettings);
+      // Create updated settings directly
+      const nextSettings: CompanyInfo = { ...settings, homeFeaturedProductKey: next };
+      console.log('[AdminHome] Saving settings:', nextSettings.homeFeaturedProductKey);
+      
+      await saveSettings(nextSettings);
+      console.log('[AdminHome] Saved homeFeaturedProductKey:', next);
+      
+      // Update local state after successful save
+      setSettings(nextSettings);
+      
+      // Verify save by re-reading from Firestore
+      const verified = await getSettings();
+      console.log('[AdminHome] Verified saved value:', verified.homeFeaturedProductKey);
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('[AdminHome] Save failed:', error);
+      alert('Failed to save settings. Check console for details.');
     } finally {
       setIsSaving(false);
     }
@@ -56,7 +74,10 @@ export default function AdminHomePage() {
               Choose which product the customer homepage should show by default.
             </p>
           </div>
-          {(isLoading || isSaving) && <Loader2 className="w-5 h-5 animate-spin text-slate-400" />}
+          <div className="flex items-center gap-2">
+            {isSaving && <Loader2 className="w-5 h-5 animate-spin text-slate-400" />}
+            {saveSuccess && <CheckCircle className="w-5 h-5 text-green-600" />}
+          </div>
         </div>
 
         <div className="mt-4 inline-flex rounded-lg border border-slate-200 overflow-hidden">
