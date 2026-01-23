@@ -434,3 +434,101 @@ export interface ContactMessage {
   emailNotificationError?: string;
   createdAt?: Date;
 }
+
+// ========================================
+// Airline Ticket Types
+// ========================================
+
+export type AirlineType = 'JIN' | 'JEJU' | 'AIRBUSAN' | '5J' | 'BX';
+export type JourneyType = 'round-trip' | 'one-way' | 'multi-city';
+
+export interface FlightJourney {
+  flightNumber: string;
+  airline?: string; // For JIN Air: "LJ", "7C" etc.
+  departureAirportCode: string;
+  departureAirportName: string;
+  departureDate: string; // "27 OCT 2024" format
+  departureTime: string; // "23:30" format
+  departureTerminal?: string;
+  arrivalAirportCode: string;
+  arrivalAirportName: string;
+  arrivalDate: string;
+  arrivalTime: string;
+  arrivalTerminal?: string;
+  bookingClass: string; // "Y", "K", "F" etc.
+  notValidBefore?: string;
+  notValidAfter?: string;
+  baggageAllowance?: string; // "20kg"
+  flightTime?: string; // JIN Air only
+}
+
+export interface TicketPassenger {
+  lastName: string;
+  firstName: string;
+  gender: string; // Allow any string for flexibility during parsing
+  ticketNumber?: string; // JIN Air only
+  type?: 'Adult' | 'Child' | 'Infant'; // Cebu Pacific, Air Busan
+  passengerType?: string; // Jeju Air, Jin Air, Cebu Pacific (from parsing)
+  baggageAllowance?: string; // Various airlines
+}
+
+export interface ExtraService {
+  name: string;
+  data: string;
+}
+
+export type CurrencyType = 'PHP' | 'USD' | 'KRW';
+export type PaymentMethodType = 'CASH' | 'CREDIT_CARD' | 'BANK_TRANSFER';
+
+export interface FareInformation {
+  formOfPayment?: PaymentMethodType;
+  fareAmount?: { currency: CurrencyType; value: string };
+  fuelSurcharge?: { currency: CurrencyType; value: string };
+  tax?: { currency: CurrencyType; value: string };
+  changeFee?: { currency: CurrencyType; value: string };
+  totalAmount?: { currency: CurrencyType; value: string };
+}
+
+export interface AirlineTicket {
+  id: string;
+  airline: AirlineType;
+  journeyType: JourneyType;
+  
+  // Group booking info
+  isGroupBooking: boolean;
+  totalSeats?: number;
+  
+  // Booking info
+  reservationNumber: string;
+  bookingDate: string;
+  agentName: string;
+  notes?: string;
+  
+  // Journey info (1 for one-way, 2 for round-trip)
+  journeys: FlightJourney[];
+  
+  // Passenger list
+  passengers: TicketPassenger[];
+  needsPassengerInput: boolean; // Whether manual passenger input is required
+  
+  // Extra services (max 4)
+  extraServices: ExtraService[];
+  
+  // Fare information (optional)
+  fareInformation?: FareInformation;
+  
+  // File info
+  pdfFileName: string;
+  pdfFileUrl?: string; // Firebase Storage URL
+  
+  // Name List file (optional, for group bookings)
+  nameListFileName?: string;
+  nameListFileUrl?: string; // Firebase Storage URL
+  
+  // PDF generation info
+  pdfFolderUrl?: string; // PDF folder URL
+  pdfUrls?: Record<string, string>; // Passenger name -> PDF URL
+  
+  createdAt?: Date;
+  updatedAt?: Date;
+}

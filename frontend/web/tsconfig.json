@@ -33,7 +33,7 @@
         "../../shared/*"
       ]
     },
-    "target": "ES2017"
+    "target": "ES2018"
   },
   "include": [
     "next-env.d.ts",
@@ -43,6 +43,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "public"
   ]
 }

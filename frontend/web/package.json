@@ -9,12 +9,17 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.3.2",
     "@tailwindcss/postcss": "^4.1.17",
+    "@tanstack/react-table": "^8.21.3",
     "clsx": "latest",
     "firebase": "latest",
     "framer-motion": "latest",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.0.0",
     "lucide-react": "latest",
     "next": "latest",
+    "pdfjs-dist": "^5.4.530",
     "react": "latest",
     "react-dom": "latest",
     "react-hook-form": "latest",

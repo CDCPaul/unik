@@ -56,6 +56,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // 항공권 티켓 - 관리자만 접근
+    match /airline-tickets/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // 기타 모든 문서 - 관리자만 접근
     match /{document=**} {
       allow read, write: if isAdmin();

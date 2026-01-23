@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, Users, FileText, Navigation, 
-  Palette, Settings, LogOut, Menu, X, Home, LayoutTemplate, Type
+  Palette, Settings, LogOut, Menu, X, Home, LayoutTemplate, Type, Plane
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,7 @@ const menuItems = [
   { href: '/admin/home', icon: LayoutTemplate, label: 'Home' },
   { href: '/admin/navigation', icon: Navigation, label: 'Navigation' },
   { href: '/admin/content', icon: FileText, label: 'Content' },
+  { href: '/admin/tickets', icon: Plane, label: 'Tickets' },
   { href: '/admin/theme', icon: Palette, label: 'Theme' },
   { href: '/admin/ui-text', icon: Type, label: 'UI Text' },
   { href: '/admin/settings', icon: Settings, label: 'Settings' },
