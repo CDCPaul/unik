@@ -160,9 +160,11 @@ export default function TicketsListPage() {
 
     try {
       await deleteTicket(id);
-      setTickets(tickets.filter(t => t.id !== id));
+      // 로컬 상태 업데이트
+      setTickets(prevTickets => prevTickets.filter(t => t.id !== id));
       alert('Ticket deleted successfully.');
     } catch (error) {
+      console.error('Error deleting ticket:', error);
       alert('Failed to delete ticket.');
     }
   };
