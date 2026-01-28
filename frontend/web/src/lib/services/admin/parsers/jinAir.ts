@@ -20,9 +20,11 @@ function normalizeAirportName(name: string): string {
 
 function parseJinAirJourney(htmlContent: string, startIndex: number): FlightJourney | null {
   try {
-    const sectionContent = htmlContent.substring(startIndex, startIndex + 3000);
+    // Extract a larger section to ensure we capture all flight details
+    const actualStart = Math.max(0, startIndex - 500);
+    const sectionContent = htmlContent.substring(actualStart, startIndex + 5000);
     
-    console.log('\n📝 Parsing journey from index:', startIndex);
+    console.log('\n📝 Parsing journey from index:', startIndex, '(actual start:', actualStart, ')');
 
     // Flight number
     const flightPattern = /Flight No\s+<strong>\s*LJ\s+(\d+)<\/strong>/i;
@@ -49,17 +51,42 @@ function parseJinAirJourney(htmlContent: string, startIndex: number): FlightJour
     console.log(`🛫 ${departureAirportCode} ${departureAirportName} → 🛬 ${arrivalAirportCode} ${arrivalAirportName}`);
 
     // Departure date/time
-    const deptDatePattern = /(\d{4})hr\s*,\s*[A-Za-z]{3},?\s*(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/i;
-    const deptDateMatch = sectionContent.match(deptDatePattern);
+    console.log('\n🔍 출발 시간 파싱 시작...');
+    
     let departureTime = '';
     let departureDate = '';
-    if (deptDateMatch) {
-      const timeStr = deptDateMatch[1];
-      departureTime = `${timeStr.substring(0, 2)}:${timeStr.substring(2)}`;
-      const day = deptDateMatch[2].padStart(2, '0');
-      const month = deptDateMatch[3].toUpperCase();
-      const year = deptDateMatch[4];
-      departureDate = `${day} ${month} ${year}`;
+    
+    // Try multiple patterns
+    const deptPatterns = [
+      // Pattern 1: "0145hr, Thu 26 Feb 2026" (comma after hr, no comma after day name)
+      /(\d{4})hr\s*,\s*[A-Za-z]{3,4}\s+(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/i,
+      // Pattern 2: "2245hr, Wed, 25 FEB 2026" (comma after hr and day name)
+      /(\d{4})hr\s*,\s*[A-Za-z]{3,4},\s*(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/i,
+      // Pattern 3: "2245hr Wed 25 FEB 2026" (no comma)
+      /(\d{4})hr\s+[A-Za-z]{3,4}\s+(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/i,
+      // Pattern 4: Look for time near DEPARTING
+      /DEPARTING[^<]*<\/strong>[^<]*<br>[^<]*<br>[^<]*(\d{4})hr[^<]*(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/i
+    ];
+    
+    for (let i = 0; i < deptPatterns.length; i++) {
+      const pattern = deptPatterns[i];
+      const match = sectionContent.match(pattern);
+      if (match) {
+        const timeStr = match[1];
+        departureTime = `${timeStr.substring(0, 2)}:${timeStr.substring(2)}`;
+        const day = match[2].padStart(2, '0');
+        const month = match[3].toUpperCase();
+        const year = match[4];
+        departureDate = `${day} ${month} ${year}`;
+        console.log(`✅ 출발 시간 발견 (패턴 ${i + 1}):`, departureTime, departureDate);
+        break;
+      }
+    }
+    
+    if (!departureDate) {
+      console.log('⚠️ 출발 날짜를 찾을 수 없음');
+      // Debug: show sample of content
+      console.log('🔍 샘플 내용:', sectionContent.substring(0, 800));
     }
 
     // Arrival date/time

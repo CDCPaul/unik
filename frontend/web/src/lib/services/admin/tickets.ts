@@ -47,8 +47,11 @@ export async function createTicket(ticket: Omit<AirlineTicket, 'id' | 'createdAt
     const docId = `${ticket.airline.toLowerCase()}-${ticket.reservationNumber}-${timestamp}`;
     const docRef = doc(db, COLLECTION, docId);
     
+    // Remove undefined values to avoid Firestore errors
+    const cleanTicket = removeUndefined(ticket);
+    
     await setDoc(docRef, {
-      ...ticket,
+      ...cleanTicket,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -97,13 +100,19 @@ export async function getAllTickets(): Promise<AirlineTicket[]> {
   }
 }
 
-// Helper function to remove undefined values from objects
+// Helper function to remove undefined and empty string values from objects
 function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
   const result: any = {};
   Object.keys(obj).forEach(key => {
     const value = obj[key];
-    if (value !== undefined) {
-      if (value && typeof value === 'object' && !Array.isArray(value)) {
+    // Skip undefined and empty strings
+    if (value !== undefined && value !== '') {
+      if (Array.isArray(value)) {
+        // Clean arrays recursively
+        result[key] = value.map(item => 
+          typeof item === 'object' && item !== null ? removeUndefined(item) : item
+        );
+      } else if (value && typeof value === 'object') {
         // Recursively clean nested objects
         const cleaned = removeUndefined(value);
         if (Object.keys(cleaned).length > 0) {
