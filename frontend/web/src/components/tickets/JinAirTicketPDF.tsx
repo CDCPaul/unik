@@ -108,16 +108,21 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+  },
+  footerSpacer: {
+    width: 60,
+    height: 60,
   },
   footerText: {
+    flex: 1,
     fontSize: 7,
     color: '#666666',
+    textAlign: 'center',
   },
   cebuLogo: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     objectFit: 'contain',
   },
 });
@@ -346,6 +351,7 @@ export default function JinAirTicketPDF({ ticket, passenger }: JinAirTicketPDFPr
 
         {/* Footer */}
         <View style={styles.footer}>
+          <View style={styles.footerSpacer} />
           <View style={styles.footerText}>
             <Text>ticket@cebu-jinair.com</Text>
             <Text>0917-186-8666 / 032-234-8666</Text>

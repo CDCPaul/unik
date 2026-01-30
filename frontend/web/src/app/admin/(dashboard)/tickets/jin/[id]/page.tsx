@@ -33,6 +33,7 @@ export default function JinAirTicketDetailPage() {
   const [extraServices, setExtraServices] = useState<ExtraService[]>([]);
   const [passengers, setPassengers] = useState<TicketPassenger[]>([]);
   const [fareInfo, setFareInfo] = useState<FareInformation>({});
+  const [journeys, setJourneys] = useState<AirlineTicket['journeys']>([]);
 
   useEffect(() => {
     loadTicket();
@@ -45,12 +46,19 @@ export default function JinAirTicketDetailPage() {
     }
   }, [ticket]);
 
+  useEffect(() => {
+    if (ticket && isEditing) {
+      // Ensure edit state uses a fresh copy of journeys
+      setJourneys(ticket.journeys?.map(journey => ({ ...journey })) || []);
+    }
+  }, [ticket, isEditing]);
+
   const handlePreviewTicket = (passengerIdx: number) => {
     const passenger = passengers[passengerIdx];
     if (!ticket || !passenger) return;
 
     // Open new window
-    const previewWindow = window.open('', '_blank', 'width=900,height=1200,menubar=no,toolbar=no,location=no,status=no');
+    const previewWindow = window.open('', '_blank', 'width=1200,height=1200,menubar=no,toolbar=no,location=no,status=no');
     if (!previewWindow) {
       alert('Popup was blocked. Please allow popups.');
       return;
@@ -174,6 +182,7 @@ export default function JinAirTicketDetailPage() {
         setExtraServices(data.extraServices || []);
         setPassengers(data.passengers || []);
         setFareInfo(data.fareInformation || {});
+        setJourneys(data.journeys || []);
       } else {
         alert('Ticket not found.');
         router.push('/admin/tickets');
@@ -196,7 +205,8 @@ export default function JinAirTicketDetailPage() {
         notes,
         extraServices: extraServices.filter(s => s.name || s.data),
         passengers,
-        fareInformation: fareInfo
+        fareInformation: fareInfo,
+        journeys
       });
       
       alert('Ticket updated successfully.');
@@ -213,6 +223,12 @@ export default function JinAirTicketDetailPage() {
   const updatePassenger = (index: number, field: keyof TicketPassenger, value: string) => {
     setPassengers(prev => prev.map((p, idx) => 
       idx === index ? { ...p, [field]: value } : p
+    ));
+  };
+
+  const updateJourney = (index: number, field: keyof AirlineTicket['journeys'][number], value: string) => {
+    setJourneys(prev => prev.map((j, idx) => 
+      idx === index ? { ...j, [field]: value } : j
     ));
   };
 
@@ -354,6 +370,7 @@ export default function JinAirTicketDetailPage() {
                   setExtraServices(ticket.extraServices || []);
                   setPassengers(ticket.passengers || []);
                   setFareInfo(ticket.fareInformation || {});
+                  setJourneys(ticket.journeys || []);
                 }}
                 className="admin-btn-secondary"
               >
@@ -419,7 +436,7 @@ export default function JinAirTicketDetailPage() {
       <div className="admin-card p-6">
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Journey Information</h2>
         <div className="space-y-4">
-          {ticket.journeys.map((journey, idx) => (
+          {(isEditing ? journeys : ticket.journeys).map((journey, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, y: 20 }}
@@ -483,11 +500,26 @@ export default function JinAirTicketDetailPage() {
                 </div>
               </div>
 
-              {journey.baggageAllowance && (
-                <div className="mt-3 pt-3 border-t border-slate-200">
-                  <p className="text-xs text-slate-500">Baggage Allowance: <span className="font-medium text-slate-700">{journey.baggageAllowance}</span></p>
-                </div>
-              )}
+              <div className="mt-3 pt-3 border-t border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Baggage Allowance</p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={journey.baggageAllowance || ''}
+                    onChange={(e) => updateJourney(idx, 'baggageAllowance', e.target.value)}
+                    className="admin-input text-sm"
+                    placeholder="e.g. 15kg"
+                  />
+                ) : (
+                  <p className="text-xs text-slate-600">
+                    {journey.baggageAllowance ? (
+                      <span className="font-medium text-slate-700">{journey.baggageAllowance}</span>
+                    ) : (
+                      '-'
+                    )}
+                  </p>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
@@ -526,7 +558,7 @@ export default function JinAirTicketDetailPage() {
                     type="checkbox"
                     checked={selectedPassengers.includes(idx)}
                     onChange={() => togglePassengerSelection(idx)}
-                    className="w-5 h-5 text-purple-600 border-slate-300 rounded focus:ring-purple-500 flex-shrink-0"
+                    className="w-5 h-5 text-purple-600 border-slate-300 rounded focus:ring-purple-500 shrink-0"
                   />
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-3">

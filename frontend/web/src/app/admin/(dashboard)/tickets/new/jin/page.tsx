@@ -8,7 +8,7 @@ import {
   Upload, Plane, FileText, Loader2, 
   CheckCircle, AlertCircle, UserPlus, Trash2, Save
 } from 'lucide-react';
-import type { AirlineTicket, TicketPassenger, ExtraService, FareInformation, CurrencyType, PaymentMethodType } from '@unik/shared/types';
+import type { AirlineTicket, TicketPassenger, ExtraService, FareInformation, CurrencyType, PaymentMethodType, FlightJourney } from '@unik/shared/types';
 import { parseJinAirHtml } from '@/lib/services/admin/tickets';
 import { createTicket, uploadTicketPdf } from '@/lib/services/admin';
 
@@ -21,6 +21,7 @@ export default function NewJinAirTicketPage() {
   
   // Form states
   const [passengers, setPassengers] = useState<TicketPassenger[]>([]);
+  const [journeys, setJourneys] = useState<FlightJourney[]>([]);
   const [extraServices, setExtraServices] = useState<ExtraService[]>([
     { name: '', data: '' },
     { name: '', data: '' },
@@ -97,6 +98,7 @@ export default function NewJinAirTicketPage() {
       const passengersList = parsed.passengers || [];
       console.log('✅ Setting passengers to state:', passengersList.length, 'passengers');
       setPassengers(passengersList);
+      setJourneys(parsed.journeys || []);
       
       setExtraServices(parsed.extraServices || [
         { name: '', data: '' },
@@ -124,6 +126,13 @@ export default function NewJinAirTicketPage() {
     const updated = [...passengers];
     updated[index] = { ...updated[index], [field]: value };
     setPassengers(updated);
+  };
+
+  // Handle journey data change
+  const handleJourneyChange = (index: number, field: keyof FlightJourney, value: string) => {
+    const updated = [...journeys];
+    updated[index] = { ...updated[index], [field]: value };
+    setJourneys(updated);
   };
 
   // Add passenger
@@ -197,6 +206,7 @@ export default function NewJinAirTicketPage() {
         ...parsedData,
         agentName,
         notes: notes.trim(),
+      journeys,
         passengers,
         extraServices: extraServices.filter(s => s.name || s.data),
         needsPassengerInput: false,
@@ -334,7 +344,7 @@ export default function NewJinAirTicketPage() {
           {/* Journey Info */}
           <div className="admin-card p-6">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">✈️ Journey Information</h2>
-            {parsedData.journeys && parsedData.journeys.map((journey, index) => (
+            {journeys.map((journey, index) => (
               <div key={index} className="mb-6 last:mb-0">
                 <h3 className="text-sm font-semibold text-slate-700 mb-3">
                   {index === 0 ? 'Outbound' : 'Inbound'}
@@ -370,7 +380,13 @@ export default function NewJinAirTicketPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Baggage</label>
-                    <p className="text-sm text-slate-900">{journey.baggageAllowance || '-'}</p>
+                    <input
+                      type="text"
+                      placeholder="e.g. 15kg"
+                      value={journey.baggageAllowance || ''}
+                      onChange={(e) => handleJourneyChange(index, 'baggageAllowance', e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">Validity</label>
