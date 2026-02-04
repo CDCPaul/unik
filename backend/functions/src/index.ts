@@ -237,222 +237,236 @@ export const onNewContact = onDocumentCreated(
 
 /**
  * Roulette spin endpoint
+ * invoker: public - allows unauthenticated access
  */
-export const spinRoulette = onRequest({ cors: true }, async (req, res) => {
-  applyCors(req, res);
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
+export const spinRoulette = onRequest(
+  { 
+    cors: true,
+    invoker: "public"  // 인증 없이 접근 허용
+  }, 
+  async (req, res) => {
+    applyCors(req, res);
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
 
-  if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
-    return;
-  }
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
 
-  const rouletteId = (req.body?.rouletteId || "cdc-travel").toString();
-  const docRef = admin.firestore().collection("roulette").doc(rouletteId);
+    const rouletteId = (req.body?.rouletteId || "cdc-travel").toString();
+    const docRef = admin.firestore().collection("roulette").doc(rouletteId);
 
-  try {
-    const result = await admin.firestore().runTransaction(async (tx) => {
-      const snapshot = await tx.get(docRef);
-      let data: any = snapshot.data() || {};
-      const tiers = Array.isArray(data.tiers) ? data.tiers : null;
-      const slotCount = Number(data.slotCount || 50);
-      const targetSpins = Number(data.targetSpins || 0);
-      const visualCounts = data.visualCounts || { high: 5, mid: 10, low: 35 };
-      const visualPattern = data.visualPattern || ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'];
+    try {
+      const result = await admin.firestore().runTransaction(async (tx) => {
+        const snapshot = await tx.get(docRef);
+        let data: any = snapshot.data() || {};
+        const tiers = Array.isArray(data.tiers) ? data.tiers : null;
+        const slotCount = Number(data.slotCount || 50);
+        const targetSpins = Number(data.targetSpins || 0);
+        const visualCounts = data.visualCounts || { high: 5, mid: 10, low: 35 };
+        const visualPattern = data.visualPattern || ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'];
 
-      if (tiers && tiers.length) {
-        const totalProb = tiers.reduce(
-          (acc: number, tier: any) => acc + Number(tier?.probability || 0),
-          0
-        );
-        if (!totalProb) {
-          throw new Error("Invalid probability settings");
+        if (tiers && tiers.length) {
+          const totalProb = tiers.reduce(
+            (acc: number, tier: any) => acc + Number(tier?.probability || 0),
+            0
+          );
+          if (!totalProb) {
+            throw new Error("Invalid probability settings");
+          }
+
+          const winsByTier = { ...(data.winsByTier || {}) } as Record<string, number>;
+          const maxWinsByTier = tiers.reduce((acc: Record<string, number>, tier: any) => {
+            const prob = Number(tier?.probability || 0);
+            const maxWins =
+              targetSpins > 0 ? Math.round((targetSpins * prob) / totalProb) : Number.POSITIVE_INFINITY;
+            acc[tier.id] = maxWins;
+            return acc;
+          }, {});
+
+          const availableTiers = tiers.filter((tier: any) => {
+            const maxWins = maxWinsByTier[tier.id];
+            const currentWins = Number(winsByTier[tier.id] || 0);
+            return maxWins > 0 && currentWins < maxWins;
+          });
+
+          if (!availableTiers.length) {
+            throw new Error("No available stock");
+          }
+
+          const availableWeight = availableTiers.reduce(
+            (acc: number, tier: any) => acc + Number(tier?.probability || 0),
+            0
+          );
+
+          let randomPoint = Math.random() * availableWeight;
+          let selectedTier = availableTiers[0];
+
+          for (const tier of availableTiers) {
+            randomPoint -= Number(tier?.probability || 0);
+            if (randomPoint <= 0) {
+              selectedTier = tier;
+              break;
+            }
+          }
+
+          const slots = buildVisualSlots(tiers, slotCount, visualCounts, visualPattern);
+          const tierIndices = slots
+            .map((slot, index) => ({ slot, index }))
+            .filter(({ slot }) => slot.grade === selectedTier.id);
+
+          if (!tierIndices.length) {
+            throw new Error("No available slot for tier");
+          }
+
+          const chosen = tierIndices[Math.floor(Math.random() * tierIndices.length)];
+          winsByTier[selectedTier.id] = Number(winsByTier[selectedTier.id] || 0) + 1;
+
+          tx.update(docRef, {
+            winsByTier,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+
+          return {
+            index: chosen.index,
+            slot: {
+              ...chosen.slot,
+              probability: Number(selectedTier?.probability || 0),
+              total_stock: maxWinsByTier[selectedTier.id],
+              current_stock: Math.max(0, maxWinsByTier[selectedTier.id] - winsByTier[selectedTier.id]),
+            },
+            remainingStock: Math.max(0, maxWinsByTier[selectedTier.id] - winsByTier[selectedTier.id]),
+          };
         }
 
-        const winsByTier = { ...(data.winsByTier || {}) } as Record<string, number>;
-        const maxWinsByTier = tiers.reduce((acc: Record<string, number>, tier: any) => {
-          const prob = Number(tier?.probability || 0);
-          const maxWins =
-            targetSpins > 0 ? Math.round((targetSpins * prob) / totalProb) : Number.POSITIVE_INFINITY;
-          acc[tier.id] = maxWins;
-          return acc;
-        }, {});
+        let slots = Array.isArray(data.slots) ? data.slots : [];
 
-        const availableTiers = tiers.filter((tier: any) => {
-          const maxWins = maxWinsByTier[tier.id];
-          const currentWins = Number(winsByTier[tier.id] || 0);
-          return maxWins > 0 && currentWins < maxWins;
-        });
+        if (!snapshot.exists || slots.length === 0) {
+          slots = buildDefaultRouletteSlots();
+          data = { id: rouletteId, title: "CDC TRAVEL Roulette", slots };
+          tx.set(docRef, {
+            ...data,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
 
-        if (!availableTiers.length) {
+        const normalizedSlots = slots.map((slot: any, index: number) => ({
+          ...slot,
+          index,
+          probability: Number(slot?.probability || 0),
+          current_stock: Math.max(0, Number(slot?.current_stock || 0)),
+        }));
+
+        const availableSlots = normalizedSlots.filter(
+          (slot: any) => slot.current_stock > 0 && slot.probability > 0
+        );
+
+        if (availableSlots.length === 0) {
           throw new Error("No available stock");
         }
 
-        const availableWeight = availableTiers.reduce(
-          (acc: number, tier: any) => acc + Number(tier?.probability || 0),
+        const totalWeight = availableSlots.reduce(
+          (acc: number, slot: any) => acc + slot.probability,
           0
         );
 
-        let randomPoint = Math.random() * availableWeight;
-        let selectedTier = availableTiers[0];
+        let randomPoint = Math.random() * totalWeight;
+        let selected = availableSlots[0];
 
-        for (const tier of availableTiers) {
-          randomPoint -= Number(tier?.probability || 0);
+        for (const slot of availableSlots) {
+          randomPoint -= slot.probability;
           if (randomPoint <= 0) {
-            selectedTier = tier;
+            selected = slot;
             break;
           }
         }
 
-        const slots = buildVisualSlots(tiers, slotCount, visualCounts, visualPattern);
-        const tierIndices = slots
-          .map((slot, index) => ({ slot, index }))
-          .filter(({ slot }) => slot.grade === selectedTier.id);
-
-        if (!tierIndices.length) {
-          throw new Error("No available slot for tier");
-        }
-
-        const chosen = tierIndices[Math.floor(Math.random() * tierIndices.length)];
-        winsByTier[selectedTier.id] = Number(winsByTier[selectedTier.id] || 0) + 1;
+        const updatedSlots = slots.map((slot: any, index: number) => {
+          if (index !== selected.index) return slot;
+          return {
+            ...slot,
+            current_stock: Math.max(0, Number(slot?.current_stock || 0) - 1),
+          };
+        });
 
         tx.update(docRef, {
-          winsByTier,
+          slots: updatedSlots,
           updatedAt: FieldValue.serverTimestamp(),
         });
 
         return {
-          index: chosen.index,
-          slot: {
-            ...chosen.slot,
-            probability: Number(selectedTier?.probability || 0),
-            total_stock: maxWinsByTier[selectedTier.id],
-            current_stock: Math.max(0, maxWinsByTier[selectedTier.id] - winsByTier[selectedTier.id]),
-          },
-          remainingStock: Math.max(0, maxWinsByTier[selectedTier.id] - winsByTier[selectedTier.id]),
-        };
-      }
-
-      let slots = Array.isArray(data.slots) ? data.slots : [];
-
-      if (!snapshot.exists || slots.length === 0) {
-        slots = buildDefaultRouletteSlots();
-        data = { id: rouletteId, title: "CDC TRAVEL Roulette", slots };
-        tx.set(docRef, {
-          ...data,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      }
-
-      const normalizedSlots = slots.map((slot: any, index: number) => ({
-        ...slot,
-        index,
-        probability: Number(slot?.probability || 0),
-        current_stock: Math.max(0, Number(slot?.current_stock || 0)),
-      }));
-
-      const availableSlots = normalizedSlots.filter(
-        (slot: any) => slot.current_stock > 0 && slot.probability > 0
-      );
-
-      if (availableSlots.length === 0) {
-        throw new Error("No available stock");
-      }
-
-      const totalWeight = availableSlots.reduce(
-        (acc: number, slot: any) => acc + slot.probability,
-        0
-      );
-
-      let randomPoint = Math.random() * totalWeight;
-      let selected = availableSlots[0];
-
-      for (const slot of availableSlots) {
-        randomPoint -= slot.probability;
-        if (randomPoint <= 0) {
-          selected = slot;
-          break;
-        }
-      }
-
-      const updatedSlots = slots.map((slot: any, index: number) => {
-        if (index !== selected.index) return slot;
-        return {
-          ...slot,
-          current_stock: Math.max(0, Number(slot?.current_stock || 0) - 1),
+          index: selected.index,
+          slot: updatedSlots[selected.index],
+          remainingStock: updatedSlots[selected.index]?.current_stock ?? 0,
         };
       });
 
-      tx.update(docRef, {
-        slots: updatedSlots,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-
-      return {
-        index: selected.index,
-        slot: updatedSlots[selected.index],
-        remainingStock: updatedSlots[selected.index]?.current_stock ?? 0,
-      };
-    });
-
-    res.status(200).json(result);
-  } catch (error: any) {
-    console.error("Roulette spin error:", error);
-    const message = error?.message || "Spin failed";
-    const status = message === "No available stock" ? 409 : 500;
-    res.status(status).send(message);
+      res.status(200).json(result);
+    } catch (error: any) {
+      console.error("Roulette spin error:", error);
+      const message = error?.message || "Spin failed";
+      const status = message === "No available stock" ? 409 : 500;
+      res.status(status).send(message);
+    }
   }
-});
+);
 
 /**
  * Save roulette winner info
+ * invoker: public - allows unauthenticated access
  */
-export const createRouletteWinner = onRequest({ cors: true }, async (req, res) => {
-  applyCors(req, res);
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
+export const createRouletteWinner = onRequest(
+  { 
+    cors: true,
+    invoker: "public"  // 인증 없이 접근 허용
+  }, 
+  async (req, res) => {
+    applyCors(req, res);
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    const {
+      rouletteId = "cdc-travel",
+      winnerName,
+      winnerContact,
+      slot,
+      slotIndex,
+    } = req.body || {};
+
+    if (!winnerName || !winnerContact || !slot?.id || !slot?.label || !slot?.grade) {
+      res.status(400).send("Invalid payload");
+      return;
+    }
+
+    try {
+      const docRef = await admin.firestore().collection("roulette_winners").add({
+        rouletteId: String(rouletteId),
+        slotId: String(slot.id),
+        slotLabel: String(slot.label),
+        slotGrade: String(slot.grade),
+        slotIndex: typeof slotIndex === "number" ? slotIndex : null,
+        winnerName: String(winnerName),
+        winnerContact: String(winnerContact),
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      res.status(200).json({ id: docRef.id });
+    } catch (error) {
+      console.error("Create winner error:", error);
+      res.status(500).send("Failed to save winner");
+    }
   }
-
-  if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
-    return;
-  }
-
-  const {
-    rouletteId = "cdc-travel",
-    winnerName,
-    winnerContact,
-    slot,
-    slotIndex,
-  } = req.body || {};
-
-  if (!winnerName || !winnerContact || !slot?.id || !slot?.label || !slot?.grade) {
-    res.status(400).send("Invalid payload");
-    return;
-  }
-
-  try {
-    const docRef = await admin.firestore().collection("roulette_winners").add({
-      rouletteId: String(rouletteId),
-      slotId: String(slot.id),
-      slotLabel: String(slot.label),
-      slotGrade: String(slot.grade),
-      slotIndex: typeof slotIndex === "number" ? slotIndex : null,
-      winnerName: String(winnerName),
-      winnerContact: String(winnerContact),
-      createdAt: FieldValue.serverTimestamp(),
-    });
-
-    res.status(200).json({ id: docRef.id });
-  } catch (error) {
-    console.error("Create winner error:", error);
-    res.status(500).send("Failed to save winner");
-  }
-});
+);
 
 /**
  * 투어 신청 이메일 템플릿
