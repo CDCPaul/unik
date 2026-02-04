@@ -72,6 +72,21 @@ export interface RouletteWinnerPayload {
 export async function spinRoulette(
   rouletteId: string = DEFAULT_ROULETTE_ID
 ): Promise<RouletteSpinResponse> {
+  if (typeof window !== 'undefined') {
+    const response = await fetch('/api/roulette/spin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rouletteId }),
+    });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || 'Failed to spin roulette');
+    }
+
+    return response.json();
+  }
+
   const projectId = firebaseConfig.projectId;
   const explicitSpinUrl = process.env.NEXT_PUBLIC_SPIN_ROULETTE_URL;
   const explicitBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
@@ -107,6 +122,21 @@ export async function spinRoulette(
 }
 
 export async function createRouletteWinner(payload: RouletteWinnerPayload): Promise<{ id: string }> {
+  if (typeof window !== 'undefined') {
+    const response = await fetch('/api/roulette/winner', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || 'Failed to save winner');
+    }
+
+    return response.json();
+  }
+
   const projectId = firebaseConfig.projectId;
   const explicitWinnerUrl = process.env.NEXT_PUBLIC_CREATE_WINNER_URL;
   const explicitBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
