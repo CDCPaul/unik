@@ -40,6 +40,7 @@ export const defaultNavItems: NavItem[] = [
   { id: '4', label: 'Info', href: '/info', isVisible: true, order: 3 },
   { id: '5', label: 'Register', href: '/register', isVisible: true, order: 4 },
   { id: '6', label: 'Contact', href: '/contact', isVisible: true, order: 5 },
+  { id: '7', label: 'CDC TRAVEL Roulette', href: '/cdc-travel/roulette', isVisible: true, order: 6 },
 ];
 
 // Get navigation items

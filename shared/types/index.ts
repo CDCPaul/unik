@@ -423,6 +423,52 @@ export interface ThemeColors {
   goldColor: string;
 }
 
+// ========================================
+// Roulette Types
+// ========================================
+
+export type RouletteGrade = 'high' | 'mid' | 'low';
+
+export interface RouletteSlot {
+  id: string;
+  label: string;
+  grade: RouletteGrade;
+  probability: number;
+  total_stock: number;
+  current_stock: number;
+}
+
+export interface RouletteTier {
+  id: RouletteGrade;
+  name: string;
+  probability: number;
+}
+
+export interface RouletteConfig {
+  id: string;
+  title: string;
+  slots?: RouletteSlot[];
+  tiers?: RouletteTier[];
+  slotCount?: number;
+  targetSpins?: number;
+  winsByTier?: Partial<Record<RouletteGrade, number>>;
+  visualCounts?: Partial<Record<RouletteGrade, number>>;
+  visualPattern?: RouletteGrade[];
+  updatedAt?: Date;
+}
+
+export interface RouletteWinner {
+  id: string;
+  rouletteId: string;
+  slotId: string;
+  slotLabel: string;
+  slotGrade: RouletteGrade;
+  slotIndex?: number;
+  winnerName: string;
+  winnerContact: string;
+  createdAt?: Date;
+}
+
 export interface ContactMessage {
   id: string;
   name: string;

@@ -21,6 +21,7 @@
     "next": "latest",
     "pdfjs-dist": "^5.4.530",
     "react": "latest",
+    "react-custom-roulette": "^1.4.1",
     "react-dom": "latest",
     "react-hook-form": "latest",
     "tailwind-merge": "latest"

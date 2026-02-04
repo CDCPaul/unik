@@ -1,7 +1,8 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
-import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { Resend } from "resend";
 
 // Initialize Firebase Admin
@@ -13,8 +14,71 @@ setGlobalOptions({
   maxInstances: 10,
 });
 
-// Define secret
-const resendApiKey = defineSecret("RESEND_API_KEY");
+const getResendApiKey = () => process.env.RESEND_API_KEY || "";
+
+const buildDefaultRouletteSlots = () =>
+  Array.from({ length: 50 }).map((_, idx) => ({
+    id: `slot-${idx + 1}`,
+    label: `Gift ${idx + 1}`,
+    grade: idx % 10 === 0 ? "high" : idx % 3 === 0 ? "mid" : "low",
+    probability: idx % 10 === 0 ? 1 : idx % 3 === 0 ? 2 : 3,
+    total_stock: idx % 10 === 0 ? 10 : idx % 3 === 0 ? 30 : 60,
+    current_stock: idx % 10 === 0 ? 10 : idx % 3 === 0 ? 30 : 60,
+  }));
+
+const buildVisualSlots = (
+  tiers: Array<{ id: string; name: string; probability: number }>,
+  slotCount: number,
+  visualCounts?: Partial<Record<string, number>>,
+  visualPattern?: string[]
+) => {
+  const counts: Record<string, number> = tiers.reduce((acc, tier) => {
+    acc[tier.id] = Math.max(0, Number(visualCounts?.[tier.id] ?? 0));
+    return acc;
+  }, {} as Record<string, number>);
+
+  const total = Object.values(counts).reduce((acc, value) => acc + value, 0);
+  if (total !== slotCount) {
+    const fallbackId = tiers[tiers.length - 1]?.id || 'low';
+    counts[fallbackId] = Math.max(0, (counts[fallbackId] || 0) + (slotCount - total));
+  }
+
+  const tierMap = tiers.reduce((acc, tier) => {
+    acc[tier.id] = tier;
+    return acc;
+  }, {} as Record<string, { id: string; name: string }>);
+
+  const pattern = (visualPattern && visualPattern.length ? visualPattern : ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'])
+    .map((id) => String(id));
+
+  const slots: Array<{ id: string; label: string; grade: string }> = [];
+  const remaining = { ...counts };
+  let guard = 0;
+
+  while (slots.length < slotCount && guard < slotCount * 5) {
+    for (const id of pattern) {
+      if (slots.length >= slotCount) break;
+      if (remaining[id] > 0) {
+        const name = tierMap[id]?.name || id;
+        const nextIndex = (counts[id] - remaining[id]) + 1;
+        slots.push({ id: `${id}-${nextIndex}`, label: name, grade: id });
+        remaining[id] -= 1;
+      }
+    }
+    guard += 1;
+  }
+
+  for (const id of Object.keys(remaining)) {
+    while (slots.length < slotCount && remaining[id] > 0) {
+      const name = tierMap[id]?.name || id;
+      const nextIndex = (counts[id] - remaining[id]) + 1;
+      slots.push({ id: `${id}-${nextIndex}`, label: name, grade: id });
+      remaining[id] -= 1;
+    }
+  }
+
+  return slots;
+};
 
 /**
  * Get staff email from settings
@@ -45,7 +109,6 @@ async function getStaffEmail(): Promise<string> {
 export const onNewRegistration = onDocumentCreated(
   {
     document: "registrations/{docId}",
-    secrets: [resendApiKey],
   },
   async (event) => {
     const snapshot = event.data;
@@ -59,8 +122,13 @@ export const onNewRegistration = onDocumentCreated(
 
     console.log(`New registration received: ${docId}`);
 
+    const apiKey = getResendApiKey();
+    if (!apiKey) {
+      console.warn("RESEND_API_KEY not configured. Skipping email send.");
+      return;
+    }
     // Initialize Resend with secret
-    const resend = new Resend(resendApiKey.value());
+    const resend = new Resend(apiKey);
     
     // Get staff email from settings
     const staffEmail = await getStaffEmail();
@@ -78,7 +146,7 @@ export const onNewRegistration = onDocumentCreated(
       // Firestore에 이메일 발송 상태 업데이트
       await snapshot.ref.update({
         emailNotificationSent: true,
-        emailNotificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        emailNotificationSentAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
       console.error("Error sending email:", error);
@@ -98,7 +166,6 @@ export const onNewRegistration = onDocumentCreated(
 export const onNewContact = onDocumentCreated(
   {
     document: "contacts/{docId}",
-    secrets: [resendApiKey],
   },
   async (event) => {
     const snapshot = event.data;
@@ -112,8 +179,13 @@ export const onNewContact = onDocumentCreated(
 
     console.log(`New contact inquiry received: ${docId}`);
 
+    const apiKey = getResendApiKey();
+    if (!apiKey) {
+      console.warn("RESEND_API_KEY not configured. Skipping email send.");
+      return;
+    }
     // Initialize Resend with secret
-    const resend = new Resend(resendApiKey.value());
+    const resend = new Resend(apiKey);
     
     // Get staff email from settings
     const staffEmail = await getStaffEmail();
@@ -130,7 +202,7 @@ export const onNewContact = onDocumentCreated(
 
       await snapshot.ref.update({
         emailNotificationSent: true,
-        emailNotificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+        emailNotificationSentAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
       console.error("Error sending email:", error);
@@ -142,6 +214,223 @@ export const onNewContact = onDocumentCreated(
     }
   }
 );
+
+/**
+ * Roulette spin endpoint
+ */
+export const spinRoulette = onRequest({ cors: true }, async (req, res) => {
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  const rouletteId = (req.body?.rouletteId || "cdc-travel").toString();
+  const docRef = admin.firestore().collection("roulette").doc(rouletteId);
+
+  try {
+    const result = await admin.firestore().runTransaction(async (tx) => {
+      const snapshot = await tx.get(docRef);
+      let data: any = snapshot.data() || {};
+      const tiers = Array.isArray(data.tiers) ? data.tiers : null;
+      const slotCount = Number(data.slotCount || 50);
+      const targetSpins = Number(data.targetSpins || 0);
+      const visualCounts = data.visualCounts || { high: 5, mid: 10, low: 35 };
+      const visualPattern = data.visualPattern || ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'];
+
+      if (tiers && tiers.length) {
+        const totalProb = tiers.reduce(
+          (acc: number, tier: any) => acc + Number(tier?.probability || 0),
+          0
+        );
+        if (!totalProb) {
+          throw new Error("Invalid probability settings");
+        }
+
+        const winsByTier = { ...(data.winsByTier || {}) } as Record<string, number>;
+        const maxWinsByTier = tiers.reduce((acc: Record<string, number>, tier: any) => {
+          const prob = Number(tier?.probability || 0);
+          const maxWins =
+            targetSpins > 0 ? Math.round((targetSpins * prob) / totalProb) : Number.POSITIVE_INFINITY;
+          acc[tier.id] = maxWins;
+          return acc;
+        }, {});
+
+        const availableTiers = tiers.filter((tier: any) => {
+          const maxWins = maxWinsByTier[tier.id];
+          const currentWins = Number(winsByTier[tier.id] || 0);
+          return maxWins > 0 && currentWins < maxWins;
+        });
+
+        if (!availableTiers.length) {
+          throw new Error("No available stock");
+        }
+
+        const availableWeight = availableTiers.reduce(
+          (acc: number, tier: any) => acc + Number(tier?.probability || 0),
+          0
+        );
+
+        let randomPoint = Math.random() * availableWeight;
+        let selectedTier = availableTiers[0];
+
+        for (const tier of availableTiers) {
+          randomPoint -= Number(tier?.probability || 0);
+          if (randomPoint <= 0) {
+            selectedTier = tier;
+            break;
+          }
+        }
+
+        const slots = buildVisualSlots(tiers, slotCount, visualCounts, visualPattern);
+        const tierIndices = slots
+          .map((slot, index) => ({ slot, index }))
+          .filter(({ slot }) => slot.grade === selectedTier.id);
+
+        if (!tierIndices.length) {
+          throw new Error("No available slot for tier");
+        }
+
+        const chosen = tierIndices[Math.floor(Math.random() * tierIndices.length)];
+        winsByTier[selectedTier.id] = Number(winsByTier[selectedTier.id] || 0) + 1;
+
+        tx.update(docRef, {
+          winsByTier,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        return {
+          index: chosen.index,
+          slot: {
+            ...chosen.slot,
+            probability: Number(selectedTier?.probability || 0),
+            total_stock: maxWinsByTier[selectedTier.id],
+            current_stock: Math.max(0, maxWinsByTier[selectedTier.id] - winsByTier[selectedTier.id]),
+          },
+          remainingStock: Math.max(0, maxWinsByTier[selectedTier.id] - winsByTier[selectedTier.id]),
+        };
+      }
+
+      let slots = Array.isArray(data.slots) ? data.slots : [];
+
+      if (!snapshot.exists || slots.length === 0) {
+        slots = buildDefaultRouletteSlots();
+        data = { id: rouletteId, title: "CDC TRAVEL Roulette", slots };
+        tx.set(docRef, {
+          ...data,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+
+      const normalizedSlots = slots.map((slot: any, index: number) => ({
+        ...slot,
+        index,
+        probability: Number(slot?.probability || 0),
+        current_stock: Math.max(0, Number(slot?.current_stock || 0)),
+      }));
+
+      const availableSlots = normalizedSlots.filter(
+        (slot: any) => slot.current_stock > 0 && slot.probability > 0
+      );
+
+      if (availableSlots.length === 0) {
+        throw new Error("No available stock");
+      }
+
+      const totalWeight = availableSlots.reduce(
+        (acc: number, slot: any) => acc + slot.probability,
+        0
+      );
+
+      let randomPoint = Math.random() * totalWeight;
+      let selected = availableSlots[0];
+
+      for (const slot of availableSlots) {
+        randomPoint -= slot.probability;
+        if (randomPoint <= 0) {
+          selected = slot;
+          break;
+        }
+      }
+
+      const updatedSlots = slots.map((slot: any, index: number) => {
+        if (index !== selected.index) return slot;
+        return {
+          ...slot,
+          current_stock: Math.max(0, Number(slot?.current_stock || 0) - 1),
+        };
+      });
+
+      tx.update(docRef, {
+        slots: updatedSlots,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      return {
+        index: selected.index,
+        slot: updatedSlots[selected.index],
+        remainingStock: updatedSlots[selected.index]?.current_stock ?? 0,
+      };
+    });
+
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error("Roulette spin error:", error);
+    const message = error?.message || "Spin failed";
+    const status = message === "No available stock" ? 409 : 500;
+    res.status(status).send(message);
+  }
+});
+
+/**
+ * Save roulette winner info
+ */
+export const createRouletteWinner = onRequest({ cors: true }, async (req, res) => {
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  const {
+    rouletteId = "cdc-travel",
+    winnerName,
+    winnerContact,
+    slot,
+    slotIndex,
+  } = req.body || {};
+
+  if (!winnerName || !winnerContact || !slot?.id || !slot?.label || !slot?.grade) {
+    res.status(400).send("Invalid payload");
+    return;
+  }
+
+  try {
+    const docRef = await admin.firestore().collection("roulette_winners").add({
+      rouletteId: String(rouletteId),
+      slotId: String(slot.id),
+      slotLabel: String(slot.label),
+      slotGrade: String(slot.grade),
+      slotIndex: typeof slotIndex === "number" ? slotIndex : null,
+      winnerName: String(winnerName),
+      winnerContact: String(winnerContact),
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    res.status(200).json({ id: docRef.id });
+  } catch (error) {
+    console.error("Create winner error:", error);
+    res.status(500).send("Failed to save winner");
+  }
+});
 
 /**
  * 투어 신청 이메일 템플릿

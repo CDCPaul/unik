@@ -29,4 +29,6 @@ export const COLLECTIONS = {
   navigation: 'navigation',
   theme: 'theme',
   settings: 'settings',
+  roulette: 'roulette',
+  rouletteWinners: 'roulette_winners',
 } as const;
