@@ -5,6 +5,15 @@ import type { RouletteConfig, RouletteSlot } from '@unik/shared/types';
 
 export const DEFAULT_ROULETTE_ID = 'cdc-travel';
 
+const getBrowserHostname = (): string | undefined => {
+  if (typeof globalThis === 'undefined') {
+    return undefined;
+  }
+
+  const location = (globalThis as { location?: { hostname?: string } }).location;
+  return location?.hostname;
+};
+
 const buildDefaultSlots = (): RouletteSlot[] =>
   Array.from({ length: 50 }).map((_, idx) => ({
     id: `slot-${idx + 1}`,
@@ -90,12 +99,9 @@ export async function spinRoulette(
   const projectId = firebaseConfig.projectId;
   const explicitSpinUrl = process.env.NEXT_PUBLIC_SPIN_ROULETTE_URL;
   const explicitBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
-  const isLocalhost =
-    typeof window !== 'undefined' &&
-    ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const isUnikProd =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'unik.ph' || window.location.hostname === 'www.unik.ph');
+  const hostname = getBrowserHostname();
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isUnikProd = hostname === 'unik.ph' || hostname === 'www.unik.ph';
   const prodSpinUrl = 'https://spinroulette-6b6i7iageq-du.a.run.app';
   const endpoint = explicitSpinUrl
     ? explicitSpinUrl
@@ -140,12 +146,9 @@ export async function createRouletteWinner(payload: RouletteWinnerPayload): Prom
   const projectId = firebaseConfig.projectId;
   const explicitWinnerUrl = process.env.NEXT_PUBLIC_CREATE_WINNER_URL;
   const explicitBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
-  const isLocalhost =
-    typeof window !== 'undefined' &&
-    ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const isUnikProd =
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'unik.ph' || window.location.hostname === 'www.unik.ph');
+  const hostname = getBrowserHostname();
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isUnikProd = hostname === 'unik.ph' || hostname === 'www.unik.ph';
   const prodWinnerUrl = 'https://createroulettewinner-6b6i7iageq-du.a.run.app';
   const endpoint = explicitWinnerUrl
     ? explicitWinnerUrl
