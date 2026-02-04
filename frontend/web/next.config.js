@@ -13,6 +13,14 @@ const nextConfig = {
     ],
   },
   transpilePackages: ['@unik/shared'],
+  // Compiler optimizations for better compatibility
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+  // Output optimizations for legacy browsers
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
 };
 
 module.exports = nextConfig;

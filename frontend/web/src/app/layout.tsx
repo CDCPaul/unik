@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   title: 'UNIK | KBL All-Star 2026 Tour - Experience Korean Basketball',
   description: 'Join the ultimate basketball tour from Philippines to Korea. Watch KBL All-Star 2026, meet Filipino players, and explore Korea. January 15-18, 2026.',
   keywords: ['KBL', 'All-Star', 'Basketball', 'Korea', 'Philippines', 'Tour', 'Travel'],
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
+  themeColor: '#1f2937',
   openGraph: {
     title: 'UNIK | KBL All-Star 2026 Tour',
     description: 'Experience the KBL All-Star 2026 in Korea. The ultimate basketball tour for Filipino fans.',
