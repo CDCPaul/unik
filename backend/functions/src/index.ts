@@ -16,6 +16,26 @@ setGlobalOptions({
 
 const getResendApiKey = () => process.env.RESEND_API_KEY || "";
 
+const allowedOrigins = [
+  "https://unik.ph",
+  "https://www.unik.ph",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
+const applyCors = (req: any, res: any) => {
+  const origin = req.get("origin");
+  if (origin && allowedOrigins.includes(origin)) {
+    res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+  } else {
+    res.set("Access-Control-Allow-Origin", "*");
+  }
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Max-Age", "3600");
+};
+
 const buildDefaultRouletteSlots = () =>
   Array.from({ length: 50 }).map((_, idx) => ({
     id: `slot-${idx + 1}`,
@@ -219,6 +239,7 @@ export const onNewContact = onDocumentCreated(
  * Roulette spin endpoint
  */
 export const spinRoulette = onRequest({ cors: true }, async (req, res) => {
+  applyCors(req, res);
   if (req.method === "OPTIONS") {
     res.status(204).send("");
     return;
@@ -390,6 +411,7 @@ export const spinRoulette = onRequest({ cors: true }, async (req, res) => {
  * Save roulette winner info
  */
 export const createRouletteWinner = onRequest({ cors: true }, async (req, res) => {
+  applyCors(req, res);
   if (req.method === "OPTIONS") {
     res.status(204).send("");
     return;

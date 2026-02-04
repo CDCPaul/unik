@@ -73,15 +73,24 @@ export async function spinRoulette(
   rouletteId: string = DEFAULT_ROULETTE_ID
 ): Promise<RouletteSpinResponse> {
   const projectId = firebaseConfig.projectId;
+  const explicitSpinUrl = process.env.NEXT_PUBLIC_SPIN_ROULETTE_URL;
   const explicitBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
   const isLocalhost =
     typeof window !== 'undefined' &&
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const endpoint = explicitBase
-    ? `${explicitBase.replace(/\/$/, '')}/spinRoulette`
-    : isLocalhost
-      ? `http://127.0.0.1:5001/${projectId}/asia-northeast3/spinRoulette`
-      : `https://asia-northeast3-${projectId}.cloudfunctions.net/spinRoulette`;
+  const isUnikProd =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'unik.ph' || window.location.hostname === 'www.unik.ph');
+  const prodSpinUrl = 'https://spinroulette-6b6i7iageq-du.a.run.app';
+  const endpoint = explicitSpinUrl
+    ? explicitSpinUrl
+    : explicitBase
+      ? `${explicitBase.replace(/\/$/, '')}/spinRoulette`
+      : isLocalhost
+        ? `http://127.0.0.1:5001/${projectId}/asia-northeast3/spinRoulette`
+        : isUnikProd
+          ? prodSpinUrl
+          : `https://asia-northeast3-${projectId}.cloudfunctions.net/spinRoulette`;
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -99,15 +108,24 @@ export async function spinRoulette(
 
 export async function createRouletteWinner(payload: RouletteWinnerPayload): Promise<{ id: string }> {
   const projectId = firebaseConfig.projectId;
+  const explicitWinnerUrl = process.env.NEXT_PUBLIC_CREATE_WINNER_URL;
   const explicitBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
   const isLocalhost =
     typeof window !== 'undefined' &&
     ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const endpoint = explicitBase
-    ? `${explicitBase.replace(/\/$/, '')}/createRouletteWinner`
-    : isLocalhost
-      ? `http://127.0.0.1:5001/${projectId}/asia-northeast3/createRouletteWinner`
-      : `https://asia-northeast3-${projectId}.cloudfunctions.net/createRouletteWinner`;
+  const isUnikProd =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'unik.ph' || window.location.hostname === 'www.unik.ph');
+  const prodWinnerUrl = 'https://createroulettewinner-6b6i7iageq-du.a.run.app';
+  const endpoint = explicitWinnerUrl
+    ? explicitWinnerUrl
+    : explicitBase
+      ? `${explicitBase.replace(/\/$/, '')}/createRouletteWinner`
+      : isLocalhost
+        ? `http://127.0.0.1:5001/${projectId}/asia-northeast3/createRouletteWinner`
+        : isUnikProd
+          ? prodWinnerUrl
+          : `https://asia-northeast3-${projectId}.cloudfunctions.net/createRouletteWinner`;
 
   const response = await fetch(endpoint, {
     method: 'POST',
