@@ -5,8 +5,16 @@ const resolveWinnerEndpoint = () => {
   const projectId = firebaseConfig.projectId;
   const explicitWinnerUrl = process.env.NEXT_PUBLIC_CREATE_WINNER_URL;
   const explicitBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE_URL;
+  
   if (explicitWinnerUrl) return explicitWinnerUrl;
   if (explicitBase) return `${explicitBase.replace(/\/$/, '')}/createRouletteWinner`;
+  
+  // Production: use Cloud Run URL
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://createroulettewinner-6b6i7iageq-du.a.run.app';
+  }
+  
+  // Development: use local emulator or Cloud Functions
   return `https://asia-northeast3-${projectId}.cloudfunctions.net/createRouletteWinner`;
 };
 
