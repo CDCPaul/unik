@@ -47,19 +47,34 @@ function getTourStatus(ticket: AirlineTicket): { status: string; color: string }
     return { status: 'No Info', color: 'bg-gray-100 text-gray-800' };
   }
 
-  const parseDate = (dateStr: string) => {
+  const parseDate = (dateStr: string | undefined) => {
+    // dateStr이 없거나 비어있으면 null 반환
+    if (!dateStr || typeof dateStr !== 'string') {
+      return null;
+    }
+    
     // Parse "20 DEC 2025" format
     const months: Record<string, number> = {
       'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5,
       'JUL': 6, 'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11
     };
-    const parts = dateStr.trim().split(' ');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0]);
-      const month = months[parts[1].toUpperCase()];
-      const year = parseInt(parts[2]);
-      return new Date(year, month, day);
+    
+    try {
+      const parts = dateStr.trim().split(' ');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0]);
+        const month = months[parts[1].toUpperCase()];
+        const year = parseInt(parts[2]);
+        
+        // month가 유효한지 확인
+        if (month !== undefined && !isNaN(day) && !isNaN(year)) {
+          return new Date(year, month, day);
+        }
+      }
+    } catch (error) {
+      console.error('Date parsing error:', error, dateStr);
     }
+    
     return null;
   };
 

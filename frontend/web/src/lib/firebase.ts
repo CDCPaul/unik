@@ -19,13 +19,19 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const auth = getAuth(app);
 
+// Firestore 에뮬레이터 연결 (명시적으로 환경변수 설정 시에만)
 if (typeof window !== 'undefined') {
-  const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  const useEmulator = isLocalhost && process.env.NODE_ENV !== 'production';
+  const useEmulator = process.env.NEXT_PUBLIC_USE_FIRESTORE_EMULATOR === 'true';
   const globalWindow = window as Window & { __firestoreEmulatorConnected?: boolean };
+  
   if (useEmulator && !globalWindow.__firestoreEmulatorConnected) {
-    connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    globalWindow.__firestoreEmulatorConnected = true;
+    try {
+      connectFirestoreEmulator(db, '127.0.0.1', 8080);
+      globalWindow.__firestoreEmulatorConnected = true;
+      console.log('✅ Firestore 에뮬레이터에 연결됨');
+    } catch (error) {
+      console.warn('⚠️ Firestore 에뮬레이터 연결 실패:', error);
+    }
   }
 }
 
