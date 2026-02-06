@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Maximize2, Minimize2, Sparkles, RefreshCw, Plane, Zap } from 'lucide-react';
+import { Maximize2, Minimize2, Sparkles, RefreshCw } from 'lucide-react';
 import { createRouletteWinner, getRouletteConfig, spinRoulette } from '@/lib/services/roulette';
 import type { RouletteConfig, RouletteSlot } from '@unik/shared/types';
 import SimpleRoulette from './SimpleRoulette';
@@ -16,7 +16,7 @@ const Wheel = dynamic(
 
 const BASE_WIDTH = 1920;
 const BASE_HEIGHT = 1080;
-const POINTER_OFFSET_DEG = -47;
+const POINTER_OFFSET_DEG = -45;
 
 const gradeStyles: Record<string, { bg: string; text: string }> = {
   high: { bg: '#ff6b6b', text: '#1f2937' },
@@ -142,20 +142,6 @@ export default function CdcTravelRoulettePage() {
   const wheelWrapperRef = useRef<HTMLDivElement | null>(null);
   const dragAngleRef = useRef<number | null>(null);
   const [dragRotation, setDragRotation] = useState(0);
-  const [simpleMode, setSimpleMode] = useState(false);
-  
-  // Detect webOS for compatibility adjustments
-  const isWebOS = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return /webOS|Web0S/i.test(navigator.userAgent);
-  }, []);
-  
-  // Auto-enable simple mode on webOS
-  useEffect(() => {
-    if (isWebOS) {
-      setSimpleMode(true);
-    }
-  }, [isWebOS]);
 
   useEffect(() => {
     const updateScale = () => {
@@ -364,129 +350,6 @@ export default function CdcTravelRoulettePage() {
   };
 
   const targetSpins = config?.targetSpins || 0;
-  
-  // Simple mode UI
-  if (simpleMode) {
-    return (
-      <div ref={containerRef} className="w-screen h-screen bg-gradient-to-br from-purple-900 via-pink-800 to-orange-700 overflow-hidden">
-        <div className="absolute top-4 right-4 z-50 flex gap-2">
-          <button
-            onClick={() => setSimpleMode(false)}
-            className="px-4 py-2 rounded-full bg-white/20 backdrop-blur text-white text-sm hover:bg-white/30 transition-colors"
-          >
-            고급 모드
-          </button>
-          <button
-            onClick={isFullscreen ? exitFullscreen : requestFullscreen}
-            className="px-4 py-2 rounded-full bg-white/20 backdrop-blur text-white text-sm hover:bg-white/30 transition-colors"
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-        </div>
-        
-        <div className="w-full h-full flex flex-col items-center justify-center p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-6xl font-bold text-white mb-4">🎁 CDC TRAVEL</h1>
-            <p className="text-2xl text-white/80">Festival Roulette</p>
-            {isWebOS && (
-              <p className="text-sm text-yellow-300 mt-2 flex items-center justify-center gap-2">
-                <Zap className="w-4 h-4" />
-                webOS 최적화 모드
-              </p>
-            )}
-          </div>
-
-          {isLoading ? (
-            <div className="text-white text-2xl">로딩 중...</div>
-          ) : errorMessage ? (
-            <div className="text-red-300 text-xl p-8 bg-black/20 rounded-2xl">{errorMessage}</div>
-          ) : (
-            <SimpleRoulette
-              slots={rouletteSlots}
-              onSpin={handleSpin}
-              isSpinning={isSpinning}
-              isSpinningRequest={isSpinningRequest}
-              prizeIndex={prizeNumber}
-              gradeStyles={gradeStyles}
-            />
-          )}
-        </div>
-
-        {/* Winner Modal */}
-        <AnimatePresence>
-          {showWin && lastResult && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-              onClick={() => setShowWin(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.5, opacity: 0 }}
-                transition={{ type: 'spring', damping: 15 }}
-                className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="text-center space-y-6">
-                  <div className="text-6xl">🎉</div>
-                  <h2 className="text-4xl font-bold text-slate-900">축하합니다!</h2>
-                  <div
-                    className="py-6 px-8 rounded-2xl text-3xl font-bold"
-                    style={{
-                      backgroundColor: gradeStyles[lastResult.grade]?.bg || '#e2e8f0',
-                      color: gradeStyles[lastResult.grade]?.text || '#0f172a',
-                    }}
-                  >
-                    {getPrizeLabel(lastResult)}
-                  </div>
-
-                  {!winnerSaved ? (
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        placeholder="이름"
-                        value={winnerName}
-                        onChange={(e) => setWinnerName(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 outline-none text-lg"
-                      />
-                      <input
-                        type="text"
-                        placeholder="연락처"
-                        value={winnerContact}
-                        onChange={(e) => setWinnerContact(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-purple-500 outline-none text-lg"
-                      />
-                      {winnerError && <p className="text-red-500 text-sm">{winnerError}</p>}
-                      <button
-                        onClick={handleSaveWinner}
-                        disabled={isSavingWinner || !winnerName.trim() || !winnerContact.trim()}
-                        className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg hover:shadow-lg transition-all disabled:opacity-50"
-                      >
-                        {isSavingWinner ? '저장 중...' : '정보 저장'}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <p className="text-green-600 text-lg font-semibold">✓ 정보가 저장되었습니다!</p>
-                      <button
-                        onClick={() => setShowWin(false)}
-                        className="w-full py-3 rounded-xl bg-slate-800 text-white font-bold text-lg hover:bg-slate-700 transition-colors"
-                      >
-                        닫기
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
 
   // Original advanced mode UI
   return (
@@ -513,14 +376,6 @@ export default function CdcTravelRoulettePage() {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setSimpleMode(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 text-slate-700 shadow-sm hover:bg-white transition-colors"
-                  title="webOS 최적화 모드"
-                >
-                  <Zap className="w-5 h-5" />
-                  간단 모드
-                </button>
-                <button
                   onClick={isFullscreen ? exitFullscreen : requestFullscreen}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 text-slate-700 shadow-sm hover:bg-white transition-colors"
                 >
@@ -546,20 +401,19 @@ export default function CdcTravelRoulettePage() {
                   style={{ touchAction: 'manipulation', transform: 'scale(2)', transformOrigin: 'center' }}
                 >
                   <div className="absolute -inset-6 rounded-full bg-white/60 blur-2xl" />
-                  <div className="pointer-events-none absolute left-1/2 top-[-44px] z-10 flex -translate-x-1/2 flex-col items-center">
-                    <div className="h-10 w-1 rounded-full bg-linear-to-b from-amber-300 via-amber-400 to-amber-500 shadow-md" />
-                    <div className="-mt-1 h-5 w-5 rotate-45 rounded-sm bg-white shadow-lg ring-2 ring-amber-300" />
-                    <div className="-mt-2 h-3 w-3 rotate-45 rounded-sm bg-amber-400 shadow-sm" />
-                    <Plane
-                      className={`mt-2 h-6 w-6 text-amber-500 drop-shadow ${
-                        lastResult ? 'animate-pulse' : ''
-                      }`}
+                  {/* Pointer Pin */}
+                  <div className="pointer-events-none absolute left-1/2 top-[-50px] z-10 flex -translate-x-1/2 flex-col items-center">
+                    <div 
+                      className="relative"
+                      style={{
+                        width: 0,
+                        height: 0,
+                        borderLeft: '16px solid transparent',
+                        borderRight: '16px solid transparent',
+                        borderTop: '48px solid #ef4444',
+                        filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))',
+                      }}
                     />
-                    {lastResult && (
-                      <div className="mt-2 rounded-full bg-slate-900/90 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow-lg">
-                        Winner
-                      </div>
-                    )}
                   </div>
                   <div
                     ref={wheelWrapperRef}
