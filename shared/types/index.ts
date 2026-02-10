@@ -427,33 +427,37 @@ export interface ThemeColors {
 // Roulette Types
 // ========================================
 
+// Legacy support for old data
 export type RouletteGrade = 'high' | 'mid' | 'low';
 
 export interface RouletteSlot {
   id: string;
   label: string;
-  grade: RouletteGrade;
+  grade: string; // Changed from RouletteGrade to string for dynamic support
   probability: number;
   total_stock: number;
   current_stock: number;
 }
 
 export interface RouletteTier {
-  id: RouletteGrade;
+  id: string; // Changed from RouletteGrade to string (dynamic tier IDs)
   name: string;
-  probability: number;
+  probability: number; // 당첨 확률 (%)
+  visualCount: number; // 보여지는 조각 수
+  color?: string; // UI 표시용 색상
+  order: number; // 정렬 순서
 }
 
 export interface RouletteConfig {
   id: string;
   title: string;
-  slots?: RouletteSlot[];
-  tiers?: RouletteTier[];
-  slotCount?: number;
-  targetSpins?: number;
-  winsByTier?: Partial<Record<RouletteGrade, number>>;
-  visualCounts?: Partial<Record<RouletteGrade, number>>;
-  visualPattern?: RouletteGrade[];
+  slots?: RouletteSlot[]; // Legacy support
+  tiers: RouletteTier[]; // 동적 상품 배열 (required)
+  slotCount: number; // 총 조각 수 (기본 50)
+  targetSpins: number; // 목표 회전 수
+  winsByTier?: Record<string, number>; // Changed to Record<string, number>
+  visualCounts?: Record<string, number>; // Legacy support
+  visualPattern?: string[]; // ['tier-id-1', 'tier-id-2', ...] 순서 패턴
   updatedAt?: Date;
 }
 
@@ -462,7 +466,7 @@ export interface RouletteWinner {
   rouletteId: string;
   slotId: string;
   slotLabel: string;
-  slotGrade: RouletteGrade;
+  slotGrade: string; // Changed from RouletteGrade to string
   slotIndex?: number;
   winnerName: string;
   winnerContact: string;

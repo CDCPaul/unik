@@ -14,25 +14,64 @@ const resolveSpinEndpoint = () => {
     return 'https://spinroulette-6b6i7iageq-du.a.run.app';
   }
   
-  // Development: use local emulator or Cloud Functions
-  return `https://asia-northeast3-${projectId}.cloudfunctions.net/spinRoulette`;
+  // Development: use local emulator
+  return `http://127.0.0.1:5001/${projectId}/asia-northeast3/spinRoulette`;
 };
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => ({}));
   const endpoint = resolveSpinEndpoint();
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  // 웜업 요청인 경우 빠르게 응답 (실제 스핀 안함)
+  if (payload.warmup === true) {
+    try {
+      // 백엔드에 웜업 요청만 보내고 응답 기다리지 않음
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, warmup: true }),
+      }).catch(() => {});
+      
+      return new NextResponse(
+        JSON.stringify({ warmup: true }), 
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    } catch {
+      return new NextResponse(
+        JSON.stringify({ warmup: true }), 
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+  }
 
-  const bodyText = await response.text();
-  return new NextResponse(bodyText, {
-    status: response.status,
-    headers: {
-      'Content-Type': response.headers.get('content-type') || 'application/json',
-    },
-  });
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const bodyText = await response.text();
+    return new NextResponse(bodyText, {
+      status: response.status,
+      headers: {
+        'Content-Type': response.headers.get('content-type') || 'application/json',
+      },
+    });
+  } catch (error) {
+    console.error('Spin endpoint error:', error);
+    return new NextResponse(
+      JSON.stringify({ error: 'Failed to connect to spin service' }), 
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
 }

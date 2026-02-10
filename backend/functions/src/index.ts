@@ -47,13 +47,14 @@ const buildDefaultRouletteSlots = () =>
   }));
 
 const buildVisualSlots = (
-  tiers: Array<{ id: string; name: string; probability: number }>,
+  tiers: Array<{ id: string; name: string; probability: number; visualCount?: number }>,
   slotCount: number,
-  visualCounts?: Partial<Record<string, number>>,
+  visualCounts?: Record<string, number>,
   visualPattern?: string[]
 ) => {
+  // visualCount를 우선 사용, 없으면 visualCounts에서 가져옴 (하위 호환성)
   const counts: Record<string, number> = tiers.reduce((acc, tier) => {
-    acc[tier.id] = Math.max(0, Number(visualCounts?.[tier.id] ?? 0));
+    acc[tier.id] = Math.max(0, Number(tier.visualCount ?? visualCounts?.[tier.id] ?? 0));
     return acc;
   }, {} as Record<string, number>);
 
@@ -68,8 +69,18 @@ const buildVisualSlots = (
     return acc;
   }, {} as Record<string, { id: string; name: string }>);
 
-  const pattern = (visualPattern && visualPattern.length ? visualPattern : ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'])
-    .map((id) => String(id));
+  // 동적 기본 패턴 생성: 패턴이 없거나 비어있으면 tier 순서대로
+  let pattern: string[];
+  if (visualPattern && visualPattern.length > 0) {
+    pattern = visualPattern.map((id) => String(id));
+  } else {
+    // 기본 패턴: 모든 tier를 순서대로
+    pattern = tiers.map(t => t.id);
+    // 패턴이 비어있으면 레거시 패턴 사용
+    if (pattern.length === 0) {
+      pattern = ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'];
+    }
+  }
 
   const slots: Array<{ id: string; label: string; grade: string }> = [];
   const remaining = { ...counts };
@@ -257,6 +268,13 @@ export const spinRoulette = onRequest(
     }
 
     const rouletteId = (req.body?.rouletteId || "cdc-travel").toString();
+    
+    // 웜업 요청인 경우 빠르게 응답 (함수만 초기화)
+    if (req.body?.warmup === true) {
+      res.status(200).json({ warmup: true, message: "Function warmed up" });
+      return;
+    }
+
     const docRef = admin.firestore().collection("roulette").doc(rouletteId);
 
     try {

@@ -29,12 +29,11 @@ export const defaultRouletteConfig: RouletteConfig = {
   title: 'CDC TRAVEL Roulette',
   slotCount: 50,
   targetSpins: 1000,
-  visualCounts: { high: 5, mid: 10, low: 35 },
-  visualPattern: ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'],
+  visualPattern: ['high', 'mid', 'low', 'low', 'low', 'mid', 'low', 'low', 'low'], // Default pattern
   tiers: [
-    { id: 'high', name: 'Premium Prize', probability: 0.2 },
-    { id: 'mid', name: 'Special Prize', probability: 1.0 },
-    { id: 'low', name: 'Regular Prize', probability: 98.8 },
+    { id: 'high', name: '1st Prize', probability: 0.2, visualCount: 5, color: '#FFD700', order: 1 },
+    { id: 'mid', name: '2nd Prize', probability: 1.0, visualCount: 10, color: '#C0C0C0', order: 2 },
+    { id: 'low', name: '3rd Prize', probability: 98.8, visualCount: 35, color: '#CD7F32', order: 3 },
   ],
   slots: buildDefaultSlots(),
 };

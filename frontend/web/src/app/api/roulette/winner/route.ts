@@ -14,25 +14,36 @@ const resolveWinnerEndpoint = () => {
     return 'https://createroulettewinner-6b6i7iageq-du.a.run.app';
   }
   
-  // Development: use local emulator or Cloud Functions
-  return `https://asia-northeast3-${projectId}.cloudfunctions.net/createRouletteWinner`;
+  // Development: use local emulator
+  return `http://127.0.0.1:5001/${projectId}/asia-northeast3/createRouletteWinner`;
 };
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => ({}));
   const endpoint = resolveWinnerEndpoint();
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-  const bodyText = await response.text();
-  return new NextResponse(bodyText, {
-    status: response.status,
-    headers: {
-      'Content-Type': response.headers.get('content-type') || 'application/json',
-    },
-  });
+    const bodyText = await response.text();
+    return new NextResponse(bodyText, {
+      status: response.status,
+      headers: {
+        'Content-Type': response.headers.get('content-type') || 'application/json',
+      },
+    });
+  } catch (error) {
+    console.error('Winner endpoint error:', error);
+    return new NextResponse(
+      JSON.stringify({ error: 'Failed to connect to winner service' }), 
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
 }

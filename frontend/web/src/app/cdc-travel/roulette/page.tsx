@@ -22,6 +22,8 @@ const gradeStyles: Record<string, { bg: string; text: string }> = {
   high: { bg: '#ff6b6b', text: '#1f2937' },
   mid: { bg: '#ffd166', text: '#1f2937' },
   low: { bg: '#4ecdc4', text: '#0f172a' },
+  // 기본 색상 (동적 tier용)
+  default: { bg: '#94a3b8', text: '#0f172a' },
 };
 
 const playWinSound = () => {
@@ -48,30 +50,40 @@ const playWinSound = () => {
 };
 
 const buildVisualSlots = (
-  tiers: Array<{ id: string; name: string; probability: number }>,
+  tiers: Array<{ id: string; name: string; probability: number; visualCount?: number; color?: string }>,
   slotCount: number,
-  visualCounts?: Partial<Record<RouletteSlot['grade'], number>>,
-  visualPattern?: Array<RouletteSlot['grade']>
+  visualCounts?: Record<string, number>,
+  visualPattern?: string[]
 ): RouletteSlot[] => {
+  // visualCount를 우선 사용, 없으면 visualCounts에서 가져옴 (하위 호환성)
   const counts = tiers.reduce((acc, tier) => {
-    acc[tier.id as RouletteSlot['grade']] = Math.max(0, Number(visualCounts?.[tier.id as RouletteSlot['grade']] ?? 0));
+    acc[tier.id] = Math.max(0, Number(tier.visualCount ?? visualCounts?.[tier.id] ?? 0));
     return acc;
-  }, {} as Record<RouletteSlot['grade'], number>);
+  }, {} as Record<string, number>);
 
   const total = Object.values(counts).reduce((acc, value) => acc + value, 0);
   if (total !== slotCount) {
-    const fallbackId = (tiers[tiers.length - 1]?.id || 'low') as RouletteSlot['grade'];
+    const fallbackId = tiers[tiers.length - 1]?.id || 'low';
     counts[fallbackId] = Math.max(0, (counts[fallbackId] || 0) + (slotCount - total));
   }
 
   const tierMap = tiers.reduce((acc, tier) => {
-    acc[tier.id as RouletteSlot['grade']] = tier;
+    acc[tier.id] = tier;
     return acc;
-  }, {} as Record<RouletteSlot['grade'], { id: string; name: string }>);
+  }, {} as Record<string, { id: string; name: string; color?: string }>);
 
-  const pattern = (visualPattern?.length
-    ? visualPattern
-    : ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low']) as Array<RouletteSlot['grade']>;
+  // 동적 기본 패턴 생성: 패턴이 없거나 비어있으면 tier 순서대로
+  let pattern: string[];
+  if (visualPattern && visualPattern.length > 0) {
+    pattern = visualPattern;
+  } else {
+    // 기본 패턴: 모든 tier를 순서대로
+    pattern = tiers.map(t => t.id);
+    // 패턴이 비어있으면 레거시 패턴 사용
+    if (pattern.length === 0) {
+      pattern = ['low', 'low', 'low', 'mid', 'high', 'mid', 'low', 'low', 'low'];
+    }
+  }
 
   const slots: RouletteSlot[] = [];
   const remaining = { ...counts };
@@ -97,7 +109,7 @@ const buildVisualSlots = (
     guard += 1;
   }
 
-  for (const id of Object.keys(remaining) as Array<RouletteSlot['grade']>) {
+  for (const id of Object.keys(remaining)) {
     while (slots.length < slotCount && remaining[id] > 0) {
       const name = tierMap[id]?.name || id;
       const nextIndex = (counts[id] - remaining[id]) + 1;
@@ -122,6 +134,7 @@ export default function CdcTravelRoulettePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [config, setConfig] = useState<RouletteConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWarmedUp, setIsWarmedUp] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [isSpinningRequest, setIsSpinningRequest] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
@@ -180,6 +193,10 @@ export default function CdcTravelRoulettePage() {
       try {
         const data = await getRouletteConfig();
         setConfig(data);
+        
+        // 백엔드 웜업: 페이지 로드 시 더미 요청으로 함수 초기화
+        // 사용자가 실제로 스핀할 때 빠르게 응답하도록
+        warmupBackend(data.id);
       } catch (error) {
         console.error('Failed to load roulette config:', error);
         setErrorMessage('룰렛 데이터를 불러오지 못했어요.');
@@ -189,6 +206,22 @@ export default function CdcTravelRoulettePage() {
     };
     load();
   }, []);
+
+  // 백엔드 웜업 함수 (첫 스핀 속도 개선)
+  const warmupBackend = async (rouletteId: string) => {
+    try {
+      // 백그라운드에서 조용히 실행 (사용자는 모름)
+      await fetch('/api/roulette/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rouletteId, warmup: true }),
+      });
+      setIsWarmedUp(true);
+    } catch {
+      // 에러 무시 (웜업 실패해도 괜찮음)
+      setIsWarmedUp(true); // 실패해도 표시는 제거
+    }
+  };
 
   const rouletteSlots = useMemo(() => {
     if (config?.tiers?.length) {
@@ -202,9 +235,27 @@ export default function CdcTravelRoulettePage() {
     return config?.slots || [];
   }, [config?.slotCount, config?.slots, config?.tiers, config?.visualCounts, config?.visualPattern]);
 
+  // 동적 gradeStyles 생성 (tier의 color 활용)
+  const dynamicGradeStyles = useMemo(() => {
+    if (!config?.tiers?.length) return gradeStyles;
+    
+    const styles: Record<string, { bg: string; text: string }> = { ...gradeStyles };
+    
+    config.tiers.forEach(tier => {
+      if (tier.color) {
+        styles[tier.id] = {
+          bg: tier.color,
+          text: '#1f2937', // 기본 텍스트 색상
+        };
+      }
+    });
+    
+    return styles;
+  }, [config?.tiers]);
+
   const wheelData = useMemo(() => {
     return rouletteSlots.map(slot => {
-      const style = gradeStyles[slot.grade] || gradeStyles.low;
+      const style = dynamicGradeStyles[slot.grade] || gradeStyles.default;
       return {
         option: slot.label,
         style: {
@@ -213,7 +264,7 @@ export default function CdcTravelRoulettePage() {
         },
       };
     });
-  }, [rouletteSlots]);
+  }, [rouletteSlots, dynamicGradeStyles]);
 
   const safeWheelData = wheelData.length
     ? wheelData
@@ -240,19 +291,25 @@ export default function CdcTravelRoulettePage() {
   };
 
   const handleSpin = async () => {
-    if (isSpinning || isSpinningRequest || !hasRemaining || !config) return;
+    if (isSpinning || isSpinningRequest || !hasRemaining || !config || !isWarmedUp) return;
     setErrorMessage('');
     setWinnerError('');
     setWinnerSaved(false);
     setIsSpinningRequest(true);
+    
     try {
+      // 스핀 요청 시작 - 즉시 시각적 피드백
       const result = await spinRoulette(config.id);
       const nextIndex = Math.max(0, Math.min(result.index, rouletteSlots.length - 1));
+      
+      // 바로 애니메이션 시작
       setPrizeNumber(nextIndex);
       setPendingSlot(result.slot);
       setPendingIndex(nextIndex);
       setDragRotation(0);
       setIsSpinning(true);
+      setIsSpinningRequest(false); // 요청 완료, 애니메이션 시작
+      
       setConfig(prev => {
         if (!prev?.slots?.length) return prev;
         return {
@@ -265,8 +322,8 @@ export default function CdcTravelRoulettePage() {
     } catch (error) {
       console.error('Spin failed:', error);
       setErrorMessage('스핀 요청에 실패했어요. 잠시 후 다시 시도해주세요.');
-    } finally {
       setIsSpinningRequest(false);
+      setIsSpinning(false);
     }
   };
 
@@ -454,14 +511,30 @@ export default function CdcTravelRoulettePage() {
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-28 h-28 rounded-full bg-white shadow-lg flex items-center justify-center">
-                      <span className="text-lg font-semibold text-slate-700">
-                        {isSpinningRequest ? 'Loading...' : 'SPIN'}
-                      </span>
+                      {isSpinningRequest ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <RefreshCw className="w-6 h-6 animate-spin text-slate-700" />
+                          <span className="text-xs font-medium text-slate-500">Loading...</span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-semibold text-slate-700">SPIN</span>
+                      )}
                     </div>
                   </div>
                 </div>
                 <p className="text-sm text-slate-500 mt-4">
-                  {hasRemaining ? 'Touch the wheel to start' : 'All prizes are out of stock'}
+                  {isLoading ? (
+                    '룰렛 로딩 중...'
+                  ) : !isWarmedUp ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      준비 중...
+                    </span>
+                  ) : !hasRemaining ? (
+                    'All prizes are out of stock'
+                  ) : (
+                    'Touch the wheel to start'
+                  )}
                 </p>
                 {errorMessage && (
                   <p className="mt-2 text-sm text-rose-500">{errorMessage}</p>
