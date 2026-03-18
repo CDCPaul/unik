@@ -135,10 +135,7 @@ export default function AirBusanTicketPDF({ ticket, passenger }: AirBusanTicketP
             </View>
           </View>
           
-          <View style={{ flexDirection: 'row' }}>
-            <Text style={styles.label}>E-Ticket No.</Text>
-            <Text style={{ marginLeft: 20 }}>{passenger.ticketNumber || '-'}</Text>
-          </View>
+          <View style={{ minHeight: 20 }} />
         </View>
 
         {/* Journey Table */}

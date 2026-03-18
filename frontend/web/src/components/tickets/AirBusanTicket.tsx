@@ -44,10 +44,7 @@ export default function AirBusanTicket({ ticket, passenger }: AirBusanTicketProp
           </div>
         </div>
         
-        <div>
-          <span style={{ fontWeight: 'bold' }}>E-Ticket No.</span>
-          <span style={{ marginLeft: '40px' }}>{passenger.ticketNumber || '-'}</span>
-        </div>
+        <div style={{ minHeight: '1.4em' }} />
       </div>
 
       {/* Journey Information */}
