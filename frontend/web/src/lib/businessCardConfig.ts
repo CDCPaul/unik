@@ -13,8 +13,11 @@ export const COMPANY_INFO = {
   nameKo: '세부 다이렉트 클럽',
 
   /** vCard ADR;TYPE=WORK 와 페이지 하단에 표시되는 회사 주소 */
-  address: '서울특별시 중구 명동길 26, 4층',
-  addressEn: '4F, 26 Myeongdong-gil, Jung-gu, Seoul, Republic of Korea',
+  address:
+    'Unit 09-11, Phase 2 Gaisano Mactan Island Mall, M.L. Quezon National Highway, Pajo, Lapu-Lapu City, Cebu 6015, Philippines',
+
+  /** 회사 대표 사무실 전화 — 모든 직원 명함에 공통으로 표시 */
+  officePhone: '+63 32 345 8908',
 
   /** vCard URL 필드 */
   website: 'https://unik.ph',
@@ -22,7 +25,7 @@ export const COMPANY_INFO = {
   /** 페이지 상단에 표시되는 회사 로고 (public/ 기준 경로) */
   logoUrl: '/cebu-direct-logo.jpg',
 
-  /** 명함 페이지에 노출되는 회사 대표 이메일/전화 (선택) */
+  /** 명함 페이지에 노출되는 회사 대표 이메일 */
   representativeEmail: 'ticket@cebudirectclub.com',
 } as const;
 

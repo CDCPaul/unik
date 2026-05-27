@@ -54,7 +54,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     department: card.department,
     title: card.title,
     phoneCell: card.phone,
-    phoneWork: card.phoneOffice,
+    phoneWork: COMPANY_INFO.officePhone,
     email: card.email,
     workAddress: COMPANY_INFO.address,
     website: COMPANY_INFO.website,

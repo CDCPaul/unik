@@ -140,22 +140,20 @@ export default function ProfilePage({ params }: PageProps) {
               </div>
             </a>
 
-            {card.phoneOffice && (
-              <a
-                href={`tel:${card.phoneOffice}`}
-                className="flex items-center gap-4 py-4 hover:bg-slate-50 rounded-xl px-2 -mx-2 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-slate-400">사무실</p>
-                  <p className="text-sm font-medium text-slate-900 truncate">
-                    {card.phoneOffice}
-                  </p>
-                </div>
-              </a>
-            )}
+            <a
+              href={`tel:${COMPANY_INFO.officePhone}`}
+              className="flex items-center gap-4 py-4 hover:bg-slate-50 rounded-xl px-2 -mx-2 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                <Building2 className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-slate-400">사무실</p>
+                <p className="text-sm font-medium text-slate-900 truncate">
+                  {COMPANY_INFO.officePhone}
+                </p>
+              </div>
+            </a>
 
             <a
               href={`mailto:${card.email}`}
@@ -176,10 +174,9 @@ export default function ProfilePage({ params }: PageProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-slate-400">회사 주소</p>
-                <p className="text-sm font-medium text-slate-900">{COMPANY_INFO.address}</p>
-                {COMPANY_INFO.addressEn && (
-                  <p className="text-xs text-slate-500 mt-0.5">{COMPANY_INFO.addressEn}</p>
-                )}
+                <p className="text-sm font-medium text-slate-900 leading-relaxed">
+                  {COMPANY_INFO.address}
+                </p>
               </div>
             </div>
           </div>

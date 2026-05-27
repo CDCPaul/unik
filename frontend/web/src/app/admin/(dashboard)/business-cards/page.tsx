@@ -35,7 +35,6 @@ const emptyDraft = (): DraftCard => ({
   department: '',
   title: '',
   phone: '',
-  phoneOffice: '',
   email: '',
   photoUrl: '',
   isActive: true,
@@ -105,7 +104,6 @@ export default function BusinessCardsAdminPage() {
         department: draft.department?.trim() || undefined,
         title: draft.title?.trim() || undefined,
         phone: draft.phone.trim(),
-        phoneOffice: draft.phoneOffice?.trim() || undefined,
         email: draft.email.trim(),
         photoUrl: draft.photoUrl || undefined,
         isActive: draft.isActive ?? true,
@@ -414,28 +412,18 @@ export default function BusinessCardsAdminPage() {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="휴대폰 *">
-                  <input
-                    className="admin-input"
-                    type="tel"
-                    value={draft.phone ?? ''}
-                    onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
-                    placeholder="+82-10-1234-5678"
-                  />
-                </Field>
-                <Field label="사무실 전화" hint="선택">
-                  <input
-                    className="admin-input"
-                    type="tel"
-                    value={draft.phoneOffice ?? ''}
-                    onChange={(e) =>
-                      setDraft({ ...draft, phoneOffice: e.target.value })
-                    }
-                    placeholder="+82-2-1234-5678"
-                  />
-                </Field>
-              </div>
+              <Field
+                label="휴대폰 *"
+                hint="회사 대표 사무실 전화는 모든 명함에 자동 표시됩니다 (lib/businessCardConfig.ts)"
+              >
+                <input
+                  className="admin-input"
+                  type="tel"
+                  value={draft.phone ?? ''}
+                  onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
+                  placeholder="+63-917-123-4567"
+                />
+              </Field>
 
               <Field label="이메일 *">
                 <input

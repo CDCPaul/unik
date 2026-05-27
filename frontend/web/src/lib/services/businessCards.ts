@@ -29,7 +29,6 @@ function fromDoc(id: string, data: Record<string, unknown>): BusinessCard {
     department: data.department as string | undefined,
     title: data.title as string | undefined,
     phone: (data.phone as string) ?? '',
-    phoneOffice: data.phoneOffice as string | undefined,
     email: (data.email as string) ?? '',
     photoUrl: data.photoUrl as string | undefined,
     isActive: (data.isActive as boolean) ?? true,
