@@ -33,4 +33,5 @@ export const COLLECTIONS = {
   settings: 'settings',
   roulette: 'roulette',
   rouletteWinners: 'roulette_winners',
+  businessCards: 'business_cards',
 } as const;

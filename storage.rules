@@ -31,7 +31,13 @@ service firebase.storage {
       allow read: if true;
       allow write: if isAdmin();
     }
-    
+
+    // 직원 명함 사진 - 누구나 읽기, 관리자만 업로드
+    match /business-cards/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // 기타 파일은 관리자만
     match /{allPaths=**} {
       allow read, write: if isAdmin();

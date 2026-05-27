@@ -61,6 +61,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // 모바일 명함 - 누구나 읽기(NFC 공개 페이지), 관리자만 수정
+    match /business_cards/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // 기타 모든 문서 - 관리자만 접근
     match /{document=**} {
       allow read, write: if isAdmin();

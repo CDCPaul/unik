@@ -578,7 +578,30 @@ export interface AirlineTicket {
   // PDF generation info
   pdfFolderUrl?: string; // PDF folder URL
   pdfUrls?: Record<string, string>; // Passenger name -> PDF URL
-  
+
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// ========================================
+// NFC Business Card (모바일 명함)
+// ========================================
+
+export interface BusinessCard {
+  id: string;               // Firestore doc ID === slug
+  slug: string;             // URL slug, e.g. "gildong-hong" — /profile/{slug}
+  name: string;             // 표시 이름 (한글 또는 영문). vCard FN에 사용.
+  nameEn?: string;          // 영문 이름 (선택). 있으면 vCard FN 부보조/N에 활용.
+  familyName?: string;      // vCard N의 성 (선택, 미입력 시 자동 추정)
+  givenName?: string;       // vCard N의 이름 (선택, 미입력 시 자동 추정)
+  department?: string;      // 부서
+  title?: string;           // 직함
+  phone: string;            // 휴대폰
+  phoneOffice?: string;     // 사무실 전화
+  email: string;
+  photoUrl?: string;        // Firebase Storage URL (선택)
+  isActive: boolean;        // 비활성 시 /profile/{slug} 접근 차단
+  order: number;            // 어드민 목록 정렬용
   createdAt?: Date;
   updatedAt?: Date;
 }
