@@ -10,7 +10,6 @@
 export const COMPANY_INFO = {
   /** vCard ORG 필드, 페이지 헤더에 표시 */
   name: 'Cebu Direct Club',
-  nameKo: '세부 다이렉트 클럽',
 
   /** vCard ADR;TYPE=WORK 와 페이지 하단에 표시되는 회사 주소 */
   address:

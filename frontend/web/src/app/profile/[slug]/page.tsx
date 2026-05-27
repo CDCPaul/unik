@@ -41,9 +41,9 @@ export default function ProfilePage({ params }: PageProps) {
   if (!card) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8 text-center">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">명함을 찾을 수 없습니다</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Profile Not Found</h1>
         <p className="text-slate-500">
-          요청하신 프로필이 존재하지 않거나 비활성화되었습니다.
+          The requested profile does not exist or has been disabled.
         </p>
       </div>
     );
@@ -51,6 +51,9 @@ export default function ProfilePage({ params }: PageProps) {
 
   // vCard 다운로드는 서버 라우트로 위임 — iOS Safari 가 MIME 으로 .vcf 를 인식해 연락처 앱으로 넘김.
   const vcardHref = `/profile/${encodeURIComponent(card.slug)}/vcard`;
+
+  // 기존에 저장된 데이터에 하이픈이 들어있을 수 있어 표시 단에서도 제거 (어드민 입력은 이미 차단됨)
+  const displayPhone = card.phone.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 py-8 px-4">
@@ -75,7 +78,7 @@ export default function ProfilePage({ params }: PageProps) {
           <div className="relative bg-gradient-to-br from-blue-600 to-indigo-700 px-6 pt-10 pb-20">
             <div className="text-center text-white">
               <p className="text-xs uppercase tracking-widest opacity-80">
-                {COMPANY_INFO.nameKo}
+                {COMPANY_INFO.name}
               </p>
             </div>
           </div>
@@ -118,37 +121,34 @@ export default function ProfilePage({ params }: PageProps) {
               className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl bg-blue-600 text-white font-bold text-base shadow-lg shadow-blue-600/30 hover:bg-blue-700 active:scale-[0.98] transition-all"
             >
               <Download className="w-5 h-5" />
-              연락처 스마트폰에 저장하기
+              Save to Contacts
             </a>
-            <p className="text-center text-xs text-slate-400 mt-2">
-              iOS Safari · Android Chrome 자동 인식
-            </p>
           </div>
 
           {/* 상세 정보 */}
           <div className="px-6 py-6 space-y-1 divide-y divide-slate-100">
             <a
-              href={`tel:${card.phone}`}
+              href={`tel:${displayPhone.replace(/\s/g, '')}`}
               className="flex items-center gap-4 py-4 hover:bg-slate-50 rounded-xl px-2 -mx-2 transition-colors"
             >
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
                 <Phone className="w-5 h-5 text-blue-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-400">휴대폰</p>
-                <p className="text-sm font-medium text-slate-900 truncate">{card.phone}</p>
+                <p className="text-xs text-slate-400">Mobile</p>
+                <p className="text-sm font-medium text-slate-900 truncate">{displayPhone}</p>
               </div>
             </a>
 
             <a
-              href={`tel:${COMPANY_INFO.officePhone}`}
+              href={`tel:${COMPANY_INFO.officePhone.replace(/\s/g, '')}`}
               className="flex items-center gap-4 py-4 hover:bg-slate-50 rounded-xl px-2 -mx-2 transition-colors"
             >
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
                 <Building2 className="w-5 h-5 text-blue-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-400">사무실</p>
+                <p className="text-xs text-slate-400">Office</p>
                 <p className="text-sm font-medium text-slate-900 truncate">
                   {COMPANY_INFO.officePhone}
                 </p>
@@ -163,7 +163,7 @@ export default function ProfilePage({ params }: PageProps) {
                 <Mail className="w-5 h-5 text-blue-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-400">이메일</p>
+                <p className="text-xs text-slate-400">Email</p>
                 <p className="text-sm font-medium text-slate-900 truncate">{card.email}</p>
               </div>
             </a>
@@ -173,7 +173,7 @@ export default function ProfilePage({ params }: PageProps) {
                 <MapPin className="w-5 h-5 text-blue-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-slate-400">회사 주소</p>
+                <p className="text-xs text-slate-400">Office Address</p>
                 <p className="text-sm font-medium text-slate-900 leading-relaxed">
                   {COMPANY_INFO.address}
                 </p>

@@ -414,14 +414,16 @@ export default function BusinessCardsAdminPage() {
 
               <Field
                 label="휴대폰 *"
-                hint="회사 대표 사무실 전화는 모든 명함에 자동 표시됩니다 (lib/businessCardConfig.ts)"
+                hint="하이픈(-) 없이 스페이스로 구분해 입력하세요. 회사 사무실 전화(+63 32 345 8908) 스타일과 통일됩니다."
               >
                 <input
                   className="admin-input"
                   type="tel"
                   value={draft.phone ?? ''}
-                  onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
-                  placeholder="+63-917-123-4567"
+                  onChange={(e) =>
+                    setDraft({ ...draft, phone: e.target.value.replace(/-/g, '') })
+                  }
+                  placeholder="+63 917 123 4567"
                 />
               </Field>
 
