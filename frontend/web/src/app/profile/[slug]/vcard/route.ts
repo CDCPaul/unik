@@ -78,8 +78,18 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     }
   }
 
+  // slug 는 Firestore 문서 ID 라 사람마다 고유하고 바뀌지 않는다 → 그대로 UID 로 쓴다.
+  const uidHost = (() => {
+    try {
+      return new URL(COMPANY_INFO.website).host;
+    } catch {
+      return 'cebudirectclub.com';
+    }
+  })();
+
   const vcard = buildVCard({
     fullName: card.name,
+    uid: `${card.slug}@${uidHost}`,
     familyName: card.familyName,
     givenName: card.givenName,
     organization: COMPANY_INFO.name,

@@ -10,6 +10,12 @@
 
 export interface VCardInput {
   fullName: string;             // 필수. FN 필드 (전체 표시 이름)
+  /**
+   * 이 사람을 가리키는 고정 식별자 (UID).
+   * 같은 사람을 두 번 저장해도 연락처 앱이 중복을 만들지 않고 기존 항목을 갱신한다.
+   * slug 를 바꾸면 UID 도 바뀌므로 그 경우엔 한 번 중복이 생길 수 있다.
+   */
+  uid?: string;
   familyName?: string;          // N 필드의 성
   givenName?: string;           // N 필드의 이름
   organization?: string;        // ORG 첫 번째 컴포넌트 (회사명)
@@ -91,6 +97,7 @@ export function buildVCard(input: VCardInput): string {
   lines.push(`PRODID:-//Cebu Direct Club//Mobile Business Card//KO`);
   lines.push(`N:${escapeValue(auto.family)};${escapeValue(auto.given)};;;`);
   lines.push(`FN:${escapeValue(input.fullName)}`);
+  if (input.uid) lines.push(`UID:${escapeValue(input.uid)}`);
 
   if (input.organization || input.department) {
     const org = escapeValue(input.organization ?? '');
