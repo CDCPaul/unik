@@ -30,6 +30,8 @@ function fromDoc(id: string, data: Record<string, unknown>): BusinessCard {
     title: data.title as string | undefined,
     phone: (data.phone as string) ?? '',
     kakaoId: data.kakaoId as string | undefined,
+    officePhone: data.officePhone as string | undefined,
+    officeAddress: data.officeAddress as string | undefined,
     email: (data.email as string) ?? '',
     photoUrl: data.photoUrl as string | undefined,
     isActive: (data.isActive as boolean) ?? true,

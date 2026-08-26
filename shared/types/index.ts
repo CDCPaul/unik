@@ -599,6 +599,10 @@ export interface BusinessCard {
   phone: string;            // 휴대폰
   kakaoId?: string;         // 카카오톡 ID (선택). 명함에서 휴대폰과 사무실 전화 사이에 표시.
   email: string;
+  /** 사무실 전화 (선택). 비어 있으면 COMPANY_INFO.officePhone 을 사용. */
+  officePhone?: string;
+  /** 사무실 주소 (선택). 비어 있으면 COMPANY_INFO.address 를 사용. */
+  officeAddress?: string;
   photoUrl?: string;        // Firebase Storage URL (선택)
   isActive: boolean;        // 비활성 시 /profile/{slug} 접근 차단
   order: number;            // 어드민 목록 정렬용

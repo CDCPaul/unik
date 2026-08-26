@@ -24,6 +24,7 @@ import {
   uploadBusinessCardPhoto,
   type BusinessCardInput,
 } from '@/lib/services/admin/businessCards';
+import { COMPANY_INFO } from '@/lib/businessCardConfig';
 import type { BusinessCard } from '@unik/shared/types';
 
 type DraftCard = Partial<BusinessCard> & { _originalSlug?: string };
@@ -37,6 +38,9 @@ const emptyDraft = (): DraftCard => ({
   phone: '',
   kakaoId: '',
   email: '',
+  // 사무실 정보는 회사 공통값을 기본으로 깔아두고, 필요한 직원만 개별 수정한다.
+  officePhone: COMPANY_INFO.officePhone,
+  officeAddress: COMPANY_INFO.address,
   photoUrl: '',
   isActive: true,
   order: 0,
@@ -107,6 +111,8 @@ export default function BusinessCardsAdminPage() {
         phone: draft.phone.trim(),
         kakaoId: draft.kakaoId?.trim() || undefined,
         email: draft.email.trim(),
+        officePhone: draft.officePhone?.trim() || undefined,
+        officeAddress: draft.officeAddress?.trim() || undefined,
         photoUrl: draft.photoUrl || undefined,
         isActive: draft.isActive ?? true,
         order: draft.order ?? 0,
@@ -448,6 +454,33 @@ export default function BusinessCardsAdminPage() {
                   value={draft.email ?? ''}
                   onChange={(e) => setDraft({ ...draft, email: e.target.value })}
                   placeholder="name@cebudirectclub.com"
+                />
+              </Field>
+
+              <Field
+                label="사무실 전화"
+                hint="회사 공통값이 기본으로 채워집니다. 지사·부서가 다르면 이 칸만 바꾸세요. 비우면 공통값이 표시됩니다."
+              >
+                <input
+                  className="admin-input"
+                  type="tel"
+                  value={draft.officePhone ?? COMPANY_INFO.officePhone}
+                  onChange={(e) =>
+                    setDraft({ ...draft, officePhone: e.target.value.replace(/-/g, '') })
+                  }
+                  placeholder={COMPANY_INFO.officePhone}
+                />
+              </Field>
+
+              <Field
+                label="사무실 주소"
+                hint="회사 공통값이 기본으로 채워집니다. 비우면 공통값이 표시됩니다."
+              >
+                <textarea
+                  className="admin-input min-h-[84px] resize-y"
+                  value={draft.officeAddress ?? COMPANY_INFO.address}
+                  onChange={(e) => setDraft({ ...draft, officeAddress: e.target.value })}
+                  placeholder={COMPANY_INFO.address}
                 />
               </Field>
 

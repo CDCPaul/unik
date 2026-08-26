@@ -19,7 +19,47 @@ interface RouteContext {
   params: Promise<{ slug: string }>;
 }
 
-export async function GET(_req: NextRequest, { params }: RouteContext) {
+/**
+ * 연락처에 넣을 사진을 가져온다.
+ *
+ * 원본은 카메라 해상도 그대로(수 MB)라 base64 로 넣으면 vCard 가 1.5MB 를 넘고,
+ * iOS/안드로이드 연락처가 사진을 조용히 버린다. Next 이미지 최적화 엔드포인트로
+ * 640px JPEG 으로 줄여서 담는다(대개 20KB 안팎).
+ *
+ * 최적화가 실패하면 원본으로 폴백하되, 그래도 너무 크면 사진을 빼고 발행한다
+ * — 사진 없는 연락처가 저장 자체가 실패하는 연락처보다 낫다.
+ */
+const MAX_PHOTO_BYTES = 400 * 1024;
+
+async function fetchContactPhoto(
+  photoUrl: string,
+  origin: string,
+): Promise<{ base64: string; mime: string } | null> {
+  const optimized = `${origin}/_next/image?url=${encodeURIComponent(photoUrl)}&w=640&q=75`;
+
+  for (const [url, headers] of [
+    [optimized, { Accept: 'image/jpeg' }],
+    [photoUrl, {}],
+  ] as const) {
+    try {
+      const res = await fetch(url, { cache: 'no-store', headers });
+      if (!res.ok) continue;
+      const ct = (res.headers.get('content-type') ?? 'image/jpeg').split(';')[0].trim();
+      if (!ct.startsWith('image/')) continue;
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.byteLength > MAX_PHOTO_BYTES) {
+        console.warn(`vCard photo too large (${buf.byteLength} bytes) from ${url}`);
+        continue;
+      }
+      return { base64: buf.toString('base64'), mime: ct };
+    } catch (error) {
+      console.warn('Failed to fetch photo for vCard:', error);
+    }
+  }
+  return null;
+}
+
+export async function GET(req: NextRequest, { params }: RouteContext) {
   const { slug } = await params;
   const card = await getBusinessCardBySlug(slug);
 
@@ -31,18 +71,10 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   let photoBase64: string | undefined;
   let photoMime: string | undefined;
   if (card.photoUrl) {
-    try {
-      const res = await fetch(card.photoUrl, { cache: 'no-store' });
-      if (res.ok) {
-        const ct = res.headers.get('content-type') ?? 'image/jpeg';
-        if (ct.startsWith('image/')) {
-          photoMime = ct.split(';')[0].trim();
-          const buf = await res.arrayBuffer();
-          photoBase64 = Buffer.from(buf).toString('base64');
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to fetch photo for vCard:', error);
+    const photo = await fetchContactPhoto(card.photoUrl, req.nextUrl.origin);
+    if (photo) {
+      photoBase64 = photo.base64;
+      photoMime = photo.mime;
     }
   }
 
@@ -55,10 +87,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     title: card.title,
     // 기존 저장 데이터에 하이픈이 남아 있을 수 있어 방어적으로 제거 (스페이스는 vCard TEL 에서 유효)
     phoneCell: card.phone.replace(/-/g, ' ').replace(/\s+/g, ' ').trim(),
-    phoneWork: COMPANY_INFO.officePhone,
+    // 사무실 전화/주소는 직원별 값이 있으면 그것을, 없으면 회사 공통값을 쓴다.
+    phoneWork: card.officePhone?.trim() || COMPANY_INFO.officePhone,
     kakaoId: card.kakaoId,
     email: card.email,
-    workAddress: COMPANY_INFO.address,
+    workAddress: card.officeAddress?.trim() || COMPANY_INFO.address,
     website: COMPANY_INFO.website,
     photoBase64,
     photoMimeType: photoMime,

@@ -63,6 +63,10 @@ export default function ProfilePage({ params }: PageProps) {
   // 기존에 저장된 데이터에 하이픈이 들어있을 수 있어 표시 단에서도 제거 (어드민 입력은 이미 차단됨)
   const displayPhone = card.phone.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
 
+  // 사무실 전화/주소는 직원별 값이 있으면 그것을, 없으면 회사 공통값을 쓴다.
+  const officePhone = card.officePhone?.trim() || COMPANY_INFO.officePhone;
+  const officeAddress = card.officeAddress?.trim() || COMPANY_INFO.address;
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-md mx-auto">
@@ -174,7 +178,7 @@ export default function ProfilePage({ params }: PageProps) {
           <div className="h-px bg-[#dcedee]" />
 
           <a
-            href={`tel:${COMPANY_INFO.officePhone.replace(/\s/g, '')}`}
+            href={`tel:${officePhone.replace(/\s/g, '')}`}
             className="flex items-center gap-4 py-3.5 hover:bg-cdc-50 rounded-xl px-2 -mx-2 transition-colors"
           >
             <div className="w-10 h-10 rounded-full bg-[#EBF9FA] flex items-center justify-center shrink-0">
@@ -183,7 +187,7 @@ export default function ProfilePage({ params }: PageProps) {
             <div className="min-w-0 flex-1">
               <p className="text-xs text-cdc-800/55">Office</p>
               <p className="text-[15px] font-semibold text-cdc-950 truncate">
-                {COMPANY_INFO.officePhone}
+                {officePhone}
               </p>
             </div>
           </a>
@@ -212,7 +216,7 @@ export default function ProfilePage({ params }: PageProps) {
             <div className="min-w-0 flex-1">
               <p className="text-xs text-cdc-800/55">Office Address</p>
               <p className="text-sm font-medium text-cdc-950 leading-[1.55] text-pretty">
-                {COMPANY_INFO.address}
+                {officeAddress}
               </p>
             </div>
           </div>
