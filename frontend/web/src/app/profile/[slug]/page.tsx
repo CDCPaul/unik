@@ -135,9 +135,13 @@ export default function ProfilePage({ params }: PageProps) {
 
         {/* 핵심 CTA */}
         <div className="px-6 pt-[22px]">
+          {/*
+            download 속성을 일부러 붙이지 않는다. iOS Safari 는 download 가 있으면
+            파일 앱으로 내려받기만 하고 "연락처에 추가" 시트를 띄우지 않는다.
+            일반 링크로 두면 text/vcard 응답을 연락처 미리보기로 열어준다.
+          */}
           <a
             href={vcardHref}
-            download={`${card.slug}.vcf`}
             className="flex items-center justify-center gap-[9px] w-full h-[58px] rounded-[18px] bg-[#228990] text-white text-base font-bold shadow-[0_12px_24px_-8px_rgba(35,180,190,0.6)] hover:bg-cdc-700 active:scale-[0.98] transition-all"
           >
             <Download className="w-5 h-5" />

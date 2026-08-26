@@ -98,10 +98,15 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
   });
 
   // 파일명: 영문 slug 는 안전한 ASCII fallback, 사용자에게 보이는 이름은 UTF-8 인코딩으로
+  //
+  // inline 인 점이 중요하다. attachment 로 내려보내면 iOS Safari 가 파일 앱으로
+  // 내려받기만 하고 "연락처에 추가" 시트를 띄우지 않는다. inline + text/vcard 여야
+  // 연락처 미리보기가 떠서 바로 저장할 수 있다. (안드로이드는 어느 쪽이든 받은 뒤
+  // 탭하면 연락처 가져오기로 넘어간다.)
   const asciiName = `${card.slug}.vcf`;
   const utf8Name = `${card.name}.vcf`;
   const contentDisposition =
-    `attachment; filename="${asciiName}"; ` +
+    `inline; filename="${asciiName}"; ` +
     `filename*=UTF-8''${encodeURIComponent(utf8Name)}`;
 
   // UTF-8 바이트 길이를 정확히 계산해 Content-Length 헤더에 사용

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import {
   Edit,
@@ -220,9 +221,15 @@ export default function BusinessCardsAdminPage() {
             >
               <div className="flex gap-4">
                 {card.photoUrl ? (
-                  <img
+                  // next/image 를 거쳐 64px 썸네일만 받는다.
+                  // 원본은 카메라 해상도(1MB+)라 raw <img> 로 두면 목록 한 번 여는 데
+                  // 인원수 x 1MB 를 그대로 내려받게 된다.
+                  <Image
                     src={card.photoUrl}
                     alt={card.name}
+                    width={64}
+                    height={64}
+                    sizes="64px"
                     className="w-16 h-16 rounded-full object-cover border border-slate-200 shrink-0"
                   />
                 ) : (
@@ -338,9 +345,12 @@ export default function BusinessCardsAdminPage() {
               <Field label="프로필 사진" hint="선택. JPG/PNG 권장 600x600">
                 <div className="flex items-center gap-4">
                   {draft.photoUrl ? (
-                    <img
+                    <Image
                       src={draft.photoUrl}
                       alt="profile"
+                      width={80}
+                      height={80}
+                      sizes="80px"
                       className="w-20 h-20 rounded-full object-cover border-2 border-slate-200"
                     />
                   ) : (
