@@ -17,6 +17,7 @@ export interface VCardInput {
   title?: string;               // TITLE (직함)
   phoneCell?: string;           // TEL;TYPE=CELL
   phoneWork?: string;           // TEL;TYPE=WORK
+  kakaoId?: string;             // IMPP;X-SERVICE-TYPE=KakaoTalk (연락처 앱의 메신저 항목)
   email?: string;               // EMAIL;TYPE=WORK
   workAddress?: string;         // ADR;TYPE=WORK 의 street/extended 부분
   website?: string;             // URL
@@ -99,6 +100,10 @@ export function buildVCard(input: VCardInput): string {
   if (input.title) lines.push(`TITLE:${escapeValue(input.title)}`);
   if (input.phoneCell) lines.push(`TEL;TYPE=CELL,VOICE:${input.phoneCell}`);
   if (input.phoneWork) lines.push(`TEL;TYPE=WORK,VOICE:${input.phoneWork}`);
+  if (input.kakaoId) {
+    // iOS/Android 연락처 모두 IMPP 를 메신저 계정으로 읽는다. 값은 `<service>:<handle>` 형태.
+    lines.push(`IMPP;X-SERVICE-TYPE=KakaoTalk:kakaotalk:${escapeValue(input.kakaoId)}`);
+  }
   if (input.email) lines.push(`EMAIL;TYPE=INTERNET,WORK:${input.email}`);
   if (input.workAddress) {
     // ADR 컴포넌트: PO Box ; Extended ; Street ; City ; Region ; Postal ; Country

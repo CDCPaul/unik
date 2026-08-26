@@ -51,6 +51,19 @@
   --color-dark-900: #0f172a;
   --color-dark-950: #020617;
 
+  /* CDC Brand Teal — 회사 로고 컬러 (모바일 명함 /profile/* 등) */
+  --color-cdc-50: #eefafb;
+  --color-cdc-100: #d5f2f5;
+  --color-cdc-200: #ade5eb;
+  --color-cdc-300: #7bd3dd;
+  --color-cdc-400: #45bfcc;
+  --color-cdc-500: #23b4be;
+  --color-cdc-600: #1a94a0;
+  --color-cdc-700: #17767f;
+  --color-cdc-800: #185f68;
+  --color-cdc-900: #184f57;
+  --color-cdc-950: #0a3339;
+
   /* Font Families */
   --font-sans: var(--font-outfit), system-ui, sans-serif;
   --font-display: var(--font-playfair), Georgia, serif;

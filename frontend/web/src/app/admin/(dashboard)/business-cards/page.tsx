@@ -35,6 +35,7 @@ const emptyDraft = (): DraftCard => ({
   department: '',
   title: '',
   phone: '',
+  kakaoId: '',
   email: '',
   photoUrl: '',
   isActive: true,
@@ -104,6 +105,7 @@ export default function BusinessCardsAdminPage() {
         department: draft.department?.trim() || undefined,
         title: draft.title?.trim() || undefined,
         phone: draft.phone.trim(),
+        kakaoId: draft.kakaoId?.trim() || undefined,
         email: draft.email.trim(),
         photoUrl: draft.photoUrl || undefined,
         isActive: draft.isActive ?? true,
@@ -424,6 +426,18 @@ export default function BusinessCardsAdminPage() {
                     setDraft({ ...draft, phone: e.target.value.replace(/-/g, '') })
                   }
                   placeholder="+63 917 123 4567"
+                />
+              </Field>
+
+              <Field
+                label="카카오톡 ID"
+                hint="선택. 입력하면 명함에서 휴대폰과 사무실 전화 사이에 표시됩니다."
+              >
+                <input
+                  className="admin-input"
+                  value={draft.kakaoId ?? ''}
+                  onChange={(e) => setDraft({ ...draft, kakaoId: e.target.value.trim() })}
+                  placeholder="cdc_gildong"
                 />
               </Field>
 

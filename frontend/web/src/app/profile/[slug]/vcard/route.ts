@@ -56,6 +56,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     // 기존 저장 데이터에 하이픈이 남아 있을 수 있어 방어적으로 제거 (스페이스는 vCard TEL 에서 유효)
     phoneCell: card.phone.replace(/-/g, ' ').replace(/\s+/g, ' ').trim(),
     phoneWork: COMPANY_INFO.officePhone,
+    kakaoId: card.kakaoId,
     email: card.email,
     workAddress: COMPANY_INFO.address,
     website: COMPANY_INFO.website,

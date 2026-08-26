@@ -597,6 +597,7 @@ export interface BusinessCard {
   department?: string;      // 부서
   title?: string;           // 직함
   phone: string;            // 휴대폰
+  kakaoId?: string;         // 카카오톡 ID (선택). 명함에서 휴대폰과 사무실 전화 사이에 표시.
   email: string;
   photoUrl?: string;        // Firebase Storage URL (선택)
   isActive: boolean;        // 비활성 시 /profile/{slug} 접근 차단

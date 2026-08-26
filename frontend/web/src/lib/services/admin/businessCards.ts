@@ -1,6 +1,7 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -43,6 +44,7 @@ function fromDoc(id: string, data: Record<string, unknown>): BusinessCard {
     department: data.department as string | undefined,
     title: data.title as string | undefined,
     phone: (data.phone as string) ?? '',
+    kakaoId: data.kakaoId as string | undefined,
     email: (data.email as string) ?? '',
     photoUrl: data.photoUrl as string | undefined,
     isActive: (data.isActive as boolean) ?? true,
@@ -87,9 +89,14 @@ export async function updateBusinessCard(
   slug: string,
   patch: Partial<BusinessCardInput>,
 ): Promise<void> {
-  const sanitized = stripUndefined({ ...patch });
+  // 어드민 폼에서 선택 필드를 비우면 undefined 로 들어온다 = "이 값을 지워라".
+  // 키를 그냥 빼면 Firestore 에 남아있던 옛 값이 그대로 유지되므로 deleteField() 로 실제 삭제한다.
+  const payload: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(patch)) {
+    payload[key] = value === undefined ? deleteField() : value;
+  }
   await updateDoc(doc(db, COLLECTION, slug), {
-    ...sanitized,
+    ...payload,
     updatedAt: serverTimestamp(),
   });
 }
