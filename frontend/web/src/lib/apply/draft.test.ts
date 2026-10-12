@@ -19,17 +19,63 @@ const throwingStore: KeyValueStore = {
   },
 };
 
+const KEY = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+
+function savedRaw(mutate: (raw: Record<string, unknown>) => void): KeyValueStore & { data: Map<string, string> } {
+  const s = memoryStore();
+  const raw = JSON.parse(JSON.stringify(initialApplyState(KEY))) as Record<string, unknown>;
+  mutate(raw);
+  s.data.set('unik.applyDraft.v1', JSON.stringify(raw));
+  return s;
+}
+
 describe('draft', () => {
   it('draft round-trips the idempotencyKey and answers, never the honeypot', () => {
     const s = memoryStore();
-    let state = initialApplyState('key-7');
+    let state = initialApplyState(KEY);
     state = applyReducer(state, { type: 'setLead', field: 'firstName', value: 'Maria' });
     state = applyReducer(state, { type: 'setHoneypot', value: 'bot' });
     saveDraft(s, state);
     const loaded = loadDraft(s)!;
-    expect(loaded.idempotencyKey).toBe('key-7');
+    expect(loaded.idempotencyKey).toBe(KEY);
     expect(loaded.lead.firstName).toBe('Maria');
     expect(loaded.website).toBe('');
+  });
+  it('rejects a draft whose idempotencyKey is not a UUID', () => {
+    const s = memoryStore();
+    saveDraft(s, initialApplyState('key-7'));
+    expect(loadDraft(s)).toBeNull();
+  });
+  it('rejects a draft with a traveler whose category is unknown', () => {
+    const s = savedRaw((raw) => {
+      raw.travelers = [{ category: 'x' }];
+    });
+    expect(loadDraft(s)).toBeNull();
+  });
+  it('rejects a draft with a non-object traveler', () => {
+    const s = savedRaw((raw) => {
+      raw.travelers = ['full'];
+    });
+    expect(loadDraft(s)).toBeNull();
+  });
+  it('rejects a draft with a non-string lead field', () => {
+    const s = savedRaw((raw) => {
+      (raw.lead as Record<string, unknown>).email = 42;
+    });
+    expect(loadDraft(s)).toBeNull();
+  });
+  it('rejects a draft with a non-string promoInput or specialRequests', () => {
+    expect(loadDraft(savedRaw((raw) => void (raw.promoInput = null)))).toBeNull();
+    expect(loadDraft(savedRaw((raw) => void (raw.specialRequests = 1)))).toBeNull();
+  });
+  it('rejects a draft with a non-boolean agreedToTerms', () => {
+    expect(loadDraft(savedRaw((raw) => void (raw.agreedToTerms = 'yes')))).toBeNull();
+  });
+  it('rejects a departureId that is neither null nor a string', () => {
+    expect(loadDraft(savedRaw((raw) => void (raw.departureId = 7)))).toBeNull();
+  });
+  it('accepts a null departureId', () => {
+    expect(loadDraft(savedRaw(() => undefined))).not.toBeNull();
   });
   it('ignores corrupted or foreign data', () => {
     const s = memoryStore();

@@ -2,6 +2,35 @@ import type { KeyValueStore } from '../store';
 import type { ApplyState } from './model';
 
 const KEY = 'unik.applyDraft.v1';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CATEGORY_KEYS = ['full', 'tenK', 'companion'];
+const LEAD_TEXT_KEYS = ['firstName', 'lastName', 'email', 'phoneDial', 'phoneNumber'];
+
+function isDraftShape(s: Record<string, unknown>): boolean {
+  const counts = s.counts as Record<string, unknown> | undefined;
+  const lead = s.lead as Record<string, unknown> | undefined;
+  return (
+    typeof s.idempotencyKey === 'string' &&
+    UUID.test(s.idempotencyKey) &&
+    !!counts &&
+    typeof counts === 'object' &&
+    CATEGORY_KEYS.every((k) => typeof counts[k] === 'number') &&
+    !!lead &&
+    typeof lead === 'object' &&
+    LEAD_TEXT_KEYS.every((k) => typeof lead[k] === 'string') &&
+    typeof s.promoInput === 'string' &&
+    typeof s.specialRequests === 'string' &&
+    typeof s.agreedToTerms === 'boolean' &&
+    (s.departureId === null || typeof s.departureId === 'string') &&
+    Array.isArray(s.travelers) &&
+    s.travelers.every(
+      (t: unknown) =>
+        !!t &&
+        typeof t === 'object' &&
+        CATEGORY_KEYS.includes((t as { category?: unknown }).category as string),
+    )
+  );
+}
 
 export function saveDraft(store: KeyValueStore | null, state: ApplyState): void {
   try {
@@ -15,16 +44,10 @@ export function loadDraft(store: KeyValueStore | null): ApplyState | null {
   try {
     const raw = store?.getItem(KEY);
     if (!raw) return null;
-    const s = JSON.parse(raw) as Partial<ApplyState>;
-    const counts = s.counts as Record<string, unknown> | undefined;
-    const valid =
-      typeof s.idempotencyKey === 'string' &&
-      !!counts &&
-      ['full', 'tenK', 'companion'].every((k) => typeof counts[k] === 'number') &&
-      !!s.lead &&
-      typeof s.lead.firstName === 'string' &&
-      Array.isArray(s.travelers);
-    return valid ? ({ ...(s as ApplyState), website: '' }) : null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const s = parsed as Record<string, unknown>;
+    return isDraftShape(s) ? ({ ...(s as unknown as ApplyState), website: '' }) : null;
   } catch {
     return null;
   }

@@ -76,6 +76,56 @@ describe('validateForSubmit', () => {
   });
 });
 
+describe('validateForSubmit matches server rules', () => {
+  it('rejects an email longer than 120 characters after trim', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setLead', field: 'email', value: `${'a'.repeat(115)}@x.com` });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({ 'lead.email': expect.any(String) });
+  });
+  it('accepts an email of exactly 120 characters', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setLead', field: 'email', value: `${'a'.repeat(114)}@x.com` });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({});
+  });
+  it('rejects special requests longer than 1000 characters', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setSpecialRequests', value: 'a'.repeat(1001) });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({ specialRequests: 'Please shorten your request (max 1000 characters).' });
+  });
+  it('accepts special requests of exactly 1000 characters', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setSpecialRequests', value: 'a'.repeat(1000) });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({});
+  });
+  it('rejects control characters in special requests', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setSpecialRequests', value: 'hello\u0007world' });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({ specialRequests: 'Please remove unusual characters.' });
+  });
+  it('allows newlines and tabs in special requests', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setSpecialRequests', value: 'Vegetarian meal\n\tPlease seat me near the aisle\r\n' });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({});
+  });
+  it('rejects a promo code with a space', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setPromoInput', value: 'ta sunrise' });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({
+      promoInput: 'Promo codes use letters, numbers and hyphens (3–20 characters).',
+    });
+  });
+  it('accepts a well-formed promo code', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'setPromoInput', value: 'ta-sunrise' });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({});
+  });
+  it('does not re-check the format of an applied promo', () => {
+    let s = filled();
+    s = applyReducer(s, { type: 'promoApplied', promo: { code: 'TA-A', agencyName: 'A', discountType: 'fixed', discountValue: 1000, description: 'x' } });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({});
+  });
+});
+
 describe('toSubmitPayload', () => {
   it('normalizes phone, trims and drops empty optional values', () => {
     let s = filled();

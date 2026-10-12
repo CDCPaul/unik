@@ -6,8 +6,10 @@ import {
   buildTravelers,
   computePricing,
   hasControlChars,
+  hasControlCharsExceptWhitespace,
   isValidBirthDate,
   isValidName,
+  isValidPromoCodeFormat,
   normalizePhoneNumber,
   normalizePromoCode,
   totalPax,
@@ -125,11 +127,18 @@ export function validateForSubmit(state: ApplyState, today: string): Record<stri
   if (!state.departureId) errors.departureId = 'Please choose a departure.';
   if (!isValidName(state.lead.firstName)) errors['lead.firstName'] = 'Please enter your first name.';
   if (!isValidName(state.lead.lastName)) errors['lead.lastName'] = 'Please enter your last name.';
-  if (!EMAIL_PATTERN.test(state.lead.email.trim())) errors['lead.email'] = 'Please enter a valid email address.';
+  const email = state.lead.email.trim();
+  if (!EMAIL_PATTERN.test(email) || email.length > 120) errors['lead.email'] = 'Please enter a valid email address.';
   if (!PHONE_DIAL_PATTERN.test(state.lead.phoneDial) || !PHONE_NUMBER_PATTERN.test(normalizePhoneNumber(state.lead.phoneNumber))) {
     errors['lead.phoneNumber'] = 'Please enter a valid mobile number.';
   }
   if (!state.agreedToTerms) errors.agreedToTerms = 'Please agree to the terms to continue.';
+  if (!state.promo && state.promoInput.trim() && !isValidPromoCodeFormat(normalizePromoCode(state.promoInput))) {
+    errors.promoInput = 'Promo codes use letters, numbers and hyphens (3–20 characters).';
+  }
+  const requests = state.specialRequests.trim();
+  if (requests.length > 1000) errors.specialRequests = 'Please shorten your request (max 1000 characters).';
+  else if (hasControlCharsExceptWhitespace(requests)) errors.specialRequests = 'Please remove unusual characters.';
   state.travelers.forEach((t, i) => {
     const name = t.passportName?.trim();
     if (name && !isValidName(name)) errors[`travelers.${i}.passportName`] = 'Please use letters only.';
