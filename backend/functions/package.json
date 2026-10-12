@@ -8,6 +8,7 @@
     "build": "npm run copy-shared && tsc",
     "build:watch": "npm run copy-shared && tsc --watch",
     "test": "npm run copy-shared && firebase emulators:exec --only firestore --project demo-unik --config ../../firebase.json \"vitest run\"",
+    "seed:emulator": "node scripts/seed-emulator.mjs",
     "serve": "npm run build && firebase emulators:start --only functions,firestore --project demo-unik --config ../../firebase.json",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
