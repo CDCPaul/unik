@@ -144,16 +144,15 @@ describe('submitApplicationCore', () => {
     expect((await submitApplicationCore(testDb(), other, now)).status).toBe('new');
   });
 
-  it('rate-limits many applications from the same client IP hash within an hour', async () => {
-    for (let i = 0; i < 10; i++) {
+  it('does not count cancelled applications toward the email limit', async () => {
+    const keys: string[] = [];
+    for (let i = 0; i < 5; i++) {
       const input = validInput({ counts: { full: 0, tenK: 0, companion: 1 } });
-      input.lead = { ...input.lead, email: `p${i}@example.com` };
-      await submitApplicationCore(testDb(), input, now, { clientIpHash: 'abc' });
+      keys.push(input.idempotencyKey);
+      await submitApplicationCore(testDb(), input, now);
     }
-    const input = validInput({ counts: { full: 0, tenK: 0, companion: 1 } });
-    input.lead = { ...input.lead, email: 'p99@example.com' };
-    await expectSubmitError(submitApplicationCore(testDb(), input, now, { clientIpHash: 'abc' }), 'rate_limited');
-    expect((await submitApplicationCore(testDb(), input, now, { clientIpHash: 'other' })).status).toBe('new');
+    await testDb().collection('applications').doc(keys[0]).update({ status: 'cancelled' });
+    expect((await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1 } }), now)).status).toBe('new');
   });
 
   it('ignores submissions older than an hour for rate limiting', async () => {

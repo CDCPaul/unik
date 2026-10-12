@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  EMAIL_PATTERN,
   PHONE_DIAL_PATTERN,
   PHONE_NUMBER_PATTERN,
   PROMO_CODE_PATTERN,
@@ -48,7 +49,7 @@ export const submitInputSchema = z.object({
   lead: z.object({
     firstName: nameText,
     lastName: nameText,
-    email: z.string().trim().toLowerCase().email().max(120),
+    email: z.string().trim().toLowerCase().email().max(120).regex(EMAIL_PATTERN),
     phoneDial: z.string().regex(PHONE_DIAL_PATTERN),
     phoneNumber: z.preprocess(
       (v) => (typeof v === 'string' ? normalizePhoneNumber(v) : v),

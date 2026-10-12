@@ -31,6 +31,9 @@ describe('parseSubmitInput', () => {
     const r = parseSubmitInput(validInput({ lead: { ...validInput().lead, phoneNumber: '(0917) 123-4567' } }));
     expect(r.lead.phoneNumber).toBe('0917 123-4567');
   });
+  it('rejects an email without a dotted domain', () => {
+    expect(() => parseSubmitInput(validInput({ lead: { ...validInput().lead, email: 'maria@example' } }))).toThrow(SubmitError);
+  });
   it('rejects a malformed promo code', () => {
     expect(() => parseSubmitInput(validInput({ promoCode: 'TA_SUNRISE' }))).toThrow(SubmitError);
   });

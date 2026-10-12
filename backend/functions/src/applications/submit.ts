@@ -22,7 +22,6 @@ import { toSummary } from './summary';
 
 const RATE_WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_EMAIL_PER_WINDOW = 5;
-const MAX_PER_IP_PER_WINDOW = 10;
 
 const isMoney = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0;
 
@@ -33,12 +32,7 @@ export interface SubmitResult {
   duplicate: boolean;
 }
 
-export async function submitApplicationCore(
-  db: Firestore,
-  raw: unknown,
-  now = new Date(),
-  ctx: { clientIpHash?: string } = {},
-): Promise<SubmitResult> {
+export async function submitApplicationCore(db: Firestore, raw: unknown, now = new Date()): Promise<SubmitResult> {
   const input = parseSubmitInput(raw);
   const appRef = db.collection(COL.applications).doc(input.idempotencyKey);
 
@@ -84,8 +78,7 @@ export async function submitApplicationCore(
       .map((d) => d.data())
       .filter((d) => d.status !== 'cancelled' && submittedAtMs(d) >= windowStart);
     const sameEmail = recent.filter((d) => d.lead?.email === input.lead.email).length;
-    const sameIp = ctx.clientIpHash ? recent.filter((d) => d.clientIpHash === ctx.clientIpHash).length : 0;
-    if (sameEmail >= MAX_PER_EMAIL_PER_WINDOW || sameIp >= MAX_PER_IP_PER_WINDOW) {
+    if (sameEmail >= MAX_PER_EMAIL_PER_WINDOW) {
       throw new SubmitError(
         'rate_limited',
         'We received several applications from you in a short time. Please contact us if you need to add more travelers.',
@@ -146,7 +139,6 @@ export async function submitApplicationCore(
         statusHistory: [{ status, at, by: 'system' }],
         idempotencyKey: input.idempotencyKey,
         agreedToTermsAt: at,
-        clientIpHash: ctx.clientIpHash ?? null,
         // FieldValue·Timestamp 는 일반 객체가 아니므로 stripUndefined 가 그대로 둔다.
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
