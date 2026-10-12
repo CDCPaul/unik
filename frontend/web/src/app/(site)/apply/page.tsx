@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { ApplyForm } from './ApplyForm';
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ export default function ApplyPage() {
           </h1>
           <p className="text-lg">Takes about 2 minutes. No payment now. Our team will contact you to confirm your slot.</p>
         </div>
-        <ApplyForm />
+        <Suspense fallback={null}>
+          <ApplyForm />
+        </Suspense>
       </div>
     </div>
   );

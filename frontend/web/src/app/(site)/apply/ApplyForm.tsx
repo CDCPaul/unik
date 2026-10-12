@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CATEGORIES, CATEGORY_LABELS, TSHIRT_SIZES, formatPHP, manilaDate, totalPax } from '@unik/shared/domain';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { CATEGORIES, CATEGORY_LABELS, TSHIRT_SIZES, formatPHP, manilaDate, normalizePromoCode, totalPax } from '@unik/shared/domain';
 import type { Availability, Category, TourConfig } from '@unik/shared/domain';
 import { DIAL_CODES } from '@/lib/data/dialCodes';
 import { checkPromo, submitWithRetry } from '@/lib/apply/api';
 import { clearDraft, loadDraft, saveDraft } from '@/lib/apply/draft';
 import { PROMO_REASON_MESSAGES, describeSubmitError } from '@/lib/apply/errors';
 import { applyReducer, estimatePricing, initialApplyState, toSubmitPayload, validateForSubmit } from '@/lib/apply/model';
-import type { TravelerField } from '@/lib/apply/model';
-import { clearPromoCode, loadPromoCode } from '@/lib/promo/storage';
+import type { ApplyState, TravelerField } from '@/lib/apply/model';
+import { clearPromoCode, loadPromoCode, savePromoCode } from '@/lib/promo/storage';
 import { browserStore } from '@/lib/store';
 import { departureStatus, subscribeTourData } from '@/lib/tour/publicData';
 
@@ -41,23 +41,38 @@ export function ApplyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [openTraveler, setOpenTraveler] = useState<number | null>(0);
-  const restored = useRef(false);
+  const searchParams = useSearchParams();
+  const [hydrated, setHydrated] = useState(false);
+  const initialized = useRef(false);
+  const pristineRef = useRef<ApplyState | null>(null);
+  const pendingAutoCode = useRef<string | null>(null);
+  const promoInputRef = useRef('');
+  promoInputRef.current = state.promoInput;
 
-  // 임시저장 복원 → 없으면 저장된 추천코드로 시작
+  // 임시저장 복원 + 추천코드 시작값(주소의 ?code= 가 저장된 코드·임시저장보다 우선). StrictMode 에서도 한 번만 실행.
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
     const store = browserStore();
-    const draft = loadDraft(store);
-    if (draft) dispatch({ type: 'restore', state: draft });
-    else {
-      const code = loadPromoCode(store, Date.now());
-      if (code) dispatch({ type: 'setPromoInput', value: code });
+    const now = Date.now();
+    const urlCode = searchParams.get('code');
+    const fromUrl = urlCode ? savePromoCode(store, urlCode, now) : null;
+    const savedCode = fromUrl ?? loadPromoCode(store, now);
+    let next = loadDraft(store) ?? state;
+    if (savedCode && !next.promo && (fromUrl || !next.promoInput.trim())) {
+      next = { ...next, promoInput: savedCode };
     }
-    restored.current = true;
+    dispatch({ type: 'restore', state: next });
+    pristineRef.current = next;
+    pendingAutoCode.current = next.promoInput.trim() && !next.promo ? normalizePromoCode(next.promoInput) : null;
+    setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 사용자가 바꾼 뒤에만 저장한다(복원 직후의 빈 상태를 덮어쓰지 않음).
   useEffect(() => {
-    if (restored.current) saveDraft(browserStore(), state);
-  }, [state]);
+    if (hydrated && state !== pristineRef.current) saveDraft(browserStore(), state);
+  }, [hydrated, state]);
 
   useEffect(
     () =>
@@ -68,14 +83,14 @@ export function ApplyForm() {
     [],
   );
 
-  // 저장된 코드가 있고 아직 확인 전이면 자동 확인
-  const autoChecked = useRef(false);
+  // 복원·저장된 코드가 있으면 한 번만 자동 확인한다. 직접 입력한 코드는 자동 확인하지 않는다.
   useEffect(() => {
-    if (autoChecked.current || !restored.current || state.promo || !state.promoInput.trim()) return;
-    autoChecked.current = true;
-    void applyPromo();
+    if (!hydrated) return;
+    const pending = pendingAutoCode.current;
+    pendingAutoCode.current = null;
+    if (pending && normalizePromoCode(state.promoInput) === pending && !state.promo) void applyPromo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.promoInput]);
+  }, [hydrated]);
 
   const pricing = useMemo(() => (data.config ? estimatePricing(state, data.config) : null), [state, data.config]);
   const pax = totalPax(state.counts);
@@ -88,6 +103,7 @@ export function ApplyForm() {
     setPromoMessage('');
     try {
       const r = await checkPromo(code, pax);
+      if (normalizePromoCode(promoInputRef.current) !== normalizePromoCode(code)) return; // 확인 중 입력이 바뀜
       if (r.valid) {
         dispatch({
           type: 'promoApplied',
@@ -98,6 +114,7 @@ export function ApplyForm() {
         setPromoMessage(PROMO_REASON_MESSAGES[r.reason]);
       }
     } catch {
+      if (normalizePromoCode(promoInputRef.current) !== normalizePromoCode(code)) return;
       setPromoMessage("We couldn't check the code right now. You can still submit; we'll verify it.");
     } finally {
       setCheckingPromo(false);
@@ -108,12 +125,25 @@ export function ApplyForm() {
     e.preventDefault();
     setSubmitError('');
     const found = validateForSubmit(state, manilaDate(new Date()));
+    if (
+      !found.departureId &&
+      state.departureId &&
+      data.config &&
+      departureStatus(data.config, data.availability, state.departureId, state.counts) === 'closed'
+    ) {
+      found.departureId = 'This departure is no longer available. Please choose another one.';
+    }
     setErrors(found);
     if (Object.keys(found).length > 0) {
       const first = Object.keys(found)[0];
       const travelerMatch = /^travelers\.(\d+)\./.exec(first);
       if (travelerMatch) setOpenTraveler(Number(travelerMatch[1]));
-      requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-field="${first}"]`)?.focus());
+      requestAnimationFrame(() =>
+        (
+          document.querySelector<HTMLElement>(`[data-field="${first}"]:not(:disabled)`) ??
+          document.querySelector<HTMLElement>(`[data-field="${first}"]`)
+        )?.focus(),
+      );
       return;
     }
     setSubmitting(true);
@@ -232,14 +262,14 @@ export function ApplyForm() {
                 <select aria-label="Country code" className={`${field} w-24`} value={state.lead.phoneDial} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneDial', value: e.target.value })}>
                   {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.code}</option>)}
                 </select>
-                <input data-field="lead.phoneNumber" type="tel" className={`${field} min-w-0 flex-1`} value={state.lead.phoneNumber} autoComplete="tel-national" placeholder="917 123 4567" aria-invalid={!!errors['lead.phoneNumber']} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneNumber', value: e.target.value })} />
+                <input data-field="lead.phoneNumber" type="tel" aria-label="Mobile number" className={`${field} min-w-0 flex-1`} value={state.lead.phoneNumber} autoComplete="tel-national" placeholder="917 123 4567" aria-invalid={!!errors['lead.phoneNumber']} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneNumber', value: e.target.value })} />
               </span>
               <FieldError id="err-phone" msg={errors['lead.phoneNumber']} />
             </label>
           </div>
           <div className="flex flex-wrap gap-5 text-[15px]">
             {(['viber', 'whatsapp'] as const).map((f) => (
-              <label key={f} className="flex items-center gap-2">
+              <label key={f} className="flex min-h-11 items-center gap-2 py-1">
                 <input type="checkbox" className="h-5 w-5 accent-brand-red" checked={state.lead[f]} onChange={(e) => dispatch({ type: 'setLead', field: f, value: e.target.checked })} />
                 Reachable on {f === 'viber' ? 'Viber' : 'WhatsApp'}
               </label>
@@ -330,7 +360,7 @@ export function ApplyForm() {
             <textarea data-field="specialRequests" rows={3} maxLength={1000} className={`${field} py-3`} placeholder="Dietary needs, rooming with a friend, questions…" value={state.specialRequests} aria-invalid={!!errors.specialRequests} onChange={(e) => dispatch({ type: 'setSpecialRequests', value: e.target.value })} />
             <FieldError id="err-requests" msg={errors.specialRequests} />
           </label>
-          <label className="flex items-start gap-2.5 text-[15px]">
+          <label className="flex min-h-11 items-start gap-2.5 py-1 text-[15px]">
             <input data-field="agreedToTerms" type="checkbox" className="mt-0.5 h-5 w-5 accent-brand-red" checked={state.agreedToTerms} onChange={(e) => dispatch({ type: 'setAgreed', value: e.target.checked })} />
             <span>
               I agree to the <a href="/terms" target="_blank" className="font-bold text-brand-red">Terms</a>,{' '}
