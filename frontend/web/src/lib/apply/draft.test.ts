@@ -41,6 +41,18 @@ describe('draft', () => {
     expect(loaded.lead.firstName).toBe('Maria');
     expect(loaded.website).toBe('');
   });
+  it('records submitAttempted in the saved draft', () => {
+    const s = memoryStore();
+    saveDraft(s, applyReducer(initialApplyState(KEY), { type: 'markSubmitAttempted' }));
+    expect(loadDraft(s)!.submitAttempted).toBe(true);
+  });
+  it('accepts a draft saved before submitAttempted existed (missing means false)', () => {
+    const s = savedRaw((raw) => void delete raw.submitAttempted);
+    expect(loadDraft(s)!.submitAttempted).toBe(false);
+  });
+  it('treats a non-boolean submitAttempted as false', () => {
+    expect(loadDraft(savedRaw((raw) => void (raw.submitAttempted = 'yes')))!.submitAttempted).toBe(false);
+  });
   it('rejects a draft whose idempotencyKey is not a UUID', () => {
     const s = memoryStore();
     saveDraft(s, initialApplyState('key-7'));

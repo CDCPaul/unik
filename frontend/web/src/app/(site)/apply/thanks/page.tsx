@@ -4,8 +4,8 @@ import { Section } from '@/components/site/Section';
 
 export const metadata: Metadata = { title: 'Application received', robots: { index: false } };
 
-export default async function ThanksPage({ searchParams }: { searchParams: Promise<{ app?: string; status?: string }> }) {
-  const { app, status } = await searchParams;
+export default async function ThanksPage({ searchParams }: { searchParams: Promise<{ app?: string; status?: string; duplicate?: string }> }) {
+  const { app, status, duplicate } = await searchParams;
   const appNo = app && /^APP-\d{4,}$/.test(app) ? app : null;
   const waitlist = status === 'waitlist';
   return (
@@ -13,6 +13,7 @@ export default async function ThanksPage({ searchParams }: { searchParams: Promi
       <h1 className="font-race text-5xl font-extrabold uppercase text-brand-ink">
         {waitlist ? "You're on the waitlist" : 'Application received'}
       </h1>
+      {appNo && duplicate === '1' ? <p className="text-lg font-bold text-brand-ink">We already received this application.</p> : null}
       {appNo ? (
         <p className="text-lg">
           Your application number is <b className="text-brand-ink">{appNo}</b>. We also sent a confirmation to your email.

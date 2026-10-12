@@ -45,6 +45,16 @@ describe('applyReducer', () => {
     for (let i = 0; i < 12; i++) s = applyReducer(s, { type: 'changeCount', category: 'tenK', delta: 1 });
     expect(s.counts.full + s.counts.tenK + s.counts.companion).toBe(10);
   });
+  it('starts with submitAttempted=false and records markSubmitAttempted', () => {
+    let s = initialApplyState('k');
+    expect(s.submitAttempted).toBe(false);
+    s = applyReducer(s, { type: 'markSubmitAttempted' });
+    expect(s.submitAttempted).toBe(true);
+  });
+  it('does not send submitAttempted to the server', () => {
+    const p = toSubmitPayload(applyReducer(filled(), { type: 'markSubmitAttempted' }));
+    expect('submitAttempted' in p).toBe(false);
+  });
   it('drops an applied promo when the code input changes', () => {
     let s = initialApplyState('k');
     s = applyReducer(s, { type: 'promoApplied', promo: { code: 'TA-A', agencyName: 'A', discountType: 'fixed', discountValue: 1000, description: 'x' } });

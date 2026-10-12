@@ -46,6 +46,8 @@ export interface ApplyState {
   agreedToTerms: boolean;
   website: string; // honeypot
   idempotencyKey: string;
+  /** 제출을 시도한 적이 있으면 true. 임시저장 복원 시 같은 신청의 재시도인지 새 신청인지 가른다. */
+  submitAttempted: boolean;
 }
 
 export type TravelerField = Exclude<keyof Traveler, 'category'>;
@@ -61,6 +63,7 @@ export type ApplyAction =
   | { type: 'setSpecialRequests'; value: string }
   | { type: 'setAgreed'; value: boolean }
   | { type: 'setHoneypot'; value: string }
+  | { type: 'markSubmitAttempted' }
   | { type: 'restore'; state: ApplyState };
 
 export function initialApplyState(idempotencyKey: string, promoCode: string | null = null): ApplyState {
@@ -75,6 +78,7 @@ export function initialApplyState(idempotencyKey: string, promoCode: string | nu
     agreedToTerms: false,
     website: '',
     idempotencyKey,
+    submitAttempted: false,
   };
 }
 
@@ -109,6 +113,8 @@ export function applyReducer(state: ApplyState, action: ApplyAction): ApplyState
       return { ...state, agreedToTerms: action.value };
     case 'setHoneypot':
       return { ...state, website: action.value };
+    case 'markSubmitAttempted':
+      return state.submitAttempted ? state : { ...state, submitAttempted: true };
     case 'restore':
       return action.state;
   }

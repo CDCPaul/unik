@@ -47,7 +47,9 @@ export function loadDraft(store: KeyValueStore | null): ApplyState | null {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
     const s = parsed as Record<string, unknown>;
-    return isDraftShape(s) ? ({ ...(s as unknown as ApplyState), website: '' }) : null;
+    if (!isDraftShape(s)) return null;
+    // submitAttempted 가 없던 옛 임시저장은 false 로 본다.
+    return { ...(s as unknown as ApplyState), website: '', submitAttempted: s.submitAttempted === true };
   } catch {
     return null;
   }

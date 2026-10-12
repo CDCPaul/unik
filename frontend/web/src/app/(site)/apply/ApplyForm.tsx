@@ -8,6 +8,7 @@ import { DIAL_CODES } from '@/lib/data/dialCodes';
 import { checkPromo, submitWithRetry } from '@/lib/apply/api';
 import { clearDraft, loadDraft, saveDraft } from '@/lib/apply/draft';
 import { PROMO_REASON_MESSAGES, describeSubmitError } from '@/lib/apply/errors';
+import { resolveInitialState } from '@/lib/apply/init';
 import { applyReducer, estimatePricing, initialApplyState, toSubmitPayload, validateForSubmit } from '@/lib/apply/model';
 import type { ApplyState, TravelerField } from '@/lib/apply/model';
 import { clearPromoCode, loadPromoCode, savePromoCode } from '@/lib/promo/storage';
@@ -58,13 +59,16 @@ export function ApplyForm() {
     const urlCode = searchParams.get('code');
     const fromUrl = urlCode ? savePromoCode(store, urlCode, now) : null;
     const savedCode = fromUrl ?? loadPromoCode(store, now);
-    let next = loadDraft(store) ?? state;
-    if (savedCode && !next.promo && (fromUrl || !next.promoInput.trim())) {
-      next = { ...next, promoInput: savedCode };
-    }
+    const { state: next, autoCheckCode } = resolveInitialState({
+      draft: loadDraft(store),
+      urlCode: fromUrl,
+      storedCode: savedCode,
+      freshKey: state.idempotencyKey,
+      base: state,
+    });
     dispatch({ type: 'restore', state: next });
     pristineRef.current = next;
-    pendingAutoCode.current = next.promoInput.trim() && !next.promo ? normalizePromoCode(next.promoInput) : null;
+    pendingAutoCode.current = autoCheckCode;
     setHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -147,12 +151,16 @@ export function ApplyForm() {
       return;
     }
     setSubmitting(true);
+    // 제출을 시도했다는 사실을 먼저 남긴다(전송 중 새로고침해도 같은 키로 재시도하도록).
+    dispatch({ type: 'markSubmitAttempted' });
+    saveDraft(browserStore(), { ...state, submitAttempted: true });
     try {
       const res = await submitWithRetry(toSubmitPayload(state));
       const store = browserStore();
       clearDraft(store);
       clearPromoCode(store);
-      router.push(`/apply/thanks?app=${encodeURIComponent(res.appNo)}&status=${encodeURIComponent(res.status)}`);
+      const duplicate = res.duplicate ? '&duplicate=1' : '';
+      router.push(`/apply/thanks?app=${encodeURIComponent(res.appNo)}&status=${encodeURIComponent(res.status)}${duplicate}`);
     } catch (err) {
       const d = describeSubmitError(err);
       if (d.kind === 'promo_invalid') {
