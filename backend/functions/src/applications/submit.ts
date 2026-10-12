@@ -20,6 +20,10 @@ import { SubmitError } from './errors';
 import { parseSubmitInput } from './input';
 import { toSummary } from './summary';
 
+const RATE_WINDOW_MS = 60 * 60 * 1000;
+const MAX_PER_EMAIL_PER_WINDOW = 5;
+const MAX_PER_IP_PER_WINDOW = 10;
+
 const isMoney = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0;
 
 export interface SubmitResult {
@@ -29,7 +33,12 @@ export interface SubmitResult {
   duplicate: boolean;
 }
 
-export async function submitApplicationCore(db: Firestore, raw: unknown, now = new Date()): Promise<SubmitResult> {
+export async function submitApplicationCore(
+  db: Firestore,
+  raw: unknown,
+  now = new Date(),
+  ctx: { clientIpHash?: string } = {},
+): Promise<SubmitResult> {
   const input = parseSubmitInput(raw);
   const appRef = db.collection(COL.applications).doc(input.idempotencyKey);
 
@@ -69,6 +78,19 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
 
     const appsSnap = await tx.get(db.collection(COL.applications));
     const summaries = appsSnap.docs.map((d) => toSummary(d.data()));
+
+    const windowStart = now.getTime() - RATE_WINDOW_MS;
+    const recent = appsSnap.docs
+      .map((d) => d.data())
+      .filter((d) => d.status !== 'cancelled' && submittedAtMs(d) >= windowStart);
+    const sameEmail = recent.filter((d) => d.lead?.email === input.lead.email).length;
+    const sameIp = ctx.clientIpHash ? recent.filter((d) => d.clientIpHash === ctx.clientIpHash).length : 0;
+    if (sameEmail >= MAX_PER_EMAIL_PER_WINDOW || sameIp >= MAX_PER_IP_PER_WINDOW) {
+      throw new SubmitError(
+        'rate_limited',
+        'We received several applications from you in a short time. Please contact us if you need to add more travelers.',
+      );
+    }
 
     let promo: PromoCode | null = null;
     if (promoCode) {
@@ -124,6 +146,7 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
         statusHistory: [{ status, at, by: 'system' }],
         idempotencyKey: input.idempotencyKey,
         agreedToTermsAt: at,
+        clientIpHash: ctx.clientIpHash ?? null,
         // FieldValue·Timestamp 는 일반 객체가 아니므로 stripUndefined 가 그대로 둔다.
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
@@ -131,4 +154,10 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
     );
     return { appNo, status, pricing, duplicate: false };
   });
+}
+
+// agreedToTermsAt 은 트랜잭션 안에서 Timestamp.fromDate(now) 로 즉시 기록되므로 createdAt(서버타임스탬프)보다 신뢰할 수 있다.
+function submittedAtMs(data: FirebaseFirestore.DocumentData): number {
+  const at = data.agreedToTermsAt;
+  return at && typeof at.toMillis === 'function' ? at.toMillis() : 0;
 }

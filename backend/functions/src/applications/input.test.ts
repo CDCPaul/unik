@@ -27,6 +27,10 @@ describe('parseSubmitInput', () => {
     );
     expect(() => parseSubmitInput(validInput({ agreedToTerms: false }))).toThrow(SubmitError);
   });
+  it('accepts and normalizes Philippine phone formats', () => {
+    const r = parseSubmitInput(validInput({ lead: { ...validInput().lead, phoneNumber: '(0917) 123-4567' } }));
+    expect(r.lead.phoneNumber).toBe('0917 123-4567');
+  });
   it('rejects a malformed promo code', () => {
     expect(() => parseSubmitInput(validInput({ promoCode: 'TA_SUNRISE' }))).toThrow(SubmitError);
   });

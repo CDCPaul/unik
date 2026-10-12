@@ -1,4 +1,4 @@
-export type SubmitErrorCode = 'invalid_input' | 'closed' | 'departure_closed' | 'promo_invalid';
+export type SubmitErrorCode = 'invalid_input' | 'closed' | 'departure_closed' | 'promo_invalid' | 'rate_limited';
 
 export class SubmitError extends Error {
   constructor(

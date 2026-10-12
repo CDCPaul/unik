@@ -128,4 +128,39 @@ describe('submitApplicationCore', () => {
     const counter = await testDb().collection(COL.counters).doc(TOUR_ID).get();
     expect(counter.data()).toEqual({ appSeq: 1 });
   });
+
+  it('rate-limits many applications from the same email within an hour', async () => {
+    for (let i = 0; i < 5; i++) {
+      await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1 } }), now);
+    }
+    const err = await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1 } }), now).then(
+      () => null,
+      (e) => e,
+    );
+    expect(err).toBeInstanceOf(SubmitError);
+    expect(err.code).toBe('rate_limited');
+    const other = validInput({ counts: { full: 0, tenK: 0, companion: 1 } });
+    other.lead = { ...other.lead, email: 'someone.else@example.com' };
+    expect((await submitApplicationCore(testDb(), other, now)).status).toBe('new');
+  });
+
+  it('rate-limits many applications from the same client IP hash within an hour', async () => {
+    for (let i = 0; i < 10; i++) {
+      const input = validInput({ counts: { full: 0, tenK: 0, companion: 1 } });
+      input.lead = { ...input.lead, email: `p${i}@example.com` };
+      await submitApplicationCore(testDb(), input, now, { clientIpHash: 'abc' });
+    }
+    const input = validInput({ counts: { full: 0, tenK: 0, companion: 1 } });
+    input.lead = { ...input.lead, email: 'p99@example.com' };
+    await expectSubmitError(submitApplicationCore(testDb(), input, now, { clientIpHash: 'abc' }), 'rate_limited');
+    expect((await submitApplicationCore(testDb(), input, now, { clientIpHash: 'other' })).status).toBe('new');
+  });
+
+  it('ignores submissions older than an hour for rate limiting', async () => {
+    const earlier = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    for (let i = 0; i < 5; i++) {
+      await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1 } }), earlier);
+    }
+    expect((await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1 } }), now)).status).toBe('new');
+  });
 });
