@@ -7,7 +7,15 @@
   "exports": {
     ".": "./index.ts",
     "./types": "./types/index.ts",
-    "./firebase": "./firebase/config.ts"
+    "./firebase": "./firebase/config.ts",
+    "./domain": "./domain/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
   }
 }
-
