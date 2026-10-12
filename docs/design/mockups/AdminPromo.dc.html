@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin promo codes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="font-family: Manrope, sans-serif; color: #33405C; background: #F4F6FA; font-size: 14px; line-height: 1.45; display: flex; flex-wrap: wrap; min-height: 1000px">
+
+<nav aria-label="Admin" style="flex: 1 1 220px; max-width: 240px; background: #0B1F4D; color: #FFFFFF; padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box">
+<div style="padding: 0 12px 20px; display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: 0.06em">UNIK</span><span style="font-size: 12px; color: rgba(255,255,255,0.7)">Admin</span></div>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; color: rgba(255,255,255,0.82); font-weight: 600">Applicants</a>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.14); font-weight: 700">Promo codes</a>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; color: rgba(255,255,255,0.82); font-weight: 600">Tour settings</a>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; color: rgba(255,255,255,0.82); font-weight: 600">Business cards</a>
+</nav>
+
+<main style="flex: 999 1 900px; min-width: 0; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px"><h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #0B1F4D">Promo codes</h1><span style="background: #FFF4D6; color: #7A5300; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px">Sample data</span></div>
+<button type="button" style="height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: #0B1F4D; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">+ New code</button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px">
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Active codes</div><div style="font-size: 30px; font-weight: 800; color: #0B1F4D">4</div></div>
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Applications via agencies</div><div style="font-size: 30px; font-weight: 800; color: #0B1F4D">15</div><div style="font-size: 12px">of 24 total (63%)</div></div>
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Travelers via agencies</div><div style="font-size: 30px; font-weight: 800; color: #0B1F4D">42</div></div>
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Discounts given</div><div style="font-size: 30px; font-weight: 800; color: #0B1F4D">PHP 84,000</div><div style="font-size: 12px">confirmed bookings only</div></div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 999 1 640px; min-width: 0; background: #FFFFFF; border-radius: 14px; overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; min-width: 860px">
+<thead><tr style="text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #5A6680">
+<th style="padding: 14px 16px; font-weight: 700">Code</th><th style="padding: 14px 8px; font-weight: 700">Travel agency</th><th style="padding: 14px 8px; font-weight: 700">Discount</th><th style="padding: 14px 8px; font-weight: 700">Valid until</th><th style="padding: 14px 8px; font-weight: 700">Apps</th><th style="padding: 14px 8px; font-weight: 700">Pax</th><th style="padding: 14px 8px; font-weight: 700">Confirmed pax</th><th style="padding: 14px 8px; font-weight: 700">Net sales PHP</th><th style="padding: 14px 8px; font-weight: 700">Status</th><th style="padding: 14px 16px; font-weight: 700"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Actions</span></th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<tr style="border-top: 1px solid #E6EAF2">
+<td style="padding: 14px 16px; font-weight: 800; color: #0B1F4D; letter-spacing: 0.04em">{{r.code}}</td>
+<td style="padding: 14px 8px"><div style="font-weight: 700; color: #0B1F4D">{{r.agency}}</div><div style="font-size: 12px">{{r.contact}}</div></td>
+<td style="padding: 14px 8px">{{r.discount}}</td>
+<td style="padding: 14px 8px">{{r.until}}</td>
+<td style="padding: 14px 8px">{{r.apps}}</td>
+<td style="padding: 14px 8px">{{r.pax}}</td>
+<td style="padding: 14px 8px; font-weight: 700">{{r.confirmed}}</td>
+<td style="padding: 14px 8px">{{r.net}}</td>
+<td style="padding: 14px 8px"><span style="{{r.statusStyle}}">{{r.status}}</span></td>
+<td style="padding: 14px 16px"><button type="button" aria-label="Copy referral link" style="height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #C9D2E3; background: #FFFFFF; font: inherit; font-size: 13px; font-weight: 700; color: #0B1F4D; cursor: pointer; white-space: nowrap">Copy link</button></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+
+<aside aria-label="Create promo code" style="flex: 1 1 320px; min-width: 0; background: #FFFFFF; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+<div style="font-size: 18px; font-weight: 800; color: #0B1F4D">New promo code</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Code<input type="text" value="TA-HORIZON" style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit; font-weight: 800; letter-spacing: 0.04em"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Travel agency name<input type="text" value="Horizon Tours" style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit; font-weight: 500"></label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Contact person<input type="text" style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Phone / email<input type="text" style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit"></label>
+</div>
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0 0 6px; font-weight: 700; color: #0B1F4D">Discount</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 14px">
+<label style="display: flex; align-items: center; gap: 6px"><input type="radio" name="dtype" checked style="width: 18px; height: 18px; accent-color: #0B1F4D">Fixed PHP per person</label>
+<label style="display: flex; align-items: center; gap: 6px"><input type="radio" name="dtype" style="width: 18px; height: 18px; accent-color: #0B1F4D">Percent</label>
+</div>
+<input type="text" aria-label="Discount amount" value="2,000" style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit; font-weight: 600">
+</fieldset>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Valid until<input type="text" value="2027-01-31" style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit"></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Max travelers<input type="text" placeholder="No limit" style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit"></label>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; background: #F4F6FA; border-radius: 10px; padding: 12px 14px">
+<div style="font-size: 12px; font-weight: 700; color: #5A6680; text-transform: uppercase; letter-spacing: 0.06em">Referral link for the agency</div>
+<div style="font-weight: 700; color: #0B1F4D; word-break: break-all">unik.ph/apply?code=TA-HORIZON</div>
+</div>
+<button type="button" style="height: 44px; border-radius: 10px; border: 0; background: #0B1F4D; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Create code</button>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var pill = function (bg, fg) { return 'display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: ' + bg + '; color: ' + fg; };
+    var data = [
+      ['TA-SUNRISE', 'Sunrise Travel', 'Contact: [name]', 'PHP 2,000 / pax', '2027-01-31', '5', '14', '9', '[AMOUNT]', 'Active'],
+      ['TA-ISLAND', 'Island Hoppers PH', 'Contact: [name]', '5%', '2027-01-31', '4', '11', '4', '[AMOUNT]', 'Active'],
+      ['TA-METRO', 'Metro Holidays', 'Contact: [name]', 'PHP 1,500 / pax', '2027-01-31', '3', '10', '6', '[AMOUNT]', 'Active'],
+      ['RUNCLUB-QC', 'QC Run Club', 'Contact: [name]', 'PHP 1,000 / pax', '2026-12-15', '3', '7', '3', '[AMOUNT]', 'Active'],
+      ['TA-TEST', 'Old partner', 'Contact: [name]', 'PHP 2,000 / pax', '2026-10-01', '0', '0', '0', '0', 'Paused']
+    ];
+    var rows = data.map(function (d) {
+      return { code: d[0], agency: d[1], contact: d[2], discount: d[3], until: d[4], apps: d[5], pax: d[6], confirmed: d[7], net: d[8], status: d[9],
+        statusStyle: d[9] === 'Active' ? pill('#DCFCE7', '#166534') : pill('#F1F1F1', '#555555') };
+    });
+    return { rows: rows };
+  }
+}
+</script>
+</body>
+</html>
