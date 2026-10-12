@@ -7,6 +7,7 @@ import { fetchTourConfig } from '@/lib/tour/publicData';
 
 export const revalidate = 60;
 export const metadata: Metadata = {
+  alternates: { canonical: '/tour' },
   title: 'The Tour',
   description: 'Packages, prices, departures, inclusions and itinerary for the Seoul Marathon 2027 tour.',
 };

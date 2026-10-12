@@ -3,7 +3,7 @@ import { Section, SectionHeading } from '@/components/site/Section';
 import { SITE } from '@/content/site';
 import { ContactForm } from './ContactForm';
 
-export const metadata: Metadata = { title: 'Contact', description: 'Questions about the Seoul Marathon 2027 tour? Contact CDC Travel.' };
+export const metadata: Metadata = { alternates: { canonical: '/contact' }, title: 'Contact', description: 'Questions about the Seoul Marathon 2027 tour? Contact CDC Travel.' };
 
 export default function ContactPage() {
   return (

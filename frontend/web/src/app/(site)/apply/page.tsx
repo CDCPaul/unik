@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { ApplyForm } from './ApplyForm';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/apply' },
   title: 'Apply',
   description: 'Apply for the Seoul Marathon 2027 tour. Takes about 2 minutes, no payment now.',
 };

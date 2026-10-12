@@ -3,7 +3,7 @@ import { ButtonLink } from '@/components/site/ButtonLink';
 import { Section, SectionHeading } from '@/components/site/Section';
 import { PAST_TOURS } from '@/content/pastTours';
 
-export const metadata: Metadata = { title: 'Past tours', description: 'Tours CDC Travel has run for Filipino fans and runners in Korea.' };
+export const metadata: Metadata = { alternates: { canonical: '/past-tours' }, title: 'Past tours', description: 'Tours CDC Travel has run for Filipino fans and runners in Korea.' };
 
 export default function PastToursPage() {
   return (

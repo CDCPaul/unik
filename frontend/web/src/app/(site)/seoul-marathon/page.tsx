@@ -6,6 +6,7 @@ import { Section, SectionHeading } from '@/components/site/Section';
 import { RACE } from '@/content/race';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/seoul-marathon' },
   title: 'Seoul Marathon 2027',
   description: `${RACE.edition} on ${RACE.date}. Full marathon and 10K race information for our tour participants.`,
 };

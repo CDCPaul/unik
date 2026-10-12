@@ -15,6 +15,7 @@ import { fetchTourConfig, lowestPrice } from '@/lib/tour/publicData';
 export const revalidate = 60;
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/' },
   title: 'Seoul Marathon 2027 Tour with Artjoy Torregosa',
   description:
     "Race the 2027 Seoul Marathon (March 21, 2027) with Artjoy Torregosa, the Philippine women's marathon record holder. Flights, hotel, race entry and support from the Philippines.",

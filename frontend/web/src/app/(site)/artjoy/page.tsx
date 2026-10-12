@@ -5,6 +5,7 @@ import { Section, SectionHeading } from '@/components/site/Section';
 import { ARTJOY } from '@/content/artjoy';
 
 export const metadata: Metadata = {
+  alternates: { canonical: '/artjoy' },
   title: 'Run with Artjoy Torregosa',
   description: `${ARTJOY.name}, the ${ARTJOY.title}, travels with our Seoul Marathon 2027 group.`,
 };

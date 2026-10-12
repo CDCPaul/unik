@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Section } from '@/components/site/Section';
 import { FAQ } from '@/content/faq';
 
-export const metadata: Metadata = { title: 'FAQ', description: 'Answers to common questions about the Seoul Marathon 2027 tour.' };
+export const metadata: Metadata = { alternates: { canonical: '/faq' }, title: 'FAQ', description: 'Answers to common questions about the Seoul Marathon 2027 tour.' };
 
 export default function FaqPage() {
   return (
