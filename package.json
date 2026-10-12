@@ -4,11 +4,14 @@
   "private": true,
   "description": "UNIK — Seoul Marathon 2027 tour applications (CDC Travel)",
   "scripts": {
-    "dev": "pnpm -r --parallel --filter @unik/web --filter @unik/functions dev",
+    "dev": "pnpm --filter @unik/web dev",
+    "dev:functions": "npm --prefix backend/functions run serve",
     "dev:web": "pnpm --filter @unik/web dev",
     "build:web": "pnpm --filter @unik/web build",
     "build": "pnpm -r run build",
-    "lint": "pnpm -r run lint"
+    "lint": "pnpm -r run lint",
+    "test": "pnpm --filter @unik/shared test && pnpm --filter @unik/rules-tests test && npm --prefix backend/functions test",
+    "typecheck": "pnpm --filter @unik/web exec tsc --noEmit && pnpm --filter @unik/shared typecheck"
   },
   "keywords": [
     "seoul-marathon",
@@ -20,4 +23,3 @@
   "author": "Cebu Direct Club",
   "license": "UNLICENSED"
 }
-
