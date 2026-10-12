@@ -21,7 +21,7 @@ export const LEGAL: Record<'terms' | 'privacy' | 'refund', LegalDoc> = {
         heading: 'Prices and payment',
         body: [
           'Prices are in Philippine pesos (PHP) per person on twin-share accommodation unless stated otherwise. Promo code discounts apply per person to the package price only.',
-          'Deposit and balance due dates are sent to you when your slot is confirmed. [Payment schedule TBC]',
+          'Deposit and balance due dates are sent to you when your slot is confirmed. [TBC: payment schedule]',
         ],
       },
       {
@@ -58,7 +58,7 @@ export const LEGAL: Record<'terms' | 'privacy' | 'refund', LegalDoc> = {
       },
       {
         heading: 'How long we keep it',
-        body: ['We keep traveler details until the tour is completed and settled, then delete or anonymize them within [N] months. [Retention period TBC]'],
+        body: ['We keep traveler details until the tour is completed and settled, then delete or anonymize them after [TBC: retention period].'],
       },
       {
         heading: 'Your rights',
@@ -73,11 +73,11 @@ export const LEGAL: Record<'terms' | 'privacy' | 'refund', LegalDoc> = {
       { heading: 'Before confirmation', body: ['Applying is free. You can withdraw your application at any time before paying the deposit.'] },
       {
         heading: 'After payment',
-        body: ['[Cancellation charges by date to be confirmed by CDC Travel before launch, including the non-refundable race entry and airfare portions.]'],
+        body: ['[TBC: cancellation charges by date, including the non-refundable race entry and airfare portions]'],
       },
       {
         heading: 'If the race is cancelled',
-        body: ['[Policy to be confirmed by CDC Travel before launch.]'],
+        body: ['[TBC: policy if the race is cancelled]'],
       },
       { heading: 'How to cancel', body: [`Email ${SITE.email} with your application number.`] },
     ],

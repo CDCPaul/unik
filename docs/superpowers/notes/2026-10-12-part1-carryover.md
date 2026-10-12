@@ -43,4 +43,4 @@
 - 운영 Firestore 에 `tourConfig/seoul2027` 입력 (3부 어드민 "상품 설정" 화면으로)
 
 ## 오픈 당일 점검
-- 빌드 결과에 [TBC]/[TBA]/[YEAR]/[N] 문구가 남아 있지 않은지 확인
+- `LAUNCH=1 pnpm --filter @unik/web test` 가 통과해야 한다 (모든 [TBC: …] 제거)
