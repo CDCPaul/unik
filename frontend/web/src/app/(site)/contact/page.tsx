@@ -9,7 +9,7 @@ export default function ContactPage() {
   return (
     <Section className="flex flex-wrap gap-12">
       <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-4">
-        <SectionHeading eyebrow="CONTACT" title="Talk to us" intro="We usually reply within 1 to 2 business days." />
+        <SectionHeading as="h1" eyebrow="CONTACT" title="Talk to us" intro="We usually reply within 1 to 2 business days." />
         <p>{SITE.address}</p>
         <p>{SITE.phone}</p>
         <p><a href={`mailto:${SITE.email}`} className="text-brand-red">{SITE.email}</a></p>

@@ -14,7 +14,7 @@ export default function SeoulMarathonPage() {
   return (
     <>
       <Section tone="ink">
-        <SectionHeading tone="dark" eyebrow="THE RACE" title={RACE.name} intro={`${RACE.edition} · ${RACE.date} · ${RACE.city}`} />
+        <SectionHeading as="h1" tone="dark" eyebrow="THE RACE" title={RACE.name} intro={`${RACE.edition} · ${RACE.date} · ${RACE.city}`} />
       </Section>
       <Section className="flex flex-col gap-10">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5">

@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Past tours', description: 'Tours CDC
 export default function PastToursPage() {
   return (
     <Section className="flex flex-col gap-10">
-      <SectionHeading eyebrow="OUR TRACK RECORD" title="We've taken Filipino fans to Korea before" />
+      <SectionHeading as="h1" eyebrow="OUR TRACK RECORD" title="We've taken Filipino fans to Korea before" />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
         {PAST_TOURS.map((t) => (
           <article key={t.title} className="flex flex-col gap-2 rounded-3xl bg-brand-soft p-8">

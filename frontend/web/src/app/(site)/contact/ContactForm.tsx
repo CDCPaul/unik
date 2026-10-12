@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { EMAIL_PATTERN, hasControlCharsExceptWhitespace, isValidName } from '@unik/shared/domain';
+import { SITE } from '@/content/site';
 import { createContactMessage } from '@/lib/services/contacts';
 
 const input = 'min-h-12 w-full rounded-xl border-2 border-brand-line px-3.5 font-medium text-brand-ink';
@@ -16,12 +17,13 @@ export function ContactForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setStatus('idle');
     const name = form.name.trim();
     const email = form.email.trim();
     const phone = form.phone.trim();
     const message = form.message.trim();
     if (!isValidName(name)) return setError('Please enter your name.');
-    if (!EMAIL_PATTERN.test(email)) return setError('Please enter a valid email address.');
+    if (!EMAIL_PATTERN.test(email) || email.length > 120) return setError('Please enter a valid email address.');
     if (phone.length > 40) return setError('Please shorten the phone number.');
     if (!message || message.length > 5000 || hasControlCharsExceptWhitespace(message)) return setError('Please enter your message.');
     setError('');
@@ -52,7 +54,7 @@ export function ContactForm() {
       <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">Subject<input className={input} value={form.subject} onChange={set('subject')} /></label>
       <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">Message *<textarea className={`${input} py-3`} rows={5} value={form.message} onChange={set('message')} /></label>
       {error ? <p role="alert" className="font-semibold text-brand-red">{error}</p> : null}
-      {status === 'error' ? <p role="alert" className="font-semibold text-brand-red">Sending failed. Please email us at the address on the left.</p> : null}
+      {status === 'error' ? <p role="alert" className="font-semibold text-brand-red">Sending failed. Please email us at {SITE.email}.</p> : null}
       <button type="submit" disabled={status === 'sending'} className="min-h-14 rounded-full bg-brand-red font-extrabold text-white disabled:opacity-60">
         {status === 'sending' ? 'Sending…' : 'Send message'}
       </button>

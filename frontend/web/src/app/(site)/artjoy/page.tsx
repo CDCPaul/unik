@@ -16,7 +16,7 @@ export default function ArtjoyPage() {
         <Image src={ARTJOY.image} alt={ARTJOY.imageAlt} fill priority sizes="(max-width: 900px) 100vw, 460px" className="object-cover" />
       </div>
       <div className="flex min-w-0 flex-[1_1_480px] flex-col gap-6">
-        <SectionHeading eyebrow="YOUR RUNNING CAPTAIN" title={ARTJOY.name} intro={`The ${ARTJOY.title}: ${ARTJOY.record}.`} />
+        <SectionHeading as="h1" eyebrow="YOUR RUNNING CAPTAIN" title={ARTJOY.name} intro={`The ${ARTJOY.title}: ${ARTJOY.record}.`} />
         <p className="text-lg">{ARTJOY.intro}</p>
         <h2 className="text-2xl font-extrabold text-brand-ink">On tour with Artjoy</h2>
         <ul className="flex flex-col gap-4">

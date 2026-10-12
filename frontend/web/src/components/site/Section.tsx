@@ -33,22 +33,25 @@ export function SectionHeading({
   title,
   intro,
   tone = 'light',
+  as: Heading = 'h2',
 }: {
   eyebrow: string;
   title: ReactNode;
   intro?: ReactNode;
   tone?: 'light' | 'dark';
+  /** 페이지의 주 제목이면 'h1' (페이지당 h1 은 하나) */
+  as?: 'h1' | 'h2';
 }) {
   return (
     <div className="flex max-w-[720px] flex-col gap-4">
       <p className={`text-[13px] font-extrabold tracking-[0.16em] ${tone === 'dark' ? 'text-brand-sun' : 'text-brand-red'}`}>
         {eyebrow}
       </p>
-      <h2
+      <Heading
         className={`font-race text-5xl font-extrabold uppercase leading-none sm:text-[56px] ${tone === 'dark' ? 'text-white' : 'text-brand-ink'}`}
       >
         {title}
-      </h2>
+      </Heading>
       {intro ? <p className="text-lg">{intro}</p> : null}
     </div>
   );

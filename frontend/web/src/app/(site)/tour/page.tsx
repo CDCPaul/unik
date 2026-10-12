@@ -17,7 +17,7 @@ export default async function TourPage() {
   return (
     <>
       <Section tone="ink">
-        <SectionHeading tone="dark" eyebrow="THE TOUR" title="Everything handled. You just run." intro="Prices are per person on twin-share accommodation." />
+        <SectionHeading as="h1" tone="dark" eyebrow="THE TOUR" title="Everything handled. You just run." intro="Prices are per person on twin-share accommodation." />
       </Section>
       <Section className="flex flex-col gap-12">
         {departures.length === 0 ? (
