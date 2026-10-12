@@ -12,9 +12,10 @@ const HTTPS_CODE: Record<SubmitErrorCode, 'invalid-argument' | 'failed-precondit
   rate_limited: 'resource-exhausted',
 };
 
-// App Check 강제(enforceAppCheck)는 2부에서 웹에 App Check 를 붙인 뒤 켠다.
+// 운영에서는 App Check 토큰이 없는 호출을 거절한다. Functions 에뮬레이터(FUNCTIONS_EMULATOR=true)에서는 끈다.
 const options: CallableOptions = {
   invoker: 'public',
+  enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== 'true',
   cors: ['https://unik.ph', 'https://www.unik.ph', /^http:\/\/localhost:\d+$/, /\.vercel\.app$/],
 };
 

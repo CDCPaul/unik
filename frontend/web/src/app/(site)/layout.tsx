@@ -3,6 +3,7 @@ import { Barlow_Condensed, Manrope } from 'next/font/google';
 import { Header } from '@/components/site/Header';
 import { Footer } from '@/components/site/Footer';
 import { PromoCodeCapture } from '@/components/site/PromoCodeCapture';
+import { AppCheckInit } from '@/components/site/AppCheckInit';
 
 const barlow = Barlow_Condensed({
   subsets: ['latin'],
@@ -19,6 +20,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <Suspense fallback={null}>
         <PromoCodeCapture />
       </Suspense>
+      <AppCheckInit />
       <Header />
       <main>{children}</main>
       <Footer />
