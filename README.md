@@ -21,3 +21,5 @@
 3. Vercel 환경변수 `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` 설정 (Production, Preview)
 4. 로컬 개발: 브라우저 콘솔에 출력되는 디버그 토큰을 Firebase 콘솔 > App Check > 디버그 토큰에 등록하거나 `NEXT_PUBLIC_APPCHECK_DEBUG_TOKEN` 에 지정
 5. Functions 를 배포하면 `submitApplication`·`checkPromoCode` 는 App Check 토큰 없는 호출을 거절한다 (에뮬레이터 제외)
+6. Vercel 프리뷰 도메인(`*.vercel.app`)은 reCAPTCHA 키의 허용 도메인에 추가해야 한다. 추가하지 않으면 프리뷰에서는 디버그 토큰(4번)으로만 신청이 가능하다.
+7. **Firestore·Storage 에는 App Check 를 강제(Enforce)하지 말 것.** 서버 렌더링(SSR) 가격 조회와 NFC 명함 페이지는 App Check 토큰을 보내지 않으므로 강제하면 깨진다. 강제 대상은 Functions 호출뿐이다.

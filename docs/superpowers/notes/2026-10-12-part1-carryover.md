@@ -21,6 +21,13 @@
 - 문의 폼은 `contacts` 에 `{name,email,phone?,subject,message,isRead:false,createdAt: serverTimestamp()}` 만 전송 (phone ≤ 40자, email ≥ 3자).
 - 옛 URL(`/cbm`, `/tour/courtside/*` 등) → `/past-tours` 리다이렉트.
 
+## 2부 → 3부 계약
+- 어드민에서 신청서를 고쳐도 `lead.email` 은 항상 트림 + 소문자로 저장한다 (서버 입력 정규화와 동일).
+- `agreedToTermsAt` 은 절대 수정하지 않는다 (이메일당 1시간 신청 제한 계산에 쓰인다).
+- 이름·전화 검증은 `shared/domain` 의 함수만 쓴다: `normalizePhoneNumber`, `isValidName`, `isValidPassportName` (웹 폼·서버와 규칙 일치).
+- 가격·예약금은 0 이상의 정수만 허용한다.
+- Viber/WhatsApp 링크용 전화번호 정규화(+63 / 앞자리 0 → 국제 표기)는 3부에서 처리한다 (2부는 입력값을 그대로 저장).
+
 ## 3부(어드민)에서 지킬 것
 - 상품 설정 폼: 가격·예약금·싱글 추가요금은 0 이상의 정수만 (서버는 잘못된 값이면 `departure_closed`).
 - 프로모 정률 할인은 1–100 정수만 허용 (소수 % 는 페소 내림 오차).
@@ -39,6 +46,7 @@
 - Vercel Production·Preview 에 reCAPTCHA 사이트 키 설정 후 실제 신청 1건으로 확인 (키 없으면 모든 신청이 서버에서 거절됨)
 - 약관·개인정보·환불 규정 문구 확정 (`frontend/web/src/content/legal.ts` 의 [TBC] 항목)
 - 투어 문구 확정: 포함사항·일정·항공·박수 (`frontend/web/src/content/tour.ts`), 아트조이 기록·프로그램 (`content/artjoy.ts`), 과거 투어 소개 (`content/pastTours.ts`)
+- 문구 확인: 신청 마감 안내 "General registration for the 2027 race has closed", 히어로의 "MNL · CEB" 출발지 문구 (`app/(site)/seoul-marathon/page.tsx`, `app/(site)/page.tsx`)
 - 색상 테마 대표 승인 (현재 A안. 변경 시 `globals.css` 의 brand 토큰만 교체)
 - 운영 Firestore 에 `tourConfig/seoul2027` 입력 (3부 어드민 "상품 설정" 화면으로)
 
