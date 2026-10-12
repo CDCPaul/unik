@@ -28,6 +28,15 @@ export interface SubmitResult {
 
 export async function submitApplicationCore(db: Firestore, raw: unknown, now = new Date()): Promise<SubmitResult> {
   const input = parseSubmitInput(raw);
+  const appRef = db.collection(COL.applications).doc(input.idempotencyKey);
+
+  // 같은 idempotencyKey 재시도는 접수 마감 이후에도 기존 결과를 돌려준다(응답 유실 대비).
+  const prior = await appRef.get();
+  if (prior.exists) {
+    const d = prior.data()!;
+    return { appNo: d.appNo, status: d.status, pricing: d.pricing, duplicate: true };
+  }
+
   const config = await loadTourConfig(db);
   if (!config || !config.acceptingApplications) throw new SubmitError('closed', 'Applications are currently closed.');
   const departure = config.departures.find((d) => d.id === input.departureId);
@@ -37,7 +46,6 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
 
   const travelers = buildTravelers(input.counts, input.travelers);
   const pax = totalPax(input.counts);
-  const appRef = db.collection(COL.applications).doc(input.idempotencyKey);
   const counterRef = db.collection(COL.counters).doc(TOUR_ID);
   const promoCode = input.promoCode ?? null;
 

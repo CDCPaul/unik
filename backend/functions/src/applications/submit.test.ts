@@ -50,6 +50,15 @@ describe('submitApplicationCore', () => {
     expect((await testDb().collection(COL.applications).get()).size).toBe(1);
   });
 
+  it('returns the existing application on retry even after applications close', async () => {
+    const input = validInput();
+    await submitApplicationCore(testDb(), input, now);
+    await seedTourConfig({ acceptingApplications: false });
+    const retry = await submitApplicationCore(testDb(), input, now);
+    expect(retry).toMatchObject({ appNo: 'APP-0001', duplicate: true });
+    expect((await testDb().collection(COL.applications).get()).size).toBe(1);
+  });
+
   it('applies a valid promo code', async () => {
     await seedPromo('TA-SUNRISE');
     const r = await submitApplicationCore(testDb(), validInput({ promoCode: 'ta-sunrise' }), now);
