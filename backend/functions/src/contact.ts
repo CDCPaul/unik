@@ -1,7 +1,7 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { COL } from './lib/collections';
-import { escapeHtml, sendEmail } from './lib/email';
+import { escapeHtml, RESEND_API_KEY, sendEmail } from './lib/email';
 import { getNotifyEmails } from './lib/tourConfig';
 
 interface ContactData {
@@ -26,7 +26,7 @@ ${row('Name', data.name)}${row('Email', data.email)}${data.phone ? row('Phone', 
 </body></html>`;
 }
 
-export const onNewContact = onDocumentCreated(`${COL.contacts}/{docId}`, async (event) => {
+export const onNewContact = onDocumentCreated({ document: `${COL.contacts}/{docId}`, secrets: [RESEND_API_KEY] }, async (event) => {
   const snap = event.data;
   if (!snap) return;
   const data = snap.data() as ContactData;

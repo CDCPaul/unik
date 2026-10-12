@@ -1,7 +1,7 @@
 import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { COL } from '../lib/collections';
-import { sendEmail } from '../lib/email';
+import { RESEND_API_KEY, sendEmail } from '../lib/email';
 import { getNotifyEmails } from '../lib/tourConfig';
 import { recomputeAvailability } from './availability';
 import { customerEmail, staffEmail, type ApplicationEmailData } from './emails';
@@ -14,7 +14,7 @@ export const onTourConfigWritten = onDocumentWritten(`${COL.tourConfig}/{docId}`
   await recomputeAvailability(getFirestore());
 });
 
-export const onApplicationCreated = onDocumentCreated(`${COL.applications}/{docId}`, async (event) => {
+export const onApplicationCreated = onDocumentCreated({ document: `${COL.applications}/{docId}`, secrets: [RESEND_API_KEY] }, async (event) => {
   const snap = event.data;
   if (!snap) return;
   const app = snap.data() as ApplicationEmailData;

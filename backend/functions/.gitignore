@@ -8,6 +8,9 @@ node_modules/
 .env
 .env.local
 
+# 로컬 에뮬레이터용 시크릿 (RESEND_API_KEY=...)
+.secret.local
+
 # Firebase files
 .firebase/
 firebase-debug.log

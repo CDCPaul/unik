@@ -1,4 +1,8 @@
+import { defineSecret } from 'firebase-functions/params';
 import { Resend } from 'resend';
+
+// 운영에서는 Secret Manager 에 바인딩되며 런타임에 process.env.RESEND_API_KEY 로 노출된다.
+export const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
 
 export const FROM_ADDRESS = 'UNIK Seoul Marathon Tour <noreply@unik.ph>';
 

@@ -9,3 +9,8 @@
 
 설계: `docs/superpowers/specs/2026-10-12-seoul-marathon-2027-site-design.md`
 이전 사이트(KBL/벚꽃마라톤): git 태그 `archive/pre-seoul-2027`
+
+## Deploy notes
+
+- 메일 발송(Resend) 키는 Secret Manager 로 바인딩한다. Functions 를 배포하기 전에 한 번 `firebase functions:secrets:set RESEND_API_KEY` 를 실행할 것.
+- 로컬 에뮬레이터: `backend/functions/.secret.local` (gitignore 됨)에 `RESEND_API_KEY=...` 를 넣거나, 비워 두면 메일 발송을 건너뛴다.
