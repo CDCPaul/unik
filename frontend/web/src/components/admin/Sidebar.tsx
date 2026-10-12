@@ -2,27 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  LayoutDashboard, Users, FileText, Navigation,
-  Palette, Settings, LogOut, Menu, X, Home, LayoutTemplate, Type, Plane, Sparkles, IdCard
-} from 'lucide-react';
+import { LogOut, Menu, X, Home, IdCard } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from '@/lib/auth';
 
 const menuItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/registrations', icon: Users, label: 'Registrations' },
-  { href: '/admin/home', icon: LayoutTemplate, label: 'Home' },
-  { href: '/admin/navigation', icon: Navigation, label: 'Navigation' },
-  { href: '/admin/content', icon: FileText, label: 'Content' },
-  { href: '/admin/tickets', icon: Plane, label: 'Tickets' },
   { href: '/admin/business-cards', icon: IdCard, label: 'Business Cards' },
-  { href: '/admin/roulette', icon: Sparkles, label: 'Roulette Winners' },
-  { href: '/admin/roulette/settings', icon: Sparkles, label: 'Roulette Settings' },
-  { href: '/admin/theme', icon: Palette, label: 'Theme' },
-  { href: '/admin/ui-text', icon: Type, label: 'UI Text' },
-  { href: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function AdminSidebar() {

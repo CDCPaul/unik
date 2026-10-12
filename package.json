@@ -2,21 +2,18 @@
   "name": "unik",
   "version": "1.0.0",
   "private": true,
-  "description": "KBL ALL STAR Tour - Philippines to Korea Travel Package",
+  "description": "UNIK — Seoul Marathon 2027 tour applications (CDC Travel)",
   "scripts": {
     "dev": "pnpm -r --parallel --filter @unik/web --filter @unik/functions dev",
     "dev:web": "pnpm --filter @unik/web dev",
-    "dev:admin": "pnpm --filter @unik/admin dev",
     "build:web": "pnpm --filter @unik/web build",
-    "build:admin": "pnpm --filter @unik/admin build",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint"
   },
   "keywords": [
-    "kbl",
-    "basketball",
+    "seoul-marathon",
+    "marathon",
     "tour",
-    "travel",
     "philippines",
     "korea"
   ],

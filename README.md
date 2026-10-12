@@ -1,92 +1,11 @@
-# UNIK - KBL All-Star 2026 Tour
+# UNIK (unik.ph)
 
-A premium travel tour website for Filipino basketball fans to experience the KBL All-Star 2026 in Korea.
+2027 서울마라톤 투어 신청 사이트 + CDC 직원 NFC 명함.
 
-## 🏀 Project Overview
+- `frontend/web` — Next.js 앱 (공개 사이트, `/admin`, 명함 `/profile/[slug]`)
+- `shared/domain` — 웹·Functions 공용 도메인 로직 (가격, 프로모, 정원). `pnpm --filter @unik/shared test`
+- `backend/functions` — Firebase Cloud Functions (npm 사용). `npm --prefix backend/functions test` (Firestore 에뮬레이터, Java 필요)
+- `backend/rules-tests` — Firestore 보안 규칙 테스트. `pnpm --filter @unik/rules-tests test`
 
-- **Event**: KBL All-Star 2026 (January 15-18, 2026)
-- **Target**: Filipino basketball fans
-- **Purpose**: Tour package promotion & registration
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Next.js 14, React 18, Tailwind CSS
-- **Backend**: Firebase (Firestore, Auth, Functions)
-- **Analytics**: Firebase Analytics
-- **Hosting**: Vercel
-- **Package Manager**: pnpm
-
-## 📁 Project Structure
-
-```
-unik/
-├── frontend/
-│   ├── web/          # Main website (unik.ph)
-│   └── admin/        # Admin dashboard (admin.unik.ph)
-├── backend/
-│   └── functions/    # Firebase Functions
-├── shared/           # Shared types & configs
-└── package.json      # Root workspace config
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm 8+
-
-### Installation
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run web development server
-pnpm dev:web
-
-# Run admin development server
-pnpm dev:admin
-```
-
-### Environment Variables
-
-Create `.env.local` in `frontend/web/` and `frontend/admin/`:
-
-```env
-# Firebase (already configured in shared/firebase/config.ts)
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-```
-
-## 📱 Pages
-
-### Main Website (unik.ph)
-- `/` - Home
-- `/players` - Filipino player profiles
-- `/tour` - Tour package details
-- `/info` - Travel information & FAQ
-- `/register` - Registration form
-- `/contact` - Contact page
-
-### Admin Dashboard (admin.unik.ph)
-- `/` - Dashboard
-- `/registrations` - Registration management
-- `/players` - Player content management
-- `/tours` - Tour package management
-- `/analytics` - Statistics & reports
-
-## 🔐 Admin Access
-
-Admin access is restricted to `@cebudirectclub.com` email domain via Google OAuth.
-
-## 📧 Contact
-
-- Email: ticket@cebudirectclub.com
-- Website: https://unik.ph
-
-## 📄 License
-
-Private - All rights reserved.
-
+설계: `docs/superpowers/specs/2026-10-12-seoul-marathon-2027-site-design.md`
+이전 사이트(KBL/벚꽃마라톤): git 태그 `archive/pre-seoul-2027`
