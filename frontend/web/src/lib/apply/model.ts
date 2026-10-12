@@ -165,6 +165,8 @@ function cleanTraveler(t: Traveler): Traveler {
 
 export function toSubmitPayload(state: ApplyState): SubmitPayload {
   const typedCode = state.promoInput.trim() ? normalizePromoCode(state.promoInput) : undefined;
+  const promoCode = state.promo?.code ?? typedCode;
+  const specialRequests = state.specialRequests.trim();
   return {
     idempotencyKey: state.idempotencyKey,
     departureId: state.departureId ?? '',
@@ -177,8 +179,9 @@ export function toSubmitPayload(state: ApplyState): SubmitPayload {
       phoneNumber: normalizePhoneNumber(state.lead.phoneNumber),
     },
     travelers: state.travelers.map(cleanTraveler),
-    promoCode: state.promo?.code ?? typedCode,
-    specialRequests: state.specialRequests.trim() || undefined,
+    // callable SDK 가 undefined 를 null 로 보내므로 값이 없으면 키 자체를 넣지 않는다.
+    ...(promoCode ? { promoCode } : {}),
+    ...(specialRequests ? { specialRequests } : {}),
     agreedToTerms: state.agreedToTerms,
     website: state.website,
   };

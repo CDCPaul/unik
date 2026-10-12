@@ -15,7 +15,10 @@ import {
 } from '../shared-domain';
 import { SubmitError } from './errors';
 
-const blankToUndefined = (v: unknown) => (typeof v === 'string' ? (v.trim() === '' ? undefined : v.trim()) : v);
+// 콜백 SDK 는 undefined 를 null 로 직렬화한다 → null 도 미입력으로 취급한다.
+const nullToUndefined = (v: unknown) => (v === null ? undefined : v);
+const blankToUndefined = (v: unknown) =>
+  v === null ? undefined : typeof v === 'string' ? (v.trim() === '' ? undefined : v.trim()) : v;
 
 const optText = (max: number) =>
   z.preprocess(
@@ -55,12 +58,12 @@ export const submitInputSchema = z.object({
       (v) => (typeof v === 'string' ? normalizePhoneNumber(v) : v),
       z.string().regex(PHONE_NUMBER_PATTERN),
     ),
-    viber: z.boolean().default(false),
-    whatsapp: z.boolean().default(false),
+    viber: z.preprocess(nullToUndefined, z.boolean().default(false)),
+    whatsapp: z.preprocess(nullToUndefined, z.boolean().default(false)),
   }),
-  travelers: z.array(travelerSchema).max(10).default([]),
+  travelers: z.preprocess(nullToUndefined, z.array(travelerSchema).max(10).default([])),
   promoCode: z.preprocess(
-    (v) => (typeof v === 'string' ? (v.trim() === '' ? undefined : v.trim().toUpperCase()) : v),
+    (v) => (typeof v === 'string' ? (v.trim() === '' ? undefined : v.trim().toUpperCase()) : nullToUndefined(v)),
     z.string().regex(PROMO_CODE_PATTERN).optional(),
   ),
   specialRequests: z.preprocess(
@@ -72,7 +75,7 @@ export const submitInputSchema = z.object({
       .optional(),
   ),
   agreedToTerms: z.literal(true),
-  website: z.string().max(0).optional(), // honeypot: 사람은 이 칸을 보지 못한다
+  website: z.preprocess(nullToUndefined, z.string().max(0).optional()), // honeypot: 사람은 이 칸을 보지 못한다
 });
 
 export type SubmitInput = z.infer<typeof submitInputSchema>;

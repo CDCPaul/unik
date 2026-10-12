@@ -139,6 +139,11 @@ describe('toSubmitPayload', () => {
     expect(p.idempotencyKey).toBe('key-1');
     expect(p.website).toBe('');
   });
+  it('omits promoCode and specialRequests keys entirely for an empty form', () => {
+    const p = toSubmitPayload(filled());
+    expect('promoCode' in p).toBe(false);
+    expect('specialRequests' in p).toBe(false);
+  });
 });
 
 describe('estimatePricing', () => {

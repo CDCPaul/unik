@@ -18,6 +18,29 @@ describe('parseSubmitInput', () => {
   it('treats an empty promo code as none', () => {
     expect(parseSubmitInput(validInput({ promoCode: '' })).promoCode).toBeUndefined();
   });
+  it('treats null optional fields (callable SDK encodes undefined as null) as absent', () => {
+    const r = parseSubmitInput(
+      validInput({
+        promoCode: null,
+        specialRequests: null,
+        website: null,
+        travelers: [
+          { category: 'full', passportName: null, dob: null, gender: null, nationality: null, tshirtSize: null, expectedFinish: null, recentMarathon: null, room: null, emergencyContact: null },
+        ],
+      }),
+    );
+    expect(r.promoCode).toBeUndefined();
+    expect(r.specialRequests).toBeUndefined();
+    expect(r.website).toBeUndefined();
+    expect(r.travelers[0].dob).toBeUndefined();
+    expect(r.travelers[0].room).toBeUndefined();
+  });
+  it('treats null travelers as an empty list', () => {
+    expect(parseSubmitInput(validInput({ travelers: null })).travelers).toEqual([]);
+  });
+  it('still rejects a non-empty honeypot', () => {
+    expect(() => parseSubmitInput(validInput({ website: 'x' }))).toThrow(SubmitError);
+  });
   it('rejects a filled honeypot', () => {
     expect(() => parseSubmitInput(validInput({ website: 'http://spam' }))).toThrow(SubmitError);
   });
