@@ -38,6 +38,7 @@ describe('application emails', () => {
     const { subject, html } = customerEmail({ ...app, status: 'waitlist' });
     expect(subject).toBe("You're on the waitlist (APP-0021) | Seoul Marathon 2027 Tour");
     expect(html).toContain('waitlist');
+    expect(html).toContain('All available slots are currently taken, so we have added you to the waitlist.');
   });
   it('staff email links to the admin detail and summarises the booking', () => {
     const { subject, html } = staffEmail(app, 'doc-123');

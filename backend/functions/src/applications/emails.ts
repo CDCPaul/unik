@@ -56,7 +56,7 @@ export function customerEmail(app: ApplicationEmailData): { subject: string; htm
       html: layout(
         'You are on the waitlist',
         `<p>Hi ${name},</p>
-<p>Thank you for applying. This departure is currently full, so we have added you to the waitlist. We will contact you as soon as a slot opens.</p>
+<p>Thank you for applying. All available slots are currently taken, so we have added you to the waitlist. We will contact you as soon as a slot opens.</p>
 ${summaryTable(app)}
 <p>No payment is needed. Reply to this email if you have any questions.</p>`,
       ),
