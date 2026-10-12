@@ -50,6 +50,11 @@ describe('parseSubmitInput', () => {
     );
     expect(() => parseSubmitInput(validInput({ agreedToTerms: false }))).toThrow(SubmitError);
   });
+  it('rejects null for required fields (null is only "absent" for optional ones)', () => {
+    expect(() => parseSubmitInput(validInput({ agreedToTerms: null }))).toThrow(SubmitError);
+    expect(() => parseSubmitInput(validInput({ lead: { ...validInput().lead, email: null } }))).toThrow(SubmitError);
+    expect(() => parseSubmitInput(validInput({ idempotencyKey: null }))).toThrow(SubmitError);
+  });
   it('accepts and normalizes Philippine phone formats', () => {
     const r = parseSubmitInput(validInput({ lead: { ...validInput().lead, phoneNumber: '(0917) 123-4567' } }));
     expect(r.lead.phoneNumber).toBe('0917 123-4567');
