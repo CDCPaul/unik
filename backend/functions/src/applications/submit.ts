@@ -9,6 +9,7 @@ import {
   formatAppNo,
   promoUsagePax,
   totalPax,
+  type ApplicationStatus,
   type Pricing,
   type PromoCode,
 } from '../shared-domain';
@@ -19,9 +20,11 @@ import { SubmitError } from './errors';
 import { parseSubmitInput } from './input';
 import { toSummary } from './summary';
 
+const isMoney = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 0;
+
 export interface SubmitResult {
   appNo: string;
-  status: 'new' | 'waitlist';
+  status: ApplicationStatus;
   pricing: Pricing;
   duplicate: boolean;
 }
@@ -41,6 +44,14 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
   if (!config || !config.acceptingApplications) throw new SubmitError('closed', 'Applications are currently closed.');
   const departure = config.departures.find((d) => d.id === input.departureId);
   if (!departure || !departure.isOpen) {
+    throw new SubmitError('departure_closed', 'This departure is not available.');
+  }
+
+  // 잘못 입력된 운영 설정으로 NaN·음수 금액의 신청이 저장되는 것을 막는다.
+  const { prices } = departure;
+  if (
+    ![prices?.full, prices?.tenK, prices?.companion, departure.singleSupplement, config.depositPerPax].every(isMoney)
+  ) {
     throw new SubmitError('departure_closed', 'This departure is not available.');
   }
 

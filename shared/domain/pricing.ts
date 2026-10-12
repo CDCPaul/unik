@@ -38,12 +38,13 @@ export function computePricing(input: PricingInput): Pricing {
   }
 
   const subtotal = base + singleSupplements;
+  const total = subtotal - (promo ? promo.discountTotal : 0);
   return {
     lines,
     singleSupplements,
     subtotal,
     promo,
-    total: subtotal - (promo ? promo.discountTotal : 0),
-    depositDue: input.depositPerPax * pax,
+    total,
+    depositDue: Math.min(input.depositPerPax * pax, total),
   };
 }

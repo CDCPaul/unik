@@ -75,4 +75,29 @@ describe('computePricing', () => {
     expect(p.promo?.discountTotal).toBe(80000);
     expect(p.total).toBe(15000);
   });
+
+  it('caps the deposit at the total when a 100% promo makes the total 0', () => {
+    const p = computePricing(
+      input({ promo: { code: 'TA-FREE', agencyName: 'X', discountType: 'percent', discountValue: 100 } }),
+    );
+    expect(p.total).toBe(0);
+    expect(p.depositDue).toBe(0);
+  });
+
+  it('caps the deposit at the total when the total is below the per-pax deposit sum', () => {
+    const p = computePricing(
+      input({
+        counts: { full: 1, tenK: 0, companion: 0 },
+        travelers: [{}],
+        promo: { code: 'TA-X', agencyName: 'X', discountType: 'fixed', discountValue: 75000 },
+        depositPerPax: 10000,
+      }),
+    );
+    expect(p.total).toBe(5000);
+    expect(p.depositDue).toBe(5000);
+  });
+
+  it('keeps the full per-pax deposit when the total exceeds it', () => {
+    expect(computePricing(input()).depositDue).toBe(30000);
+  });
 });

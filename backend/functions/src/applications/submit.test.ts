@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { submitApplicationCore } from './submit';
 import { SubmitError } from './errors';
-import { clearFirestore, seedPromo, seedTourConfig, testDb, validInput } from '../test/helpers';
+import { baseConfig, clearFirestore, seedPromo, seedTourConfig, testDb, validInput } from '../test/helpers';
 import { COL, TOUR_ID } from '../lib/collections';
 
 const now = new Date('2026-10-20T03:00:00Z');
@@ -84,6 +84,24 @@ describe('submitApplicationCore', () => {
     await expectSubmitError(submitApplicationCore(testDb(), validInput(), now), 'closed');
     await seedTourConfig();
     await expectSubmitError(submitApplicationCore(testDb(), validInput({ departureId: 'xyz' }), now), 'departure_closed');
+  });
+
+  it('rejects a departure whose configured prices are missing or not whole non-negative numbers', async () => {
+    const [mnl, ceb] = baseConfig.departures;
+    const broken = (over: Record<string, unknown>) => ({ ...mnl, ...over }) as typeof mnl;
+    const bad = [
+      broken({ prices: { tenK: 75000, companion: 70000 } }), // full 누락
+      broken({ prices: { ...mnl.prices, tenK: -1 } }),
+      broken({ prices: { ...mnl.prices, companion: 70000.5 } }),
+      broken({ singleSupplement: null }),
+    ];
+    for (const departure of bad) {
+      await seedTourConfig({ departures: [departure, ceb] });
+      await expectSubmitError(submitApplicationCore(testDb(), validInput(), now), 'departure_closed');
+    }
+    await seedTourConfig({ depositPerPax: -5 });
+    await expectSubmitError(submitApplicationCore(testDb(), validInput(), now), 'departure_closed');
+    expect((await testDb().collection(COL.applications).get()).size).toBe(0);
   });
 
   it('puts the application on the waitlist when bibs run out', async () => {
