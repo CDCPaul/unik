@@ -75,6 +75,13 @@ describe('validateForSubmit', () => {
       ['agreedToTerms', 'departureId', 'lead.email', 'lead.firstName', 'lead.lastName', 'lead.phoneNumber'].sort(),
     );
   });
+  it('uses the shared passport-name rule (80 chars, no links) with a clear message', () => {
+    const run = (value: string) => validateForSubmit(applyReducer(filled(), { type: 'setTraveler', index: 0, field: 'passportName', value }), '2026-10-13');
+    expect(run('X'.repeat(80))).toEqual({});
+    expect(run('X'.repeat(81))).toEqual({ 'travelers.0.passportName': 'Please check the name (as written in your passport).' });
+    expect(run('see www.spam.com')).toEqual({ 'travelers.0.passportName': 'Please check the name (as written in your passport).' });
+    expect(run('MARIA' + String.fromCharCode(7))).toEqual({ 'travelers.0.passportName': 'Please check the name (as written in your passport).' });
+  });
   it('validates optional traveler fields only when filled', () => {
     let s = filled();
     s = applyReducer(s, { type: 'setTraveler', index: 0, field: 'dob', value: '2027-02-30' });

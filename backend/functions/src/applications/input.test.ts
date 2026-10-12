@@ -91,6 +91,12 @@ describe('parseSubmitInput', () => {
       }
       expect(() => parseSubmitInput(validInput(traveler({ passportName: 'a\nb' })))).toThrow(SubmitError);
     });
+    it('applies the shared passport-name rule: 80 chars max, no links or markup', () => {
+      expect(parseSubmitInput(validInput(traveler({ passportName: 'X'.repeat(80) }))).travelers[0].passportName).toBe('X'.repeat(80));
+      for (const bad of ['X'.repeat(81), 'www.spam.com', 'see https://x.y', '<b>MARIA</b>']) {
+        expect(() => parseSubmitInput(validInput(traveler({ passportName: bad }))), bad).toThrow(SubmitError);
+      }
+    });
     it('allows newlines and tabs only in specialRequests', () => {
       expect(parseSubmitInput(validInput({ specialRequests: 'line1\r\nline2\tok' })).specialRequests).toBe(
         'line1\r\nline2\tok',

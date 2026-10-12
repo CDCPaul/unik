@@ -1,6 +1,7 @@
 // 신청 폼 입력 규칙. 웹 폼과 Cloud Functions 가 같은 규칙을 쓴다.
 
 export const NAME_MAX = 60;
+export const PASSPORT_NAME_MAX = 80;
 export const PHONE_DIAL_PATTERN = /^\+\d{1,4}$/;
 export const PHONE_NUMBER_PATTERN = /^[0-9 -]{6,20}$/;
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -26,6 +27,12 @@ export function hasLinkOrMarkup(value: string): boolean {
 export function isValidName(value: string): boolean {
   const v = value.trim();
   return v.length >= 1 && v.length <= NAME_MAX && !hasControlChars(v) && !hasLinkOrMarkup(v);
+}
+
+/** 여권 이름(선택 입력): 트림 후 1–80자, 제어문자·링크·마크업 금지. 쉼표·마침표 등은 허용한다. */
+export function isValidPassportName(value: string): boolean {
+  const v = value.trim();
+  return v.length >= 1 && v.length <= PASSPORT_NAME_MAX && !hasControlChars(v) && !hasLinkOrMarkup(v);
 }
 
 /** 괄호·점을 공백으로 바꾸고 연속 공백을 하나로 줄인다. "(0917) 123-4567" → "0917 123-4567" */

@@ -9,6 +9,7 @@ import {
   hasControlCharsExceptWhitespace,
   isValidBirthDate,
   isValidName,
+  isValidPassportName,
   isValidPromoCodeFormat,
   normalizePhoneNumber,
   normalizePromoCode,
@@ -121,7 +122,6 @@ export function applyReducer(state: ApplyState, action: ApplyAction): ApplyState
 }
 
 const OPTIONAL_TEXT_MAX: Partial<Record<TravelerField, number>> = {
-  passportName: 80,
   nationality: 60,
   expectedFinish: 20,
   recentMarathon: 120,
@@ -147,7 +147,7 @@ export function validateForSubmit(state: ApplyState, today: string): Record<stri
   else if (hasControlCharsExceptWhitespace(requests)) errors.specialRequests = 'Please remove unusual characters.';
   state.travelers.forEach((t, i) => {
     const name = t.passportName?.trim();
-    if (name && !isValidName(name)) errors[`travelers.${i}.passportName`] = 'Please use letters only.';
+    if (name && !isValidPassportName(name)) errors[`travelers.${i}.passportName`] = 'Please check the name (as written in your passport).';
     const dob = t.dob?.trim();
     if (dob && !isValidBirthDate(dob, today)) errors[`travelers.${i}.dob`] = 'Please enter a valid date of birth.';
     for (const [field, max] of Object.entries(OPTIONAL_TEXT_MAX) as [TravelerField, number][]) {

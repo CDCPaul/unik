@@ -9,6 +9,7 @@ import {
   hasControlCharsExceptWhitespace,
   isValidBirthDate,
   isValidName,
+  isValidPassportName,
   manilaDate,
   normalizePhoneNumber,
   validateCounts,
@@ -29,12 +30,14 @@ const optText = (max: number) =>
       .refine((v) => !hasControlChars(v), 'Invalid characters')
       .optional(),
   );
+// 여권 이름은 선택 입력이며 웹 폼과 같은 규칙(shared isValidPassportName)을 쓴다.
+const optPassportName = z.preprocess(blankToUndefined, z.string().refine(isValidPassportName, 'Invalid name').optional());
 const nameText = z.string().trim().refine(isValidName, 'Invalid name');
 const count = z.number().int().min(0).max(10);
 
 const travelerSchema = z.object({
   category: z.enum(['full', 'tenK', 'companion']),
-  passportName: optText(80),
+  passportName: optPassportName,
   dob: z.preprocess(blankToUndefined, z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((v) => isValidBirthDate(v, manilaDate(new Date())), 'Invalid date').optional()),
   gender: z.preprocess(blankToUndefined, z.enum(['female', 'male']).optional()),
   nationality: optText(60),

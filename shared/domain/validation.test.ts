@@ -7,7 +7,9 @@ import {
   hasControlCharsExceptWhitespace,
   hasLinkOrMarkup,
   isValidBirthDate,
+  PASSPORT_NAME_MAX,
   isValidName,
+  isValidPassportName,
   normalizePhoneNumber,
 } from './validation';
 
@@ -27,6 +29,23 @@ describe('names', () => {
     expect(hasControlChars('a\u0007b')).toBe(true);
     expect(hasControlCharsExceptWhitespace('line1\nline2\tx')).toBe(false);
     expect(hasLinkOrMarkup('WWW.x.com')).toBe(true);
+  });
+});
+
+describe('passport names', () => {
+  it('allows up to 80 characters, longer than a regular name', () => {
+    expect(PASSPORT_NAME_MAX).toBe(80);
+    expect(isValidPassportName('A'.repeat(80))).toBe(true);
+    expect(isValidPassportName('A'.repeat(81))).toBe(false);
+    expect(isValidName('A'.repeat(80))).toBe(false);
+  });
+  it('trims before measuring and accepts real passport names', () => {
+    for (const n of ['  SANTOS MARIA JOSE  ', "O'NEIL-SANTOS ANNE", '김민지', 'DELA CRUZ, JUAN']) expect(isValidPassportName(n)).toBe(true);
+  });
+  it('rejects blank, control characters, links and markup', () => {
+    for (const n of ['', '   ', 'MARIA' + String.fromCharCode(10) + 'Bcc: x', 'a' + String.fromCharCode(7) + 'b', 'www.spam.com', 'https://x.y', '<b>MARIA</b>']) {
+      expect(isValidPassportName(n), JSON.stringify(n)).toBe(false);
+    }
   });
 });
 
