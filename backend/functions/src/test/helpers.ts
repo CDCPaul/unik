@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import type { PromoCode, TourConfig } from '../shared-domain';
 import { COL, TOUR_ID } from '../lib/collections';
@@ -64,4 +65,24 @@ export async function seedPromo(code: string, over: Partial<Omit<PromoCode, 'cod
       active: true,
       ...over,
     });
+}
+
+export function validInput(over: Record<string, unknown> = {}) {
+  return {
+    idempotencyKey: randomUUID(),
+    departureId: 'mnl',
+    counts: { full: 2, tenK: 0, companion: 1 },
+    lead: {
+      firstName: 'Maria',
+      lastName: 'Santos',
+      email: 'Maria@Example.com ',
+      phoneDial: '+63',
+      phoneNumber: '917 123 4567',
+      viber: true,
+      whatsapp: false,
+    },
+    travelers: [],
+    agreedToTerms: true,
+    ...over,
+  };
 }

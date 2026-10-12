@@ -9,3 +9,4 @@ setGlobalOptions({
 });
 
 export { onNewContact } from './contact';
+export { submitApplication, checkPromoCode } from './applications/callables';
