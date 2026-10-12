@@ -58,12 +58,11 @@ export function ApplyForm() {
     const store = browserStore();
     const now = Date.now();
     const urlCode = searchParams.get('code');
-    const fromUrl = urlCode ? savePromoCode(store, urlCode, now) : null;
-    const savedCode = fromUrl ?? loadPromoCode(store, now);
+    if (urlCode) savePromoCode(store, urlCode, now);
     const { state: next, autoCheckCode } = resolveInitialState({
       draft: loadDraft(store),
-      urlCode: fromUrl,
-      storedCode: savedCode,
+      urlCode,
+      storedCode: loadPromoCode(store, now),
       freshKey: state.idempotencyKey,
       base: state,
     });

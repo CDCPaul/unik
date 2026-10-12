@@ -24,7 +24,8 @@ function validCode(raw: string | null): string | null {
  * 신청 폼 시작 상태를 정한다.
  * - 임시저장의 멱등성 키는 제출을 시도한 적이 있을 때만 유지한다(같은 신청의 재시도).
  *   그렇지 않으면 새 키를 받아, 두 번째 신청이 첫 신청과 합쳐지지 않게 한다.
- * - 주소의 ?code= 가 저장된 코드·입력 중이던 코드보다 우선한다. 저장된 코드는 빈 입력만 채운다.
+ * - 주소의 ?code= 가 저장된 코드·입력 중이던 코드·다른 코드로 적용된 프로모보다 우선한다.
+ * - 저장된 코드는 빈 입력만 채운다(적용된 프로모나 입력 중인 코드는 덮지 않는다).
  */
 export function resolveInitialState(input: InitialStateInput): { state: ApplyState; autoCheckCode: string | null } {
   const { draft, freshKey, base } = input;
@@ -39,10 +40,14 @@ export function resolveInitialState(input: InitialStateInput): { state: ApplySta
       }
     : { ...base, idempotencyKey: freshKey, submitAttempted: false };
 
-  const code = url ?? stored;
-  if (code && !state.promo && (url || !state.promoInput.trim())) {
-    state = { ...state, promoInput: code };
+  if (url) {
+    // 주소의 코드가 가장 우선: 입력 중이던 코드·저장된 코드를 덮고, 다른 코드로 적용돼 있던 프로모는 해제한다.
+    state = { ...state, promoInput: url, promo: state.promo?.code === url ? state.promo : null };
+  } else if (stored && !state.promo && !state.promoInput.trim()) {
+    state = { ...state, promoInput: stored };
   }
-  const autoCheckCode = state.promoInput.trim() && !state.promo ? normalizePromoCode(state.promoInput) : null;
+  const typed = state.promoInput.trim() ? normalizePromoCode(state.promoInput) : null;
+  // 이미 같은 코드가 적용돼 있으면 다시 확인하지 않는다.
+  const autoCheckCode = typed && state.promo?.code !== typed ? typed : null;
   return { state, autoCheckCode };
 }
