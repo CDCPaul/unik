@@ -10,3 +10,4 @@ setGlobalOptions({
 
 export { onNewContact } from './contact';
 export { submitApplication, checkPromoCode } from './applications/callables';
+export { onApplicationCreated, onApplicationWritten, onTourConfigWritten } from './applications/triggers';
