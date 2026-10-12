@@ -46,6 +46,13 @@ export const LEGAL: Record<'terms' | 'privacy' | 'refund', LegalDoc> = {
         ],
       },
       {
+        heading: 'On your device and form protection',
+        body: [
+          'While you fill in the application form, your answers are saved on your own device (in your browser) so you can come back to them. They stay there until you submit the form, for up to 14 days after your last change, and are then removed.',
+          'We use Google reCAPTCHA (through Firebase App Check) to protect our forms from spam and abuse. It runs in the background and may process technical information such as your IP address and browser details, under the Google Privacy Policy and Terms of Service.',
+        ],
+      },
+      {
         heading: 'Why we use it',
         body: [
           'To process your application, register runners with the race organizers, book flights and hotels, contact you about your booking, and meet legal requirements.',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clearDraft, loadDraft, saveDraft } from './draft';
+import { DRAFT_TTL_MS, clearDraft, loadDraft, saveDraft } from './draft';
 import { applyReducer, initialApplyState } from './model';
 import type { KeyValueStore } from '../store';
 
@@ -52,6 +52,27 @@ describe('draft', () => {
   });
   it('treats a non-boolean submitAttempted as false', () => {
     expect(loadDraft(savedRaw((raw) => void (raw.submitAttempted = 'yes')))!.submitAttempted).toBe(false);
+  });
+  it('stamps savedAt when saving and does not leak it into the state', () => {
+    const s = memoryStore();
+    saveDraft(s, initialApplyState(KEY), 1_000);
+    expect(JSON.parse(s.data.get('unik.applyDraft.v1')!).savedAt).toBe(1_000);
+    expect('savedAt' in loadDraft(s, 1_001)!).toBe(false);
+  });
+  it('keeps a draft for 14 days from the last save, then discards and removes it', () => {
+    expect(DRAFT_TTL_MS).toBe(14 * 24 * 60 * 60 * 1000);
+    const s = memoryStore();
+    saveDraft(s, initialApplyState(KEY), 1_000);
+    expect(loadDraft(s, 1_000 + DRAFT_TTL_MS)).not.toBeNull();
+    expect(loadDraft(s, 1_000 + DRAFT_TTL_MS + 1)).toBeNull();
+    expect(s.data.has('unik.applyDraft.v1')).toBe(false);
+  });
+  it('accepts a draft without savedAt once (saved before the expiry existed)', () => {
+    const s = savedRaw((raw) => void delete raw.savedAt);
+    expect(loadDraft(s, Date.now())).not.toBeNull();
+  });
+  it('discards a draft whose savedAt is not a number', () => {
+    expect(loadDraft(savedRaw((raw) => void (raw.savedAt = 'yesterday')), Date.now())).toBeNull();
   });
   it('rejects a draft whose idempotencyKey is not a UUID', () => {
     const s = memoryStore();
