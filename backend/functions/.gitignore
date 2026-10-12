@@ -1,5 +1,5 @@
 # Compiled JavaScript files
-lib/
+/lib/
 
 # Node modules
 node_modules/
@@ -12,3 +12,6 @@ node_modules/
 .firebase/
 firebase-debug.log
 
+
+# shared/domain 복사본 (npm run copy-shared 가 생성)
+src/shared-domain/
