@@ -14,6 +14,13 @@ export const PROMO_REASON_MESSAGES: Record<PromoInvalidReason, string> = {
   limit_reached: 'This promo code has reached its limit for the number of travelers.',
 };
 
+/** 서버가 모르는 사유를 보내도 빈 문구가 되지 않도록 not_found 문구로 대체한다. */
+function promoReasonMessage(reason: unknown): string {
+  return typeof reason === 'string' && Object.prototype.hasOwnProperty.call(PROMO_REASON_MESSAGES, reason)
+    ? PROMO_REASON_MESSAGES[reason as PromoInvalidReason]
+    : PROMO_REASON_MESSAGES.not_found;
+}
+
 export type DescribedError = {
   kind: 'invalid_input' | 'closed' | 'departure_closed' | 'promo_invalid' | 'rate_limited' | 'network' | 'unknown';
   message: string;
@@ -51,11 +58,15 @@ export function describeSubmitError(err: unknown): DescribedError {
       return {
         kind: 'promo_invalid',
         promoReason: reason,
-        message: reason ? PROMO_REASON_MESSAGES[reason] : PROMO_REASON_MESSAGES.not_found,
+        message: promoReasonMessage(reason),
       };
     }
     case 'rate_limited':
       return { kind: 'rate_limited', message: serverMessage ?? 'Too many applications in a short time. Please contact us.' };
+  }
+  // App Check 토큰이 없거나 만료된 경우 등. 새로고침하면 토큰이 다시 발급된다.
+  if (e.code === 'functions/unauthenticated' || e.code === 'functions/permission-denied') {
+    return { kind: 'unknown', message: 'Please refresh the page and try again. If it keeps happening, contact us.' };
   }
   if (isRetryable(err)) {
     return {

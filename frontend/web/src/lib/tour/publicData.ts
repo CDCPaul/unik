@@ -16,18 +16,27 @@ export async function fetchTourConfig(): Promise<TourConfig | null> {
 
 export function subscribeTourData(
   callback: (data: { config: TourConfig | null; availability: Availability | null }) => void,
+  onError?: (error: unknown) => void,
 ): () => void {
   let config: TourConfig | null = null;
   let availability: Availability | null = null;
   const emit = () => callback({ config, availability });
-  const offConfig = onSnapshot(doc(db, COLLECTIONS.tourConfig, TOUR_ID), (s) => {
-    config = s.exists() ? (s.data() as TourConfig) : null;
-    emit();
-  });
-  const offAvailability = onSnapshot(doc(db, COLLECTIONS.availability, TOUR_ID), (s) => {
-    availability = s.exists() ? (s.data() as Availability) : null;
-    emit();
-  });
+  const offConfig = onSnapshot(
+    doc(db, COLLECTIONS.tourConfig, TOUR_ID),
+    (s) => {
+      config = s.exists() ? (s.data() as TourConfig) : null;
+      emit();
+    },
+    (error) => onError?.(error),
+  );
+  const offAvailability = onSnapshot(
+    doc(db, COLLECTIONS.availability, TOUR_ID),
+    (s) => {
+      availability = s.exists() ? (s.data() as Availability) : null;
+      emit();
+    },
+    (error) => onError?.(error),
+  );
   return () => {
     offConfig();
     offAvailability();

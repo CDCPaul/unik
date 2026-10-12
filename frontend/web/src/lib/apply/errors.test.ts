@@ -34,6 +34,19 @@ describe('describeSubmitError', () => {
   it('treats exhausted retries as a network problem', () => {
     expect(describeSubmitError(fnError('functions/unavailable')).kind).toBe('network');
   });
+  it('falls back to the not-found message for an unknown promo reason', () => {
+    const d = describeSubmitError(fnError('functions/failed-precondition', { code: 'promo_invalid', reason: 'something_new' }));
+    expect(d.kind).toBe('promo_invalid');
+    expect(d.message).toMatch(/couldn't find this promo code/i);
+  });
+  it('asks the user to refresh when App Check or auth rejects the call', () => {
+    for (const code of ['functions/unauthenticated', 'functions/permission-denied']) {
+      expect(describeSubmitError(fnError(code))).toEqual({
+        kind: 'unknown',
+        message: 'Please refresh the page and try again. If it keeps happening, contact us.',
+      });
+    }
+  });
   it('falls back to unknown', () => {
     expect(describeSubmitError('boom').kind).toBe('unknown');
   });

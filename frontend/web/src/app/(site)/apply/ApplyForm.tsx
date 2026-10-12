@@ -36,6 +36,7 @@ export function ApplyForm() {
   const [state, dispatch] = useReducer(applyReducer, null, () => initialApplyState(newKey()));
   const [data, setData] = useState<{ config: TourConfig | null; availability: Availability | null }>({ config: null, availability: null });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [promoMessage, setPromoMessage] = useState<string>('');
   const [checkingPromo, setCheckingPromo] = useState(false);
@@ -80,10 +81,14 @@ export function ApplyForm() {
 
   useEffect(
     () =>
-      subscribeTourData((d) => {
-        setData(d);
-        setLoading(false);
-      }),
+      subscribeTourData(
+        (d) => {
+          setData(d);
+          setLoadError(false);
+          setLoading(false);
+        },
+        () => setLoadError(true),
+      ),
     [],
   );
 
@@ -123,6 +128,13 @@ export function ApplyForm() {
     } finally {
       setCheckingPromo(false);
     }
+  }
+
+  // Enter 는 폼 제출이 아니라 코드 확인으로 동작한다.
+  function onPromoKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (!checkingPromo && state.promoInput.trim()) void applyPromo();
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -194,7 +206,11 @@ export function ApplyForm() {
         {/* 1. Departure */}
         <fieldset className={card}>
           <legend className={legend}>1. Choose your departure</legend>
-          {loading ? <p>Loading departures…</p> : null}
+          {loadError && !data.config ? (
+            <p role="alert" className="font-semibold text-brand-red">We couldn&apos;t load departures. Please refresh the page or contact us.</p>
+          ) : loading ? (
+            <p>Loading departures…</p>
+          ) : null}
           {departures.map((d) => {
             const status = data.config ? departureStatus(data.config, data.availability, d.id, state.counts) : 'closed';
             const selected = state.departureId === d.id;
@@ -345,7 +361,7 @@ export function ApplyForm() {
           <div className="flex flex-wrap gap-2.5">
             <label className="flex flex-[1_1_240px] flex-col gap-1.5 text-sm font-bold text-brand-ink">
               Promo code
-              <input data-field="promoInput" className={`${field} font-bold tracking-[0.06em]`} value={state.promoInput} autoCapitalize="characters" aria-invalid={!!errors.promoInput} onChange={(e) => dispatch({ type: 'setPromoInput', value: e.target.value })} />
+              <input data-field="promoInput" className={`${field} font-bold tracking-[0.06em]`} value={state.promoInput} autoCapitalize="characters" aria-invalid={!!errors.promoInput} onChange={(e) => dispatch({ type: 'setPromoInput', value: e.target.value })} onKeyDown={onPromoKeyDown} />
               <FieldError id="err-promo" msg={errors.promoInput} />
             </label>
             <button type="button" onClick={() => void applyPromo()} disabled={checkingPromo || !state.promoInput.trim()} className="min-h-12 self-end rounded-xl bg-brand-ink px-6 font-extrabold text-white disabled:opacity-50">
@@ -378,6 +394,11 @@ export function ApplyForm() {
           </label>
           <FieldError id="err-terms" msg={errors.agreedToTerms} />
           {submitError ? <p role="alert" className="rounded-xl bg-[#FDECEC] px-4 py-3 font-semibold text-brand-red">{submitError}</p> : null}
+          {pricing ? (
+            <p className="text-center text-[15px] font-bold text-brand-ink lg:hidden">
+              Estimated total {formatPHP(pricing.total)} · deposit {formatPHP(pricing.depositDue)}
+            </p>
+          ) : null}
           <button type="submit" disabled={submitting} className="min-h-[60px] rounded-full bg-brand-red text-lg font-extrabold text-white disabled:opacity-60">
             {submitting ? 'Submitting…' : 'Submit application'}
           </button>

@@ -1,6 +1,36 @@
-import { describe, expect, it } from 'vitest';
-import { departureStatus, lowestPrice } from './publicData';
+import { describe, expect, it, vi } from 'vitest';
+import { departureStatus, lowestPrice, subscribeTourData } from './publicData';
 import type { Availability, TourConfig } from '@unik/shared/domain';
+
+const listeners: { onNext: (s: unknown) => void; onError?: (e: unknown) => void }[] = [];
+vi.mock('firebase/firestore', () => ({
+  doc: () => ({}),
+  getDoc: vi.fn(),
+  onSnapshot: (_ref: unknown, onNext: (s: unknown) => void, onError?: (e: unknown) => void) => {
+    listeners.push({ onNext, onError });
+    return () => undefined;
+  },
+}));
+vi.mock('@/lib/firebase', () => ({ db: {} }));
+
+describe('subscribeTourData', () => {
+  it('reports listener errors from both snapshots through onError', () => {
+    listeners.length = 0;
+    const onError = vi.fn();
+    subscribeTourData(() => undefined, onError);
+    expect(listeners).toHaveLength(2);
+    const err = new Error('permission-denied');
+    listeners[0].onError?.(err);
+    listeners[1].onError?.(err);
+    expect(onError).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenCalledWith(err);
+  });
+  it('works without an onError callback', () => {
+    listeners.length = 0;
+    subscribeTourData(() => undefined);
+    expect(() => listeners[0].onError?.(new Error('x'))).not.toThrow();
+  });
+});
 
 const config = {
   acceptingApplications: true,
