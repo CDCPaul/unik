@@ -23,12 +23,12 @@
 > 모든 `firebase` 명령은 저장소 루트에서, **병합 전** 오픈할 커밋을 체크아웃한 `feat/seoul-2027` 에서 실행한다.
 > 어떤 `firebase deploy` 든 실행하기 전에 먼저: `npm ci --prefix backend/functions` (배포 때 함수 소스가 이 의존성으로 빌드된다).
 
-1. [ ] (D-3 점검에서 `RESEND_API_KEY` 가 `onNewContact` 의 일반 환경변수였다면) 먼저 `firebase functions:delete onNewContact --region asia-northeast3 --project unik-90206` — 문의 메일이 약 1분간 멈춘다. 그렇지 않으면 이 단계는 건너뛴다.
+1. [x] (2026-10-13 배포 완료. 로컬 함수 분석이 10초를 넘으면 `FUNCTIONS_DISCOVERY_TIMEOUT=120` 을 붙인다) (D-3 점검에서 `RESEND_API_KEY` 가 `onNewContact` 의 일반 환경변수였다면) 먼저 `firebase functions:delete onNewContact --region asia-northeast3 --project unik-90206` — 문의 메일이 약 1분간 멈춘다. 그렇지 않으면 이 단계는 건너뛴다.
    **새 함수만 배포** (구 함수 spinRoulette·createRouletteWinner·onNewRegistration 은 그대로 유지, 구 사이트 영향 없음):
    `firebase deploy --only functions:submitApplication,functions:checkPromoCode,functions:onApplicationCreated,functions:onApplicationWritten,functions:onTourConfigWritten,functions:onNewContact --project unik-90206`
    - 구 함수 삭제를 묻는 프롬프트가 나오면 **No**.
    - `onNewContact` 는 이미 존재하므로 이 배포로 **새 버전으로 교체**된다 (수신자를 `tourConfig.notifyEmails` 에서 읽고, 없으면 `ticket@cebudirectclub.com` 으로 보냄. `RESEND_API_KEY` 시크릿 필요).
-2. [ ] **규칙 배포 + 사이트 전환을 연달아** (이 사이 수 분간 구 사이트 일부 기능 정지 — 트래픽 적은 시간대):
+2. [x] (2026-10-13 완료: main 병합 후 규칙 배포) **규칙 배포 + 사이트 전환을 연달아** (이 사이 수 분간 구 사이트 일부 기능 정지 — 트래픽 적은 시간대):
    1. `firebase deploy --only firestore:rules --project unik-90206`
    2. `feat/seoul-2027` → `main` 병합 (PR 머지) → Vercel 프로덕션 배포 완료 확인
 3. [ ] 어드민 로그인 → **Tour settings** 입력: 출발편·가격·좌석·예약금·배번 200·알림 메일·Maya 링크. 이때 "Accepting applications" 는 **끈 상태**로 저장.
