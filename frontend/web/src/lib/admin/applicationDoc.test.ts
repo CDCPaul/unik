@@ -34,4 +34,14 @@ describe('fromApplicationDoc', () => {
     expect(r.counts).toEqual({ full: 0, tenK: 0, companion: 0 });
     expect(r.travelers).toEqual([]);
   });
+  it('reads voided payment fields and leaves normal payments without them', () => {
+    const r = fromApplicationDoc('doc3', {
+      payments: [
+        { id: 'p1', type: 'deposit', method: 'cash', amount: 1000, paidAt: ts('2026-10-20T02:00:00Z'), recordedBy: 'a@x.co', voidedAt: ts('2026-10-21T02:00:00Z'), voidedBy: 'b@x.co' },
+        { id: 'p2', type: 'balance', method: 'cash', amount: 2000, paidAt: ts('2026-10-20T02:00:00Z'), recordedBy: 'a@x.co' },
+      ],
+    });
+    expect(r.payments[0]).toMatchObject({ voidedAt: new Date('2026-10-21T02:00:00Z'), voidedBy: 'b@x.co' });
+    expect('voidedAt' in r.payments[1]).toBe(false);
+  });
 });

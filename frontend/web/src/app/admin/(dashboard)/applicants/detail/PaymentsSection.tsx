@@ -6,9 +6,9 @@ import type { ApplicationStatus, PaymentMethod, PaymentType, TourConfig } from '
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { PAYMENT_METHOD_LABELS, PAYMENT_TYPE_LABELS, defaultPaymentType, paidAtFromDate } from '@/lib/admin/detailHelpers';
 import { parseAmount } from '@/lib/admin/edits';
-import { STATUS_LABELS } from '@/lib/admin/format';
+import { STATUS_LABELS, formatManila } from '@/lib/admin/format';
 import { getCurrentUser } from '@/lib/auth';
-import { addPaymentTx, changeStatusTx, removePaymentTx } from '@/lib/services/admin/applications';
+import { addPaymentTx, changeStatusTx, voidPaymentTx } from '@/lib/services/admin/applications';
 import { Field, Section, SaveError, useCopy, useSave } from './ui';
 
 const today = () => manilaDate(new Date());
@@ -85,9 +85,10 @@ export function PaymentsSection({ app, config }: { app: ApplicationRecord; confi
   const balanceLink = balance > 0 ? mayaPaymentLink(base, balance) : null;
   const payments = [...app.payments].sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime());
 
-  async function remove(id: string, label: string) {
-    if (!window.confirm(`Remove this payment (${label})? The paid total will be recalculated.`)) return;
-    await run(() => removePaymentTx(app.id, id));
+  async function voidIt(id: string, label: string) {
+    if (!window.confirm(`Void this payment (${label})? It stays in the list but no longer counts toward the paid total.`)) return;
+    const by = getCurrentUser()?.email ?? 'unknown';
+    await run(() => voidPaymentTx(app.id, id, by));
   }
 
   return (
@@ -104,10 +105,11 @@ export function PaymentsSection({ app, config }: { app: ApplicationRecord; confi
             return (
               <li key={p.id} className="flex items-start justify-between gap-2 py-2">
                 <div>
-                  <p className="font-semibold">{formatPHP(p.amount)} · {PAYMENT_TYPE_LABELS[p.type] ?? p.type} · {PAYMENT_METHOD_LABELS[p.method] ?? p.method}</p>
-                  <p className="text-xs text-slate-500">{manilaDate(p.paidAt)}{p.reference ? ` · Ref ${p.reference}` : ''} · {p.recordedBy}</p>
+                  <p className={`font-semibold ${p.voidedAt ? 'text-slate-400 line-through' : ''}`}>{formatPHP(p.amount)} · {PAYMENT_TYPE_LABELS[p.type] ?? p.type} · {PAYMENT_METHOD_LABELS[p.method] ?? p.method}</p>
+                  <p className={`text-xs text-slate-500 ${p.voidedAt ? 'line-through' : ''}`}>{manilaDate(p.paidAt)}{p.reference ? ` · Ref ${p.reference}` : ''} · {p.recordedBy}</p>
+                  {p.voidedAt ? <p className="text-xs font-semibold text-red-600">Voided by {p.voidedBy || 'unknown'} at {formatManila(p.voidedAt)} (Manila)</p> : null}
                 </div>
-                <button type="button" className="text-xs font-semibold text-red-600 underline disabled:opacity-50" disabled={saving} onClick={() => remove(p.id, label)}>Remove</button>
+                {p.voidedAt ? null : <button type="button" className="text-xs font-semibold text-red-600 underline disabled:opacity-50" disabled={saving} onClick={() => voidIt(p.id, label)}>Void</button>}
               </li>
             );
           })}

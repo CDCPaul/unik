@@ -4,11 +4,11 @@ import { COLLECTIONS } from '@unik/shared/firebase/config';
 import type { ApplicationStatus, Counts, TourConfig, Traveler } from '@unik/shared/domain';
 import { fromApplicationDoc } from '@/lib/admin/applicationDoc';
 import type { ApplicationRecord, PaymentRecord } from '@/lib/admin/applicationDoc';
-import { applyPayment, planCountsApply, planTravelersSave, withoutPayment } from '@/lib/admin/edits';
+import { applyPayment, planCountsApply, planTravelersSave, voidPayment } from '@/lib/admin/edits';
 import type { TxPlan } from '@/lib/admin/edits';
 
 const col = () => collection(db, COLLECTIONS.applications);
-// 상태·결제 관련 필드는 changeStatusTx / addPaymentTx / removePaymentTx 로만 바꾼다
+// 상태·결제 관련 필드는 changeStatusTx / addPaymentTx / voidPaymentTx 로만 바꾼다
 const PROTECTED_FIELDS = ['agreedToTermsAt', 'createdAt', 'appNo', 'status', 'statusHistory', 'payments', 'paidTotal'];
 
 export function subscribeApplications(cb: (apps: ApplicationRecord[]) => void, onError: (e: unknown) => void): () => void {
@@ -75,17 +75,18 @@ export async function applyCountsTx(id: string, baseCounts: Counts, newCounts: C
 
 export const isConflictError = (e: unknown) => e instanceof Error && e.message === 'conflict';
 
-export async function removePaymentTx(id: string, paymentId: string): Promise<void> {
+/** 결제를 삭제하지 않고 취소(void) 표시만 한다. 합계에서는 빠진다. */
+export async function voidPaymentTx(id: string, paymentId: string, by: string): Promise<void> {
   await runTransaction(db, async (tx) => {
     const ref = doc(col(), id);
     const snap = await tx.get(ref);
     if (!snap.exists()) throw new Error('Application not found');
-    const { payments, paidTotal } = withoutPayment(fromApplicationDoc(snap.id, snap.data()), paymentId);
+    const { payments, paidTotal } = voidPayment(fromApplicationDoc(snap.id, snap.data()), paymentId, by, new Date());
     tx.update(ref, { payments: payments.map(stripUndefinedPayment), paidTotal, updatedAt: serverTimestamp() });
   });
 }
 
 function stripUndefinedPayment(p: PaymentRecord): Record<string, unknown> {
-  const { reference, ...rest } = p;
-  return reference ? { ...rest, reference } : rest;
+  const { reference, voidedAt, voidedBy, ...rest } = p;
+  return { ...rest, ...(reference ? { reference } : {}), ...(voidedAt ? { voidedAt, voidedBy: voidedBy ?? '' } : {}) };
 }

@@ -126,9 +126,14 @@ export function parseAmount(raw: string): number | null {
 
 const NO_AUTO_SUGGEST: readonly ApplicationStatus[] = ['cancelled', 'confirmed', 'fully_paid', 'waitlist'];
 
+/** 취소(void)되지 않은 결제의 합계 */
+export function paidTotalOf(payments: PaymentRecord[]): number {
+  return payments.reduce((s, p) => (p.voidedAt ? s : s + p.amount), 0);
+}
+
 export function applyPayment(app: ApplicationRecord, payment: PaymentRecord) {
   const payments = [...app.payments, payment];
-  const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
+  const paidTotal = paidTotalOf(payments);
   let suggestedStatus: ApplicationStatus | null = null;
   if (!NO_AUTO_SUGGEST.includes(app.status)) {
     if (paidTotal >= app.pricing.total && app.pricing.total > 0) suggestedStatus = 'fully_paid';
@@ -137,9 +142,10 @@ export function applyPayment(app: ApplicationRecord, payment: PaymentRecord) {
   return { payments, paidTotal, suggestedStatus };
 }
 
-export function withoutPayment(app: ApplicationRecord, paymentId: string) {
-  const payments = app.payments.filter((p) => p.id !== paymentId);
-  return { payments, paidTotal: payments.reduce((s, p) => s + p.amount, 0) };
+/** 결제를 지우지 않고 취소 표시만 한다 (이미 취소된 결제는 그대로). */
+export function voidPayment(app: ApplicationRecord, paymentId: string, by: string, at: Date) {
+  const payments = app.payments.map((p) => (p.id === paymentId && !p.voidedAt ? { ...p, voidedAt: at, voidedBy: by } : p));
+  return { payments, paidTotal: paidTotalOf(payments) };
 }
 
 export function statusChangeWarnings(app: ApplicationRecord, next: ApplicationStatus): string[] {

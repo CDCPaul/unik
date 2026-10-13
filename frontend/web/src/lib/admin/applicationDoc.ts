@@ -15,6 +15,9 @@ export interface PaymentRecord {
   paidAt: Date;
   reference?: string;
   recordedBy: string;
+  /** 취소(void)된 결제. 기록은 남기고 합계에서만 제외한다. */
+  voidedAt?: Date;
+  voidedBy?: string;
 }
 
 export interface StatusEvent {
@@ -87,6 +90,7 @@ export function fromApplicationDoc(id: string, data: Obj): ApplicationRecord {
           paidAt: toDate(p.paidAt) ?? new Date(0),
           reference: typeof p.reference === 'string' ? p.reference : undefined,
           recordedBy: String(p.recordedBy ?? ''),
+          ...(toDate(p.voidedAt) ? { voidedAt: toDate(p.voidedAt)!, voidedBy: String(p.voidedBy ?? '') } : {}),
         }))
       : [],
     paidTotal: Number(data.paidTotal ?? 0),

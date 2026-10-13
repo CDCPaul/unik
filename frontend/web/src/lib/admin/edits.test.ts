@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord, PaymentRecord } from './applicationDoc';
-import { applyPayment, normalizeLead, parseAmount, planCountsApply, planTravelersSave, recalculate, repriceForTravelers, statusChangeWarnings, validateLead, validateTravelers, withoutPayment } from './edits';
+import { applyPayment, normalizeLead, parseAmount, planCountsApply, planTravelersSave, recalculate, repriceForTravelers, paidTotalOf, statusChangeWarnings, validateLead, validateTravelers, voidPayment } from './edits';
 
 const config: TourConfig = {
   acceptingApplications: true,
@@ -203,9 +203,26 @@ describe('payments', () => {
   it('never suggests a status for a waitlisted application', () => {
     expect(applyPayment({ ...app, status: 'waitlist' }, pay()).suggestedStatus).toBeNull();
   });
-  it('removes a payment and recomputes the total', () => {
+  it('voids a payment (kept in the list) and recomputes the total without it', () => {
     const withTwo = { ...app, payments: [pay(), pay({ id: 'p2', amount: 3000 })], paidTotal: 13000 };
-    expect(withoutPayment(withTwo, 'p1')).toEqual({ payments: [pay({ id: 'p2', amount: 3000 })], paidTotal: 3000 });
+    const at = new Date('2026-10-21T01:00:00Z');
+    const r = voidPayment(withTwo, 'p1', 'boss@cebudirectclub.com', at);
+    expect(r.paidTotal).toBe(3000);
+    expect(r.payments).toHaveLength(2);
+    expect(r.payments[0]).toMatchObject({ id: 'p1', amount: 10000, voidedAt: at, voidedBy: 'boss@cebudirectclub.com' });
+    expect(r.payments[1].voidedAt).toBeUndefined();
+  });
+  it('does not re-void an already voided payment', () => {
+    const at = new Date('2026-10-21T01:00:00Z');
+    const once = voidPayment({ ...app, payments: [pay()], paidTotal: 10000 }, 'p1', 'a@x.co', at);
+    const twice = voidPayment({ ...app, payments: once.payments, paidTotal: 0 }, 'p1', 'b@x.co', new Date());
+    expect(twice.payments[0]).toMatchObject({ voidedBy: 'a@x.co', voidedAt: at });
+  });
+  it('paidTotalOf and applyPayment ignore voided payments', () => {
+    const voided = pay({ id: 'v', amount: 50000, voidedAt: new Date(), voidedBy: 'a@x.co' });
+    expect(paidTotalOf([voided, pay({ id: 'p2', amount: 3000 })])).toBe(3000);
+    const r = applyPayment({ ...app, payments: [voided], paidTotal: 0 }, pay({ id: 'p3', amount: 10000 }));
+    expect(r).toMatchObject({ paidTotal: 10000, suggestedStatus: 'deposit_paid' });
   });
 });
 
