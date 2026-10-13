@@ -10,7 +10,6 @@ import {
   missingPriceCategories,
   promoEligiblePax,
   promoUsagePax,
-  totalPax,
   type ApplicationStatus,
   type Pricing,
   type PromoCode,
@@ -62,7 +61,6 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
   }
 
   const travelers = buildTravelers(input.counts, input.travelers);
-  const pax = totalPax(input.counts);
   const counterRef = db.collection(COL.counters).doc(TOUR_ID);
   const promoCode = input.promoCode ?? null;
 
