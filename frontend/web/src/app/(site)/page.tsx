@@ -75,7 +75,7 @@ export default async function HomePage() {
             {[
               [RACE.dateShort, 'Race day, Sunday'],
               ['FULL · 10K', 'Plus companion, child and infant packages for non-runners'],
-              ['MNL · CEB', 'Departures from Manila and Cebu'],
+              ['4 CITIES', 'Jeju Air flights from Manila, Cebu, Clark and Bohol'],
               [`${RACE.bibsTotal} BIBS`, 'Limited race entries for this tour'],
             ].map(([big, small]) => (
               <div key={big}>

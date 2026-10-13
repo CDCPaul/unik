@@ -9,7 +9,7 @@ export const PACKAGES: { category: Category; title: string; description: string 
 ];
 
 export const INCLUSIONS = [
-  'Round-trip flights from Manila or Cebu',
+  'Round-trip Jeju Air flights from Manila, Cebu, Clark or Bohol',
   '3 nights hotel in Seoul with breakfast (twin share)',
   'Race entry and bib for runners',
   'Meals and admission fees as listed in the itinerary',
@@ -55,4 +55,4 @@ export const ITINERARY = [
   },
 ];
 export const ITINERARY_NOTE =
-  'Flights from Manila leave the night of 18 Mar (after 11 pm); flights from other cities leave early on 19 Mar (around 1 am). All groups fly home on 22 Mar. Times and stops may change with the flight schedule, weather and traffic.';
+  'Flights from Manila leave the night of 18 Mar (after 11 pm); flights from Cebu, Clark and Bohol leave early on 19 Mar (around 1 am). All groups fly home on 22 Mar. Times and stops may change with the flight schedule, weather and traffic.';
