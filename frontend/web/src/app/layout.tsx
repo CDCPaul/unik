@@ -1,10 +1,6 @@
-import type { Metadata } from 'next';
-import { Outfit, Playfair_Display, Noto_Sans_KR } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Outfit } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { NavigationProvider } from '@/context/NavigationContext';
-import { SettingsProvider } from '@/context/SettingsContext';
-import { UiTextProvider } from '@/context/UiTextContext';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -12,55 +8,33 @@ const outfit = Outfit({
   display: 'swap',
 });
 
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-playfair',
-  display: 'swap',
-});
-
-const notoSansKr = Noto_Sans_KR({
-  subsets: ['latin'],
-  variable: '--font-noto-kr',
-  display: 'swap',
-});
-
 export const metadata: Metadata = {
-  title: 'UNIK | KBL All-Star 2026 Tour - Experience Korean Basketball',
-  description: 'Join the ultimate basketball tour from Philippines to Korea. Watch KBL All-Star 2026, meet Filipino players, and explore Korea. January 15-18, 2026.',
-  keywords: ['KBL', 'All-Star', 'Basketball', 'Korea', 'Philippines', 'Tour', 'Travel'],
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
+  metadataBase: new URL('https://unik.ph'),
+  title: {
+    default: 'UNIK | Seoul Marathon 2027 Tour with Artjoy Torregosa',
+    template: '%s | UNIK',
   },
-  themeColor: '#1f2937',
+  description:
+    'Run the 2027 Seoul Marathon (March 21, 2027) with Artjoy Torregosa. Flights, hotel, race entry and race-weekend support from the Philippines.',
   openGraph: {
-    title: 'UNIK | KBL All-Star 2026 Tour',
-    description: 'Experience the KBL All-Star 2026 in Korea. The ultimate basketball tour for Filipino fans.',
+    title: 'UNIK | Seoul Marathon 2027 Tour',
+    description: 'Run Seoul with Artjoy Torregosa. March 21, 2027.',
     type: 'website',
     locale: 'en_PH',
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0B1F4D',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${playfair.variable} ${notoSansKr.variable}`}>
-      <body className="min-h-screen">
-        <ThemeProvider>
-          <SettingsProvider>
-            <UiTextProvider>
-              <NavigationProvider>
-                {children}
-              </NavigationProvider>
-            </UiTextProvider>
-          </SettingsProvider>
-        </ThemeProvider>
-      </body>
+    <html lang="en" className={outfit.variable}>
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }

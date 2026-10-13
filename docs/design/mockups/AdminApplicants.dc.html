@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin applicants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+</style>
+</helmet>
+<div style="font-family: Manrope, sans-serif; color: #33405C; background: #F4F6FA; font-size: 14px; line-height: 1.45; display: flex; flex-wrap: wrap; min-height: 1000px">
+
+<nav aria-label="Admin" style="flex: 1 1 220px; max-width: 240px; background: #0B1F4D; color: #FFFFFF; padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box">
+<div style="padding: 0 12px 20px; display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: 0.06em">UNIK</span><span style="font-size: 12px; color: rgba(255,255,255,0.7)">Admin</span></div>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.14); font-weight: 700">Applicants</a>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; color: rgba(255,255,255,0.82); font-weight: 600">Promo codes</a>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; color: rgba(255,255,255,0.82); font-weight: 600">Tour settings</a>
+<a href="#" style="text-decoration: none; padding: 12px; border-radius: 10px; color: rgba(255,255,255,0.82); font-weight: 600">Business cards</a>
+</nav>
+
+<main style="flex: 999 1 900px; min-width: 0; padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px"><h1 style="margin: 0; font-size: 28px; font-weight: 800; color: #0B1F4D">Applicants</h1><span style="background: #FFF4D6; color: #7A5300; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px">Sample data</span></div>
+<button type="button" style="height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #C9D2E3; background: #FFFFFF; font: inherit; font-weight: 700; color: #0B1F4D; cursor: pointer">Export CSV</button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px">
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Applications</div><div style="font-size: 30px; font-weight: 800; color: #0B1F4D">24</div></div>
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Travelers</div><div style="font-size: 30px; font-weight: 800; color: #0B1F4D">61</div><div style="font-size: 12px">38 Full · 11 10K · 12 Companion</div></div>
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Confirmed travelers</div><div style="font-size: 30px; font-weight: 800; color: #0B1F4D">18</div><div style="font-size: 12px">of [N] slots</div></div>
+<div style="background: #FFFFFF; border-radius: 14px; padding: 18px 20px"><div style="font-size: 13px; font-weight: 600">Missing traveler info</div><div style="font-size: 30px; font-weight: 800; color: #B45309">9</div><div style="font-size: 12px">applications need follow-up</div></div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<div role="group" aria-label="Status filter" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{tabs}}" as="tab" hint-placeholder-count="7"><button type="button" style="{{tab.style}}">{{tab.label}}</button></sc-for>
+</div>
+<div style="flex: 1 1 auto"></div>
+<label style="display: flex; align-items: center; gap: 6px; font-weight: 600">Departure<select style="height: 40px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 10px; font: inherit; background: #FFFFFF"><option>All</option></select></label>
+<label style="display: flex; align-items: center; gap: 6px; font-weight: 600">Promo code<select style="height: 40px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 10px; font: inherit; background: #FFFFFF"><option>All</option></select></label>
+<input type="search" aria-label="Search applicants" placeholder="Search name, email, app no." style="height: 40px; width: 240px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 12px; font: inherit">
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 999 1 640px; min-width: 0; background: #FFFFFF; border-radius: 14px; overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; min-width: 820px">
+<thead><tr style="text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #5A6680">
+<th style="padding: 14px 16px; font-weight: 700">App no.</th><th style="padding: 14px 8px; font-weight: 700">Lead traveler</th><th style="padding: 14px 8px; font-weight: 700">Dep.</th><th style="padding: 14px 8px; font-weight: 700">Pax F / 10K / C</th><th style="padding: 14px 8px; font-weight: 700">Promo</th><th style="padding: 14px 8px; font-weight: 700">Total PHP</th><th style="padding: 14px 8px; font-weight: 700">Paid</th><th style="padding: 14px 8px; font-weight: 700">Info</th><th style="padding: 14px 16px; font-weight: 700">Status</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<tr style="{{r.rowStyle}}">
+<td style="padding: 14px 16px; font-weight: 700; color: #0B1F4D">{{r.no}}</td>
+<td style="padding: 14px 8px"><div style="font-weight: 700; color: #0B1F4D">{{r.name}}</div><div style="font-size: 12px">{{r.date}}</div></td>
+<td style="padding: 14px 8px">{{r.dep}}</td>
+<td style="padding: 14px 8px">{{r.pax}}</td>
+<td style="padding: 14px 8px; font-weight: 600">{{r.promo}}</td>
+<td style="padding: 14px 8px">{{r.total}}</td>
+<td style="padding: 14px 8px">{{r.paid}}</td>
+<td style="padding: 14px 8px"><span style="{{r.infoStyle}}">{{r.info}}</span></td>
+<td style="padding: 14px 16px"><span style="{{r.statusStyle}}">{{r.status}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+
+<aside aria-label="Selected application" style="flex: 1 1 320px; min-width: 0; background: #FFFFFF; border-radius: 14px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><div style="font-size: 18px; font-weight: 800; color: #0B1F4D">APP-0021 · Maria Santos</div></div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Status<select style="height: 42px; border: 1px solid #C9D2E3; border-radius: 10px; padding: 0 10px; font: inherit; background: #FFFFFF"><option>Contacted</option></select></label>
+<div style="display: flex; flex-direction: column; gap: 4px"><div style="font-weight: 700; color: #0B1F4D">Contact</div><div>maria@example.com</div><div>+63 917 123 4567 · Viber</div></div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-weight: 700; color: #0B1F4D">Travelers</div>
+<div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; background: #F4F6FA; border-radius: 10px"><span>1 · Full · SANTOS MARIA</span><span style="color: #B45309; font-weight: 700">4/8</span></div>
+<div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; background: #F4F6FA; border-radius: 10px"><span>2 · Full · (no name yet)</span><span style="color: #B45309; font-weight: 700">0/8</span></div>
+<div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; background: #F4F6FA; border-radius: 10px"><span>3 · Companion · (no name yet)</span><span style="color: #B45309; font-weight: 700">0/6</span></div>
+<div style="font-size: 12px; color: #8A4A07">Missing: passport names, DOB, T-shirt sizes, emergency contact</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><div style="font-weight: 700; color: #0B1F4D">Payments</div><button type="button" style="height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #C9D2E3; background: #FFFFFF; font: inherit; font-size: 13px; font-weight: 700; color: #0B1F4D; cursor: pointer">+ Record payment</button></div>
+<div style="display: flex; justify-content: space-between; gap: 8px; font-size: 13px"><span>No payments yet</span><span>Due: PHP [DEPOSIT] × 3</span></div>
+<button type="button" style="height: 40px; border-radius: 10px; border: 0; background: #0B1F4D; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Copy Maya payment link</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px"><div style="font-weight: 700; color: #0B1F4D">Promo</div><div>TA-SUNRISE · Sunrise Travel · −PHP 2,000 / pax</div></div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #0B1F4D">Staff notes<textarea rows="3" style="border: 1px solid #C9D2E3; border-radius: 10px; padding: 10px; font: inherit; font-weight: 500">Called 10/14, will send passport copies this week.</textarea></label>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var pill = function (bg, fg) { return 'display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; background: ' + bg + '; color: ' + fg; };
+    var S = {
+      'New': pill('#E6EEFF', '#1E3A8A'),
+      'Contacted': pill('#FFF4D6', '#7A5300'),
+      'Deposit paid': pill('#E0F2FE', '#075985'),
+      'Fully paid': pill('#DCFCE7', '#166534'),
+      'Confirmed': pill('#0B1F4D', '#FFFFFF'),
+      'Cancelled': pill('#F1F1F1', '#555555')
+    };
+    var data = [
+      ['APP-0024', 'Jose Dela Cruz', 'Oct 15', 'MNL', '1 / 0 / 0', 'Direct', '[TOTAL]', '0', '1/8', 'New'],
+      ['APP-0023', 'Ana Reyes', 'Oct 15', 'CEB', '2 / 1 / 0', 'TA-ISLAND', '[TOTAL]', '0', '0/24', 'New'],
+      ['APP-0022', 'Mark Villanueva', 'Oct 14', 'MNL', '1 / 0 / 1', 'TA-SUNRISE', '[TOTAL]', '0', '8/14', 'Contacted'],
+      ['APP-0021', 'Maria Santos', 'Oct 14', 'MNL', '2 / 0 / 1', 'TA-SUNRISE', '[TOTAL]', '0', '4/22', 'Contacted'],
+      ['APP-0019', 'Grace Lim', 'Oct 13', 'CEB', '0 / 2 / 0', 'Direct', '[TOTAL]', 'Deposit', '16/16', 'Deposit paid'],
+      ['APP-0017', 'Paolo Garcia', 'Oct 12', 'MNL', '4 / 0 / 2', 'TA-METRO', '[TOTAL]', 'Full', '44/44', 'Fully paid'],
+      ['APP-0015', 'Liza Mendoza', 'Oct 12', 'MNL', '1 / 0 / 0', 'Direct', '[TOTAL]', 'Full', '8/8', 'Confirmed'],
+      ['APP-0012', 'Ramon Torres', 'Oct 11', 'CEB', '1 / 1 / 0', 'TA-ISLAND', '[TOTAL]', '0', '2/16', 'Cancelled']
+    ];
+    var rows = data.map(function (d) {
+      var parts = d[8].split('/');
+      var complete = parts[0] === parts[1];
+      return {
+        no: d[0], name: d[1], date: d[2], dep: d[3], pax: d[4], promo: d[5], total: d[6], paid: d[7], info: d[8], status: d[9],
+        statusStyle: S[d[9]],
+        infoStyle: complete ? 'color: #166534; font-weight: 700' : 'color: #B45309; font-weight: 700',
+        rowStyle: 'border-top: 1px solid #E6EAF2' + (d[0] === 'APP-0021' ? '; background: #F4F7FF' : '')
+      };
+    });
+    var tabStyle = function (on) { return 'height: 36px; padding: 0 14px; border-radius: 999px; font: inherit; font-weight: 700; cursor: pointer; ' + (on ? 'background: #0B1F4D; color: #FFFFFF; border: 1px solid #0B1F4D' : 'background: #FFFFFF; color: #33405C; border: 1px solid #C9D2E3'); };
+    var tabs = ['All 24', 'New 6', 'Contacted 7', 'Deposit paid 4', 'Fully paid 2', 'Confirmed 3', 'Cancelled 2'].map(function (l, i) { return { label: l, style: tabStyle(i === 0) }; });
+    return { rows: rows, tabs: tabs };
+  }
+}
+</script>
+</body>
+</html>

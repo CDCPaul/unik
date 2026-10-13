@@ -347,3 +347,22 @@ body {
 @utility admin-badge-cancelled {
   @apply bg-red-100 text-red-800;
 }
+
+/* ========================================
+   Seoul Marathon 2027 public site (테마 A "PH × KR")
+   대표 승인에 따라 색만 바꾸면 되도록 토큰으로 둔다.
+   ======================================== */
+@theme {
+  --color-brand-ink: #0b1f4d;
+  --color-brand-red: #c8242b;
+  --color-brand-sun: #f6c343;
+  --color-brand-soft: #eef2fa;
+  --color-brand-line: #d9e0ee;
+  --color-brand-body: #33405c;
+}
+/* next/font 변수(--font-barlow/--font-manrope)는 (site) 레이아웃 div 에 정의되므로
+   :root 에서 해석되면 무효가 된다. inline 으로 유틸리티에 직접 풀어 쓴다. */
+@theme inline {
+  --font-race: var(--font-barlow), 'Arial Narrow', sans-serif;
+  --font-ui: var(--font-manrope), system-ui, sans-serif;
+}

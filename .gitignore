@@ -44,3 +44,7 @@ next-env.d.ts
 # Testing
 coverage
 
+
+# Firebase emulator logs
+firestore-debug.log
+firebase-debug.log

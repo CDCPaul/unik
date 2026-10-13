@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Chrome, Loader2, ShieldAlert } from 'lucide-react';
 import { signInWithGoogle } from '@/lib/auth';
+import { safeNextPath } from '@/lib/admin/loginRedirect';
+import '@/lib/admin/emulators';
 
 export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +19,7 @@ export default function AdminLoginPage() {
 
     try {
       await signInWithGoogle();
-      router.push('/admin');
+      router.push(safeNextPath(new URLSearchParams(window.location.search).get('next')));
     } catch (err: any) {
       setError(err.message || 'Login failed. Only @cebudirectclub.com emails are allowed.');
     } finally {

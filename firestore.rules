@@ -2,63 +2,37 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 헬퍼 함수: 관리자 이메일 체크
     function isAdmin() {
-      return request.auth != null 
+      return request.auth != null
+        && request.auth.token.email_verified == true
         && request.auth.token.email.matches('.*@cebudirectclub[.]com$');
     }
 
-    // 신청서 - 누구나 생성 가능, 관리자만 읽기/수정/삭제
-    match /registrations/{docId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    // 문의 - 누구나 생성 가능, 관리자만 읽기/수정/삭제  
-    match /contacts/{docId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
-
-    // 테마 설정 - 누구나 읽기, 관리자만 수정
-    match /settings/theme {
+    // 투어 상품 설정 - 누구나 읽기, 관리자만 수정
+    match /tourConfig/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // 네비게이션 설정 - 누구나 읽기, 관리자만 수정
-    match /settings/navigation {
+    // 남은 자리 - 누구나 읽기, 쓰기는 Cloud Functions(관리자 SDK)만
+    match /availability/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
     }
 
-    // 일반 설정 - 누구나 읽기, 관리자만 수정
-    match /settings/{document} {
-      allow read: if true;
-      allow write: if isAdmin();
+    // 신청서 - 생성은 Cloud Functions 만, 관리자 읽기/수정, 삭제 금지(취소 상태로 처리)
+    match /applications/{docId} {
+      allow read, update: if isAdmin();
+      allow create, delete: if false;
     }
 
-    // 플레이어 정보 - 누구나 읽기, 관리자만 수정
-    match /players/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // 갤러리 - 누구나 읽기, 관리자만 수정
-    match /gallery/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // 투어 정보 - 누구나 읽기, 관리자만 수정
-    match /tours/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // 항공권 티켓 - 관리자만 접근
-    match /airline-tickets/{docId} {
+    // 프로모 코드 - 관리자만 (공개 검증은 checkPromoCode 함수)
+    match /promoCodes/{code} {
       allow read, write: if isAdmin();
+    }
+
+    // 신청번호 카운터 - Cloud Functions 만
+    match /counters/{docId} {
+      allow read, write: if false;
     }
 
     // 모바일 명함 - 누구나 읽기(NFC 공개 페이지), 관리자만 수정
@@ -67,10 +41,25 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // 기타 모든 문서 - 관리자만 접근
-    match /{document=**} {
-      allow read, write: if isAdmin();
+    // 문의 - 정해진 필드로만 공개 생성, 관리자만 읽기/수정/삭제
+    match /contacts/{docId} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'subject', 'message', 'isRead', 'createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.email is string && request.resource.data.email.size() >= 3 && request.resource.data.email.size() <= 120
+        && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() <= 40))
+        && request.resource.data.subject is string && request.resource.data.subject.size() <= 200
+        && request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 5000
+        && request.resource.data.isRead == false
+        && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // 레거시 컬렉션 - 관리자만 (개편 전 데이터 보존용).
+    // 전체 catch-all 을 두지 않으므로 applications 삭제·availability/counters 쓰기는
+    // 관리자 클라이언트에서도 불가능하고 Cloud Functions(관리자 SDK, 규칙 우회)만 가능하다.
+    match /{legacy}/{docId} {
+      allow read, write: if isAdmin()
+        && legacy in ['registrations', 'players', 'tours', 'gallery', 'settings', 'navigation', 'theme', 'roulette', 'roulette_winners', 'airline-tickets', 'infoSections'];
     }
   }
 }
-

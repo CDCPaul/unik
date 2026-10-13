@@ -15,23 +15,15 @@ export const firebaseConfig = {
 // Allowed email domain for admin access
 export const ALLOWED_ADMIN_DOMAIN = process.env.NEXT_PUBLIC_ALLOWED_DOMAIN || 'cebudirectclub.com';
 
-// Email configuration
-export const EMAIL_CONFIG = {
-  receiverEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'ticket@cebudirectclub.com',
-};
+export const TOUR_ID = 'seoul2027';
 
 // Collection names
 export const COLLECTIONS = {
-  registrations: 'registrations',
-  players: 'players',
-  tours: 'tours',
-  gallery: 'gallery',
   contacts: 'contacts',
-  infoSections: 'infoSections',
-  navigation: 'navigation',
-  theme: 'theme',
-  settings: 'settings',
-  roulette: 'roulette',
-  rouletteWinners: 'roulette_winners',
   businessCards: 'business_cards',
+  tourConfig: 'tourConfig',
+  availability: 'availability',
+  applications: 'applications',
+  promoCodes: 'promoCodes',
+  counters: 'counters',
 } as const;

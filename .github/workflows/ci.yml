@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web-and-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Type check
+        run: pnpm typecheck
+      - name: Domain unit tests
+        run: pnpm --filter @unik/shared test
+      - name: Web unit tests
+        run: pnpm --filter @unik/web test
+      - name: Web build
+        run: pnpm --filter @unik/web build
+
+  emulator-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm install -g firebase-tools@14
+      - run: pnpm install --frozen-lockfile
+      - run: npm ci
+        working-directory: backend/functions
+      - name: Functions build (type check)
+        run: npm run build
+        working-directory: backend/functions
+      - name: Firestore rules tests
+        run: pnpm --filter @unik/rules-tests test
+      - name: Functions tests
+        run: npm test
+        working-directory: backend/functions

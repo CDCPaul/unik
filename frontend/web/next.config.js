@@ -21,6 +21,23 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
+  async redirects() {
+    const toPastTours = (source) => ({ source, destination: '/past-tours', permanent: true });
+    return [
+      toPastTours('/cbm'),
+      toPastTours('/cbm/:path*'),
+      toPastTours('/cherry-blossom-marathon'),
+      toPastTours('/tour/courtside'),
+      toPastTours('/tour/courtside/:path*'),
+      toPastTours('/tour/cherry-blossom'),
+      toPastTours('/players'),
+      toPastTours('/players/:path*'),
+      toPastTours('/gallery'),
+      toPastTours('/info'),
+      toPastTours('/cdc-travel/:path*'),
+      { source: '/register', destination: '/apply', permanent: true },
+    ];
+  },
 };
 
 module.exports = nextConfig;

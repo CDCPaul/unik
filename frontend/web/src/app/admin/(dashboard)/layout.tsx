@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { onAuthChange, isAuthorized } from '@/lib/auth';
 import AdminSidebar from '@/components/admin/Sidebar';
 import { Loader2 } from 'lucide-react';
+import { loginUrlFor } from '@/lib/admin/loginRedirect';
+import '@/lib/admin/emulators';
 
 export default function AdminDashboardLayout({
   children,
@@ -14,19 +16,21 @@ export default function AdminDashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
       if (user && isAuthorized(user)) {
         setIsAuthenticated(true);
       } else {
-        router.push('/admin/login');
+        // 로그인 후 원래 보던 화면(경로+쿼리)으로 돌아오도록 next 를 붙인다
+        router.push(loginUrlFor(pathname, window.location.search));
       }
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, pathname]);
 
   if (isLoading) {
     return (
@@ -43,7 +47,7 @@ export default function AdminDashboardLayout({
   return (
     <div className="flex min-h-screen bg-slate-50">
       <AdminSidebar />
-      <main className="flex-1 lg:ml-0">
+      <main className="min-w-0 flex-1 lg:ml-0">
         <div className="p-6 lg:p-8">
           {children}
         </div>

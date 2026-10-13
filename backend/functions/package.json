@@ -1,29 +1,32 @@
 {
   "name": "@unik/functions",
   "version": "1.0.0",
-  "description": "UNI-K Firebase Cloud Functions",
+  "description": "UNIK Cloud Functions (Seoul Marathon 2027 applications, contact)",
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
-    "dev": "pnpm run serve",
-    "serve": "npm run build && firebase emulators:start --only functions,firestore",
-    "shell": "npm run build && firebase functions:shell",
-    "start": "npm run shell",
+    "copy-shared": "node scripts/copy-shared.mjs",
+    "build": "npm run copy-shared && tsc",
+    "build:watch": "npm run copy-shared && tsc --watch",
+    "test": "npm run copy-shared && firebase emulators:exec --only firestore --project demo-unik --config ../../firebase.json \"vitest run\"",
+    "seed:emulator": "node scripts/seed-emulator.mjs",
+    "seed:emulator:applications": "node scripts/seed-emulator-applications.mjs",
+    "serve": "npm run build && firebase emulators:start --only functions,firestore --project demo-unik --config ../../firebase.json",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "dependencies": {
     "firebase-admin": "^13.6.0",
     "firebase-functions": "^6.6.0",
-    "resend": "^2.0.0"
+    "resend": "^2.0.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.7"
   },
   "private": true
 }
