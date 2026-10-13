@@ -11,6 +11,7 @@ import {
   isValidName,
   isValidPassportName,
   normalizePhoneNumber,
+  totalPax,
   validateCounts,
 } from '@unik/shared/domain';
 import type { ApplicationStatus, Counts, Pricing, TourConfig, Traveler } from '@unik/shared/domain';
@@ -20,7 +21,7 @@ export function recalculate(
   app: ApplicationRecord,
   change: { counts?: Counts; travelers?: Traveler[] },
   config: TourConfig | null,
-): { travelers: Traveler[]; completeness: { filled: number; total: number }; pricing: Pricing } | { error: string } {
+): { travelers: Traveler[]; completeness: { filled: number; total: number }; pricing: Pricing; warnings: string[] } | { error: string } {
   const counts = change.counts ?? app.counts;
   const countsError = validateCounts(counts);
   if (countsError) return { error: countsError };
@@ -29,26 +30,36 @@ export function recalculate(
   if (!departure) return { error: 'This departure is no longer in tour settings, so prices cannot be recalculated.' };
   const travelers = buildTravelers(counts, change.travelers ?? app.travelers);
   const snap = app.pricing.promo;
+  // 신청 당시 1인당 예약금을 유지한다 (설정의 예약금이 바뀌어도 기존 신청은 그대로)
+  const paxBefore = totalPax(app.counts);
+  const perPaxDeposit = paxBefore > 0 ? Math.round(app.pricing.depositDue / paxBefore) : config.depositPerPax;
   const pricing = computePricing({
     departure,
     counts,
     travelers,
     // 신청 당시 할인 조건을 그대로 쓴다 (코드 유효성은 다시 판정하지 않음)
     promo: snap ? { code: snap.code, agencyName: snap.agencyName, discountType: snap.type, discountValue: snap.value } : null,
-    depositPerPax: config.depositPerPax,
+    depositPerPax: perPaxDeposit,
   });
-  return { travelers, completeness: computeCompleteness(travelers), pricing };
+  const warnings: string[] = [];
+  if ((app.status === 'fully_paid' || app.status === 'confirmed') && app.paidTotal < pricing.total) {
+    warnings.push(`New total ${formatPHP(pricing.total)} is more than the ${formatPHP(app.paidTotal)} paid — review the status.`);
+  }
+  return { travelers, completeness: computeCompleteness(travelers), pricing, warnings };
 }
 
-/** "10,000", "₱10,000", "PHP 2 500" → 정수 페소. 소수·0·음수·문자는 null. */
+const MAX_AMOUNT = 10_000_000;
+
+/** "10,000", "₱10,000", "PHP 2 500" → 정수 페소. 소수·0·음수·문자·잘못된 쉼표 자리는 null. */
 export function parseAmount(raw: string): number | null {
-  const cleaned = raw.replace(/php|₱|,|\s/gi, '');
-  if (!/^\d+$/.test(cleaned)) return null;
-  const n = Number(cleaned);
-  return Number.isSafeInteger(n) && n > 0 ? n : null;
+  // 통화 표시는 앞에 붙은 경우만 허용하고, 숫자 사이의 php 같은 글자는 거절한다
+  const body = raw.trim().replace(/^(?:php|₱)\s*/i, '').replace(/\s/g, '');
+  if (!/^\d+$/.test(body) && !/^\d{1,3}(,\d{3})+$/.test(body)) return null;
+  const n = Number(body.replace(/,/g, ''));
+  return Number.isSafeInteger(n) && n > 0 && n <= MAX_AMOUNT ? n : null;
 }
 
-const NO_AUTO_SUGGEST: readonly ApplicationStatus[] = ['cancelled', 'confirmed', 'fully_paid'];
+const NO_AUTO_SUGGEST: readonly ApplicationStatus[] = ['cancelled', 'confirmed', 'fully_paid', 'waitlist'];
 
 export function applyPayment(app: ApplicationRecord, payment: PaymentRecord) {
   const payments = [...app.payments, payment];
@@ -84,6 +95,7 @@ export function normalizeLead(lead: ApplicationRecord['lead']): ApplicationRecor
     firstName: lead.firstName.trim(),
     lastName: lead.lastName.trim(),
     email: lead.email.trim().toLowerCase(),
+    phoneDial: lead.phoneDial.trim(),
     phoneNumber: normalizePhoneNumber(lead.phoneNumber),
   };
 }
@@ -109,7 +121,9 @@ export function validateTravelers(travelers: Traveler[], today: string): Record<
     if (dob && !isValidBirthDate(dob, today)) e[`travelers.${i}.dob`] = 'Invalid date of birth.';
     for (const [field, max] of Object.entries(TEXT_MAX) as [keyof Traveler, number][]) {
       const v = (t[field] as string | undefined)?.trim();
-      if (v && (v.length > max || hasControlChars(v))) e[`travelers.${i}.${field}`] = `Max ${max} characters.`;
+      if (!v) continue;
+      if (hasControlChars(v)) e[`travelers.${i}.${field}`] = 'Remove unusual characters.';
+      else if (v.length > max) e[`travelers.${i}.${field}`] = `Max ${max} characters.`;
     }
   });
   return e;

@@ -22,6 +22,7 @@ describe('validatePromoForm', () => {
     expect(validatePromoForm({ ...form(), validUntil: '2027-02-30' }, { isNew: true, existingCodes: [] })).toHaveProperty('validUntil');
     expect(validatePromoForm({ ...form(), maxPax: '0' }, { isNew: true, existingCodes: [] })).toHaveProperty('maxPax');
     expect(validatePromoForm({ ...form(), validUntil: '2027-01-31', maxPax: '20' }, { isNew: true, existingCodes: [] })).toEqual({});
+    expect(validatePromoForm({ ...form(), maxPax: '10php00' }, { isNew: true, existingCodes: [] })).toHaveProperty('maxPax');
   });
 });
 

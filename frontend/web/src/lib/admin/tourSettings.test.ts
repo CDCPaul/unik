@@ -49,6 +49,21 @@ describe('validateTourConfig', () => {
   });
 });
 
+describe('validateTourConfig: in-use departures and dates', () => {
+  it('flags a departure with applications that was removed from settings', () => {
+    const usage = { mnl: { seatsUsed: 3, applications: 2 } };
+    const removed = valid();
+    removed.departures = [];
+    expect(validateTourConfig(removed, usage).errors['departures.removed']).toBe('Departure(s) in use cannot be removed or renamed: mnl. Close them instead.');
+    expect(validateTourConfig(valid(), usage).errors).not.toHaveProperty('departures.removed');
+  });
+  it('rejects dates that do not exist on the calendar', () => {
+    const c = valid();
+    c.departures[0].departDate = '2027-02-30';
+    expect(validateTourConfig(c, {}).errors).toHaveProperty('departures.0.departDate');
+  });
+});
+
 describe('canRemoveDeparture', () => {
   it('blocks removing a departure in use', () => {
     expect(canRemoveDeparture({ mnl: { seatsUsed: 0, applications: 1 } }, 'mnl')).toBe(false);

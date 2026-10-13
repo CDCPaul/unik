@@ -54,6 +54,27 @@ describe('recalculate', () => {
     expect(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0 } }, { ...config, departures: [] })).toMatchObject({ error: expect.stringContaining('tour settings') });
     expect(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0 } }, null)).toMatchObject({ error: expect.any(String) });
   });
+  it('keeps the original per-traveler deposit when the current config deposit changes', () => {
+    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1 } }, { ...config, depositPerPax: 15000 });
+    if ('error' in r) throw new Error(r.error);
+    expect(r.pricing.depositDue).toBe(20000);
+  });
+  it('warns when a paid-up application now totals more than was paid', () => {
+    const grown = { counts: { full: 1, tenK: 0, companion: 1 } };
+    const paid: ApplicationRecord = { ...app, status: 'fully_paid', paidTotal: 78000 };
+    const r = recalculate(paid, grown, config);
+    if ('error' in r) throw new Error(r.error);
+    expect(r.warnings).toEqual(['New total PHP 146,000 is more than the PHP 78,000 paid — review the status.']);
+    const confirmed: ApplicationRecord = { ...app, status: 'confirmed', paidTotal: 78000 };
+    const c = recalculate(confirmed, grown, config);
+    if ('error' in c) throw new Error(c.error);
+    expect(c.warnings).toHaveLength(1);
+  });
+  it('gives no warning for an unpaid application', () => {
+    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1 } }, config);
+    if ('error' in r) throw new Error(r.error);
+    expect(r.warnings).toEqual([]);
+  });
 });
 
 describe('parseAmount', () => {
@@ -69,6 +90,17 @@ describe('parseAmount', () => {
     expect(parseAmount('abc')).toBeNull();
     expect(parseAmount('')).toBeNull();
   });
+  it('accepts only plain digits or properly grouped thousands', () => {
+    expect(parseAmount('10,50')).toBeNull();
+    expect(parseAmount('1,5')).toBeNull();
+    expect(parseAmount('10php00')).toBeNull();
+    expect(parseAmount('10,000')).toBe(10000);
+    expect(parseAmount('007')).toBe(7);
+  });
+  it('rejects amounts above 10,000,000', () => {
+    expect(parseAmount('10000001')).toBeNull();
+    expect(parseAmount('10,000,000')).toBe(10000000);
+  });
 });
 
 describe('payments', () => {
@@ -83,6 +115,9 @@ describe('payments', () => {
     expect(applyPayment({ ...app, status: 'confirmed' }, pay()).suggestedStatus).toBeNull();
     expect(applyPayment({ ...app, status: 'cancelled' }, pay()).suggestedStatus).toBeNull();
     expect(applyPayment(app, pay({ amount: 5000 })).suggestedStatus).toBeNull();
+  });
+  it('never suggests a status for a waitlisted application', () => {
+    expect(applyPayment({ ...app, status: 'waitlist' }, pay()).suggestedStatus).toBeNull();
   });
   it('removes a payment and recomputes the total', () => {
     const withTwo = { ...app, payments: [pay(), pay({ id: 'p2', amount: 3000 })], paidTotal: 13000 };
@@ -104,6 +139,13 @@ describe('statusChangeWarnings', () => {
 describe('lead and traveler edits', () => {
   it('normalizes email and phone', () => {
     expect(normalizeLead({ ...app.lead, email: '  Maria@Example.COM ', phoneNumber: '(0917) 123-4567' })).toMatchObject({ email: 'maria@example.com', phoneNumber: '0917 123-4567' });
+  });
+  it('trims the dial code', () => {
+    expect(normalizeLead({ ...app.lead, phoneDial: ' +63 ' }).phoneDial).toBe('+63');
+  });
+  it('uses a character-cleanup message for control characters and a length message for overlong text', () => {
+    expect(validateTravelers([{ category: 'full', nationality: 'PH\u0007' }], '2026-10-20')).toEqual({ 'travelers.0.nationality': 'Remove unusual characters.' });
+    expect(validateTravelers([{ category: 'full', nationality: 'x'.repeat(61) }], '2026-10-20')).toEqual({ 'travelers.0.nationality': 'Max 60 characters.' });
   });
   it('validates lead fields with the shared rules', () => {
     expect(validateLead(app.lead)).toEqual({});
