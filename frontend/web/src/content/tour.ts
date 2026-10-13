@@ -10,7 +10,7 @@ export const PACKAGES: { category: Category; title: string; description: string 
 
 export const INCLUSIONS = [
   'Round-trip flights from Manila or Cebu',
-  '4 nights hotel in Seoul with breakfast (twin share)',
+  '3 nights hotel in Seoul with breakfast (twin share)',
   'Race entry and bib for runners',
   'Meals and admission fees as listed in the itinerary',
   'Airport transfers and tour bus',
@@ -49,10 +49,10 @@ export const ITINERARY = [
   },
   {
     day: 'DAY 4',
-    title: 'Mon 22 Mar · Seoul city tour.',
+    title: 'Mon 22 Mar · City tour and flight home.',
     detail:
-      'Gyeongbokgung Palace, Myeongdong shopping street, the Seaweed Museum with DIY kimbap, and a premium outlet. Meals: hotel breakfast, lunch (shabu-shabu). Dinner on your own.',
+      'Hotel check-out, then Gyeongbokgung Palace, Myeongdong shopping street, the Seaweed Museum with DIY kimbap and a premium outlet before the transfer to Incheon International Airport for your flight home. Meals: hotel breakfast, lunch (shabu-shabu).',
   },
-  { day: 'DAY 5', title: 'Tue 23 Mar · Fly home.', detail: 'Hotel breakfast, then transfer to Incheon International Airport.' },
 ];
-export const ITINERARY_NOTE = 'Draft itinerary. Times and stops may change with the flight schedule, weather and traffic.';
+export const ITINERARY_NOTE =
+  'Flights from Manila leave the night of 18 Mar (after 11 pm); flights from other cities leave early on 19 Mar (around 1 am). All groups fly home on 22 Mar. Times and stops may change with the flight schedule, weather and traffic.';
