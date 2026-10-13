@@ -65,6 +65,8 @@ export function computeKpis(apps: ApplicationRecord[]) {
     travelers: totalPax(byCategory),
     byCategory,
     confirmedTravelers: active.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + totalPax(a.counts), 0),
+    // 확정 인원 중 번호표(bib)를 쓰는 러너만 (동반자 제외)
+    confirmedRunners: active.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + a.counts.full + a.counts.tenK, 0),
     incomplete: active.filter((a) => a.completeness.filled < a.completeness.total).length,
   };
 }

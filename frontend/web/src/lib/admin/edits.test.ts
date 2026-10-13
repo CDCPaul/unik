@@ -70,6 +70,19 @@ describe('recalculate', () => {
     if ('error' in c) throw new Error(c.error);
     expect(c.warnings).toHaveLength(1);
   });
+  it('warns when added travelers push the deposit due above what was paid', () => {
+    const grown = { counts: { full: 1, tenK: 0, companion: 1 } };
+    const paid: ApplicationRecord = { ...app, status: 'deposit_paid', paidTotal: 10000 };
+    const r = recalculate(paid, grown, config);
+    if ('error' in r) throw new Error(r.error);
+    expect(r.warnings).toEqual(['Deposit now due is PHP 20,000; PHP 10,000 has been paid.']);
+    const noChange = recalculate(paid, { counts: { full: 1, tenK: 0, companion: 0 } }, config);
+    if ('error' in noChange) throw new Error(noChange.error);
+    expect(noChange.warnings).toEqual([]);
+    const early = recalculate({ ...app, paidTotal: 0 }, grown, config);
+    if ('error' in early) throw new Error(early.error);
+    expect(early.warnings).toEqual([]);
+  });
   it('gives no warning for an unpaid application', () => {
     const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1 } }, config);
     if ('error' in r) throw new Error(r.error);

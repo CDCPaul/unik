@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import { formatPHP, totalPax } from '@unik/shared/domain';
+import { formatPHP } from '@unik/shared/domain';
 import type { Availability, Departure, TourConfig } from '@unik/shared/domain';
 import { getCurrentUser } from '@/lib/auth';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { parseAmount } from '@/lib/admin/edits';
-import { canRemoveDeparture, defaultTourConfig, newDeparture, validateTourConfig } from '@/lib/admin/tourSettings';
+import { canRemoveDeparture, computeDepartureUsage, defaultTourConfig, newDeparture, validateTourConfig } from '@/lib/admin/tourSettings';
 import type { DepartureUsage } from '@/lib/admin/tourSettings';
 import { subscribeApplications } from '@/lib/services/admin/applications';
 import { saveTourConfig, subscribeAvailability, subscribeTourConfig } from '@/lib/services/admin/tourConfig';
@@ -165,16 +165,7 @@ export default function TourSettingsPage() {
     };
   }, [fill]);
 
-  const usage: DepartureUsage = useMemo(() => {
-    const u: DepartureUsage = {};
-    for (const a of apps) {
-      if (a.status === 'cancelled') continue;
-      const e = (u[a.departure.id] ??= { seatsUsed: 0, applications: 0 });
-      e.applications += 1;
-      if (a.status !== 'waitlist') e.seatsUsed += totalPax(a.counts);
-    }
-    return u;
-  }, [apps]);
+  const usage: DepartureUsage = useMemo(() => computeDepartureUsage(apps), [apps]);
 
   if (loadError) return <p className="admin-card p-6 text-red-600">{loadError}</p>;
   if (!form || !appsLoaded) return <Loader2 aria-label="Loading" className="h-6 w-6 animate-spin text-slate-400" />;

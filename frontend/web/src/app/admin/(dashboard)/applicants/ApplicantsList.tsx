@@ -38,7 +38,7 @@ export function ApplicantsList({
   const kpis: [string, string, string?][] = [
     ['Applications', String(kpi.applications)],
     ['Travelers (incl. waitlist)', String(kpi.travelers), `${kpi.byCategory.full} Full · ${kpi.byCategory.tenK} 10K · ${kpi.byCategory.companion} Companion`],
-    ['Confirmed travelers', String(kpi.confirmedTravelers), config ? `of ${config.bibQuota.total} bibs` : undefined],
+    ['Confirmed runners', String(kpi.confirmedRunners), `${kpi.confirmedTravelers} travelers${config ? ` · of ${config.bibQuota.total} bibs` : ''}`],
     ['Missing traveler info', String(kpi.incomplete), 'applications need follow-up'],
   ];
 

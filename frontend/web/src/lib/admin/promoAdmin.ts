@@ -80,3 +80,8 @@ export function toPromoDoc(f: PromoForm): Omit<PromoCode, 'code'> {
 export function referralLink(code: string): string {
   return `https://unik.ph/apply?code=${encodeURIComponent(code)}`;
 }
+
+/** validUntil(YYYY-MM-DD)이 마닐라 오늘보다 이전이면 만료. 활성(active)이어도 만료일 수 있다. */
+export function isPromoExpired(validUntil: string | null | undefined, manilaToday: string): boolean {
+  return !!validUntil && validUntil < manilaToday;
+}

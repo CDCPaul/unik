@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
-import { describeDiscount, formatPHP, normalizePromoCode } from '@unik/shared/domain';
+import { describeDiscount, formatPHP, manilaDate, normalizePromoCode } from '@unik/shared/domain';
 import type { PromoCode } from '@unik/shared/domain';
 import { getCurrentUser } from '@/lib/auth';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { CONFIRMED_STATUSES, promoStats } from '@/lib/admin/list';
-import { emptyPromoForm, promoToForm, referralLink, toPromoDoc, validatePromoForm } from '@/lib/admin/promoAdmin';
+import { emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from '@/lib/admin/promoAdmin';
 import type { PromoForm } from '@/lib/admin/promoAdmin';
 import { subscribeApplications } from '@/lib/services/admin/applications';
 import { createPromoCode, deletePromoCode, subscribePromoCodes, updatePromoCode } from '@/lib/services/admin/promoCodes';
@@ -35,6 +35,7 @@ export default function PromoCodesPage() {
   }, []);
 
   const stats = useMemo(() => promoStats(apps ?? []), [apps]);
+  const manilaToday = manilaDate(new Date());
   const everUsed = useMemo(() => new Set((apps ?? []).map((a) => a.pricing.promo?.code).filter(Boolean) as string[]), [apps]);
 
   if (loadError) return <p className="admin-card p-6 text-red-600">{loadError}</p>;
@@ -169,7 +170,10 @@ export default function PromoCodesPage() {
                     <td className="admin-table-cell">{s?.pax ?? 0}{c.maxPax !== null && c.maxPax !== undefined ? ` / ${c.maxPax}` : ''}</td>
                     <td className="admin-table-cell font-semibold">{s?.confirmedPax ?? 0}</td>
                     <td className="admin-table-cell">{formatPHP(s?.netSales ?? 0)}</td>
-                    <td className="admin-table-cell"><span className={`admin-badge ${c.active ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'}`}>{c.active ? 'Active' : 'Paused'}</span></td>
+                    <td className="admin-table-cell">
+                      <span className={`admin-badge ${c.active ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'}`}>{c.active ? 'Active' : 'Paused'}</span>
+                      {isPromoExpired(c.validUntil, manilaToday) ? <span className="admin-badge ml-1 bg-amber-100 text-amber-800">Expired</span> : null}
+                    </td>
                     <td className="admin-table-cell">
                       <div className="flex gap-2">
                         <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => void copy(c.code)} aria-label={`Copy referral link for ${c.code}`}>

@@ -72,8 +72,22 @@ describe('statusCounts / computeKpis', () => {
       travelers: 5,
       byCategory: { full: 4, tenK: 0, companion: 1 },
       confirmedTravelers: 3,
+      confirmedRunners: 2,
       incomplete: 1,
     });
+  });
+});
+
+describe('confirmedRunners', () => {
+  it('counts full + 10K travelers of confirmed statuses only (not companions, not unconfirmed)', () => {
+    const k = computeKpis([
+      app({ id: 'r1', status: 'deposit_paid', counts: { full: 1, tenK: 2, companion: 1 } }),
+      app({ id: 'r2', status: 'fully_paid', counts: { full: 2, tenK: 0, companion: 0 } }),
+      app({ id: 'r3', status: 'contacted', counts: { full: 5, tenK: 5, companion: 0 } }),
+      app({ id: 'r4', status: 'cancelled', counts: { full: 9, tenK: 0, companion: 0 } }),
+    ]);
+    expect(k.confirmedRunners).toBe(5);
+    expect(k.confirmedTravelers).toBe(6);
   });
 });
 

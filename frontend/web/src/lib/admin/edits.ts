@@ -43,6 +43,13 @@ export function recalculate(
     depositPerPax: perPaxDeposit,
   });
   const warnings = paymentWarnings(app, pricing);
+  if (
+    (app.status === 'deposit_paid' || app.status === 'fully_paid' || app.status === 'confirmed') &&
+    totalPax(counts) > paxBefore &&
+    app.paidTotal < pricing.depositDue
+  ) {
+    warnings.push(`Deposit now due is ${formatPHP(pricing.depositDue)}; ${formatPHP(app.paidTotal)} has been paid.`);
+  }
   return { travelers, completeness: computeCompleteness(travelers), pricing, warnings };
 }
 

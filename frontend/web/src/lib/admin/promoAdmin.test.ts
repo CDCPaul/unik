@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyPromoForm, promoToForm, referralLink, toPromoDoc, validatePromoForm } from './promoAdmin';
+import { emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from './promoAdmin';
 
 const form = () => ({ ...emptyPromoForm(), code: 'ta-sunrise', agencyName: 'Sunrise Travel', discountValue: '2,000' });
 
@@ -46,5 +46,16 @@ describe('toPromoDoc / promoToForm / referralLink', () => {
   });
   it('builds the shareable link', () => {
     expect(referralLink('TA-SUNRISE')).toBe('https://unik.ph/apply?code=TA-SUNRISE');
+  });
+});
+
+describe('isPromoExpired', () => {
+  it('is expired only when validUntil is before today (Manila)', () => {
+    expect(isPromoExpired('2026-10-12', '2026-10-13')).toBe(true);
+    expect(isPromoExpired('2026-10-13', '2026-10-13')).toBe(false);
+    expect(isPromoExpired('2026-12-01', '2026-10-13')).toBe(false);
+    expect(isPromoExpired(null, '2026-10-13')).toBe(false);
+    expect(isPromoExpired(undefined, '2026-10-13')).toBe(false);
+    expect(isPromoExpired('', '2026-10-13')).toBe(false);
   });
 });

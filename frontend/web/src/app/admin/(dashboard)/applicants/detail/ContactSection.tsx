@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { viberLink, whatsappLink } from '@unik/shared/domain';
+import { internationalDigits, viberLink, whatsappLink } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { leadChanges } from '@/lib/admin/detailHelpers';
 import { normalizeLead, validateLead } from '@/lib/admin/edits';
@@ -20,6 +20,9 @@ export function ContactSection({ app }: { app: ApplicationRecord }) {
   const l = app.lead;
   const viber = l.viber ? viberLink(l.phoneDial, l.phoneNumber) : null;
   const wa = l.whatsapp ? whatsappLink(l.phoneDial, l.phoneNumber) : null;
+  // 국내 표기(0917…)여도 국제 형식(+63917…)으로 전화를 건다. 해석이 안 되면 입력 그대로.
+  const intl = internationalDigits(l.phoneDial, l.phoneNumber);
+  const tel = intl ? `+${intl}` : `${l.phoneDial}${l.phoneNumber.replace(/\D/g, '')}`;
 
   const start = () => { setDraft({ ...l }); setBase({ ...l }); setErrors({}); clearFailed(); };
   const cancel = () => { setDraft(null); setBase(null); setErrors({}); clearFailed(); };
@@ -42,7 +45,7 @@ export function ContactSection({ app }: { app: ApplicationRecord }) {
           <dt className="text-slate-500">Email</dt>
           <dd className="break-all"><a className="text-blue-700 underline" href={`mailto:${l.email}`}>{l.email}</a></dd>
           <dt className="text-slate-500">Phone</dt>
-          <dd><a className="text-blue-700 underline" href={`tel:${l.phoneDial}${l.phoneNumber.replace(/\D/g, '')}`}>{l.phoneDial} {l.phoneNumber}</a></dd>
+          <dd><a className="text-blue-700 underline" href={`tel:${tel}`}>{l.phoneDial} {l.phoneNumber}</a></dd>
         </dl>
         {viber || wa ? (
           <div className="mt-2 flex flex-wrap gap-2">

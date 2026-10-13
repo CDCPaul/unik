@@ -1,5 +1,6 @@
-import { EMAIL_PATTERN, isValidBirthDate } from '@unik/shared/domain';
+import { EMAIL_PATTERN, isValidBirthDate, totalPax } from '@unik/shared/domain';
 import type { Departure, TourConfig } from '@unik/shared/domain';
+import type { ApplicationRecord } from './applicationDoc';
 
 export const DEPARTURE_ID_PATTERN = /^[a-z0-9-]{2,20}$/;
 // 출발·귀국일: 실존하는 달력 날짜만 (상한은 사실상 없음)
@@ -34,6 +35,20 @@ export function newDeparture(): Departure {
 }
 
 export type DepartureUsage = Record<string, { seatsUsed: number; applications: number }>;
+
+/**
+ * 출발편별 사용 현황. applications 는 취소된 신청까지 모두 센다 (출발편을 지우거나 ID 를 바꾸면
+ * 기존 신청의 연결이 끊기므로). 좌석은 취소·대기를 제외한다.
+ */
+export function computeDepartureUsage(apps: Pick<ApplicationRecord, 'departure' | 'status' | 'counts'>[]): DepartureUsage {
+  const u: DepartureUsage = {};
+  for (const a of apps) {
+    const e = (u[a.departure.id] ??= { seatsUsed: 0, applications: 0 });
+    e.applications += 1;
+    if (a.status !== 'cancelled' && a.status !== 'waitlist') e.seatsUsed += totalPax(a.counts);
+  }
+  return u;
+}
 
 export function validateTourConfig(c: TourConfig, usage: DepartureUsage): { errors: Record<string, string>; warnings: string[] } {
   const errors: Record<string, string> = {};

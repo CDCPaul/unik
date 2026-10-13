@@ -81,8 +81,10 @@ export function PaymentsSection({ app, config }: { app: ApplicationRecord; confi
   const balance = app.pricing.total - app.paidTotal;
   const base = config?.mayaPaymentLinkBase ?? null;
   const depositRemaining = Math.max(app.pricing.depositDue - app.paidTotal, 0);
-  const depositLink = depositRemaining > 0 ? mayaPaymentLink(base, depositRemaining) : null;
-  const balanceLink = balance > 0 ? mayaPaymentLink(base, balance) : null;
+  // 취소·대기 신청에는 결제 링크를 만들지 않는다 (결제 기록은 가능)
+  const linksAllowed = app.status !== 'cancelled' && app.status !== 'waitlist';
+  const depositLink = linksAllowed && depositRemaining > 0 ? mayaPaymentLink(base, depositRemaining) : null;
+  const balanceLink = linksAllowed && balance > 0 ? mayaPaymentLink(base, balance) : null;
   const payments = [...app.payments].sort((a, b) => b.paidAt.getTime() - a.paidAt.getTime());
 
   async function voidIt(id: string, label: string) {

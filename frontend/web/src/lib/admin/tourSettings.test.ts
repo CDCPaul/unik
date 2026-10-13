@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canRemoveDeparture, defaultTourConfig, newDeparture, validateTourConfig } from './tourSettings';
+import { canRemoveDeparture, computeDepartureUsage, defaultTourConfig, newDeparture, validateTourConfig } from './tourSettings';
 
 function valid() {
   const c = defaultTourConfig();
@@ -68,5 +68,20 @@ describe('canRemoveDeparture', () => {
   it('blocks removing a departure in use', () => {
     expect(canRemoveDeparture({ mnl: { seatsUsed: 0, applications: 1 } }, 'mnl')).toBe(false);
     expect(canRemoveDeparture({}, 'mnl')).toBe(true);
+  });
+});
+
+describe('computeDepartureUsage', () => {
+  const mk = (departureId: string, status: string, full: number) => ({ departure: { id: departureId }, status, counts: { full, tenK: 0, companion: 0 } }) as never;
+  it('counts cancelled applications as references but not as seats; waitlist takes no seats', () => {
+    const u = computeDepartureUsage([mk('mnl', 'new', 2), mk('mnl', 'waitlist', 3), mk('mnl', 'cancelled', 4), mk('ceb', 'cancelled', 1)]);
+    expect(u.mnl).toEqual({ seatsUsed: 2, applications: 3 });
+    expect(u.ceb).toEqual({ seatsUsed: 0, applications: 1 });
+  });
+  it('blocks removing a departure referenced only by cancelled applications', () => {
+    const usage = computeDepartureUsage([mk('ceb', 'cancelled', 1)]);
+    expect(canRemoveDeparture(usage, 'ceb')).toBe(false);
+    const c = valid();
+    expect(validateTourConfig(c, usage).errors['departures.removed']).toContain('ceb');
   });
 });
