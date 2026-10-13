@@ -167,7 +167,7 @@ describe('validateForSubmit matches server rules', () => {
     let s = filled();
     s = applyReducer(s, { type: 'setPromoInput', value: 'ta sunrise' });
     expect(validateForSubmit(s, '2026-10-13')).toEqual({
-      promoInput: 'Promo codes use letters, numbers and hyphens (3–20 characters).',
+      promoInput: 'Promo codes use letters, numbers, hyphens and underscores (3–20 characters).',
     });
   });
   it('accepts a well-formed promo code', () => {

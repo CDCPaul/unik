@@ -19,7 +19,10 @@ describe('promo code format', () => {
   it('accepts A-Z, 0-9 and hyphen, 3 to 20 chars', () => {
     expect(isValidPromoCodeFormat('TA-SUNRISE')).toBe(true);
     expect(isValidPromoCodeFormat('AB')).toBe(false);
-    expect(isValidPromoCodeFormat('TA_SUNRISE')).toBe(false);
+    expect(isValidPromoCodeFormat('TA_SUNRISE')).toBe(true);
+    expect(isValidPromoCodeFormat('GRH_C')).toBe(true);
+    expect(isValidPromoCodeFormat('TA SUN')).toBe(false);
+    expect(isValidPromoCodeFormat('TA.SUN')).toBe(false);
     expect(isValidPromoCodeFormat('A'.repeat(21))).toBe(false);
   });
 });

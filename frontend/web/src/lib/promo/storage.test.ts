@@ -32,8 +32,12 @@ describe('promo storage', () => {
   });
   it('rejects malformed codes without storing', () => {
     const s = memoryStore();
-    expect(savePromoCode(s, 'a_b', t0)).toBeNull();
+    expect(savePromoCode(s, 'a b', t0)).toBeNull();
     expect(s.data.size).toBe(0);
+  });
+  it('keeps branch codes with an underscore from referral links', () => {
+    const s = memoryStore();
+    expect(savePromoCode(s, 'grh_c', t0)).toBe('GRH_C');
   });
   it('expires after 30 days and removes the entry', () => {
     const s = memoryStore();

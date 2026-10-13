@@ -2,7 +2,8 @@ import type { ApplicationSummary, DiscountType, PromoCode } from './types';
 import { promoEligiblePax } from './pricing';
 import { formatPHP } from './format';
 
-export const PROMO_CODE_PATTERN = /^[A-Z0-9-]{3,20}$/;
+/** 영문 대문자·숫자·하이픈·밑줄 3–20자 (TA 지점 코드에 GRH_C 같은 밑줄이 쓰인다) */
+export const PROMO_CODE_PATTERN = /^[A-Z0-9_-]{3,20}$/;
 
 export function normalizePromoCode(raw: string): string {
   return raw.trim().toUpperCase();
