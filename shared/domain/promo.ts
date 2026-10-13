@@ -42,5 +42,6 @@ export function promoUsagePax(apps: ApplicationSummary[], code: string): number 
 }
 
 export function describeDiscount(type: DiscountType, value: number): string {
+  if (type === 'fixed' && value === 0) return 'Referral code (no discount)';
   return type === 'fixed' ? `${formatPHP(value)} off per person` : `${value}% off`;
 }
