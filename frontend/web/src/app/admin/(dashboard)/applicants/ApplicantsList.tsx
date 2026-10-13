@@ -104,7 +104,7 @@ export function ApplicantsList({
               const complete = a.completeness.filled >= a.completeness.total;
               return (
                 <tr key={a.id} onClick={() => onSelect(a.id)} className={`cursor-pointer border-t border-slate-100 hover:bg-slate-50 ${selectedId === a.id ? 'bg-blue-50' : ''}`}>
-                  <td className="admin-table-cell"><button type="button" className="font-bold text-slate-900 underline-offset-2 hover:underline" onClick={(e) => { e.stopPropagation(); onSelect(a.id); }}>{a.appNo}</button></td>
+                  <td className="admin-table-cell"><button type="button" aria-current={selectedId === a.id ? 'true' : undefined} className="font-bold text-slate-900 underline-offset-2 hover:underline" onClick={(e) => { e.stopPropagation(); onSelect(a.id); }}>{a.appNo}</button></td>
                   <td className="admin-table-cell"><div className="font-semibold">{a.lead.firstName} {a.lead.lastName}</div><div className="text-xs text-slate-500">{formatManila(a.createdAt)}</div></td>
                   <td className="admin-table-cell">{a.departure.id.toUpperCase()}</td>
                   <td className="admin-table-cell">{a.counts.full} / {a.counts.tenK} / {a.counts.companion}</td>
