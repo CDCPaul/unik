@@ -1,10 +1,11 @@
 import { arrayUnion, collection, doc, onSnapshot, orderBy, query, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS } from '@unik/shared/firebase/config';
-import type { ApplicationStatus } from '@unik/shared/domain';
+import type { ApplicationStatus, Counts, TourConfig, Traveler } from '@unik/shared/domain';
 import { fromApplicationDoc } from '@/lib/admin/applicationDoc';
 import type { ApplicationRecord, PaymentRecord } from '@/lib/admin/applicationDoc';
-import { applyPayment, withoutPayment } from '@/lib/admin/edits';
+import { applyPayment, planCountsApply, planTravelersSave, withoutPayment } from '@/lib/admin/edits';
+import type { TxPlan } from '@/lib/admin/edits';
 
 const col = () => collection(db, COLLECTIONS.applications);
 // 상태·결제 관련 필드는 changeStatusTx / addPaymentTx / removePaymentTx 로만 바꾼다
@@ -49,6 +50,30 @@ export async function addPaymentTx(
     return { suggestedStatus };
   });
 }
+
+async function applyPlanTx(id: string, plan: (live: ApplicationRecord) => TxPlan): Promise<void> {
+  await runTransaction(db, async (tx) => {
+    const ref = doc(col(), id);
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Application not found');
+    const result = plan(fromApplicationDoc(snap.id, snap.data()));
+    if ('conflict' in result) throw new Error('conflict');
+    if ('error' in result) throw new Error(result.error);
+    tx.update(ref, { ...result.fields, updatedAt: serverTimestamp() });
+  });
+}
+
+/** 참가자 저장: 최신 문서에 바꾼 필드만 병합하고 (동시 수정/인원 변경이면 Error('conflict')), 가격은 싱글룸 요금만 갱신한다. */
+export async function saveTravelersTx(id: string, baseCounts: Counts, baseTravelers: Traveler[], draftTravelers: Traveler[], config: TourConfig | null): Promise<void> {
+  await applyPlanTx(id, (live) => planTravelersSave(live, baseCounts, baseTravelers, draftTravelers, config));
+}
+
+/** 인원 변경: 편집 시작 때의 인원과 다르면 Error('conflict'). */
+export async function applyCountsTx(id: string, baseCounts: Counts, newCounts: Counts, config: TourConfig | null): Promise<void> {
+  await applyPlanTx(id, (live) => planCountsApply(live, baseCounts, newCounts, config));
+}
+
+export const isConflictError = (e: unknown) => e instanceof Error && e.message === 'conflict';
 
 export async function removePaymentTx(id: string, paymentId: string): Promise<void> {
   await runTransaction(db, async (tx) => {

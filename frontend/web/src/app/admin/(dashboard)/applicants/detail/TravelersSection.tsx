@@ -5,10 +5,10 @@ import { Minus, Pencil, Plus } from 'lucide-react';
 import { CATEGORIES, CATEGORY_LABELS, buildTravelers, describeCounts, manilaDate } from '@unik/shared/domain';
 import type { Category, Counts, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
-import { cleanTraveler, droppedTravelers, droppedWarning, mergeTravelerEdits } from '@/lib/admin/detailHelpers';
+import { cleanTraveler, droppedTravelers, droppedWarning } from '@/lib/admin/detailHelpers';
 import { recalculate, repriceForTravelers, validateTravelers } from '@/lib/admin/edits';
 import type { TourConfig } from '@unik/shared/domain';
-import { updateApplicationFields } from '@/lib/services/admin/applications';
+import { applyCountsTx, isConflictError, saveTravelersTx } from '@/lib/services/admin/applications';
 import { PricePreview } from './PricePreview';
 import { TravelerCards } from './TravelerCards';
 import { Section, SaveError, useSave } from './ui';
@@ -35,13 +35,19 @@ function CountsEditor({ app, config, draft, setDraft, locked }: { app: Applicati
 
   async function apply() {
     if (!result || 'error' in result || !draft) return;
-    if (!sameCounts(draft.base, app.counts)) {
+    let conflicted = false;
+    const ok = await run(async () => {
+      try {
+        await applyCountsTx(app.id, draft.base, counts, config);
+      } catch (e) {
+        if (!isConflictError(e)) throw e;
+        conflicted = true;
+      }
+    });
+    if (conflicted) {
       setDraft(null);
       setConflict('Counts were changed by someone else — review the new counts and try again.');
-      return;
-    }
-    const ok = await run(() => updateApplicationFields(app.id, { counts, travelers: result.travelers.map(cleanTraveler), completeness: result.completeness, pricing: result.pricing }));
-    if (ok) setDraft(null);
+    } else if (ok) setDraft(null);
   }
 
   return (
@@ -103,17 +109,24 @@ export function TravelersSection({ app, config }: { app: ApplicationRecord; conf
     const found = validateTravelers(edit.draft.map(cleanTraveler), manilaDate(new Date()));
     setErrors(found);
     if (Object.keys(found).length > 0) return;
-    // 바꾼 필드만 최신 참가자에 다시 적용한다 (다른 직원의 동시 수정을 덮지 않기 위해)
-    const m = mergeTravelerEdits(edit.base, edit.draft, live, { base: edit.baseCounts, live: app.counts });
-    if ('conflict' in m) {
+    // 최신 문서 기준으로 바꾼 필드만 트랜잭션 안에서 병합한다 (다른 직원의 동시 수정을 덮지 않기 위해)
+    let conflicted = false;
+    let failure = '';
+    const ok = await run(async () => {
+      try {
+        await saveTravelersTx(app.id, edit.baseCounts, edit.base, edit.draft, config);
+      } catch (e) {
+        if (isConflictError(e)) conflicted = true;
+        else if (e instanceof Error && e.message === 'Tour settings are not loaded yet.') failure = e.message;
+        else throw e;
+      }
+    });
+    if (conflicted) {
       setEdit({ base: live.map((t) => ({ ...t })), baseCounts: { ...app.counts }, draft: live.map((t) => ({ ...t })) });
       setErrors({});
-      return setBlocked('Travelers were changed by someone else — review and re-apply your edits.');
-    }
-    const r = repriceForTravelers(app, m.merged, config);
-    if ('error' in r) return setBlocked(r.error);
-    const fields = { travelers: r.travelers.map(cleanTraveler), completeness: r.completeness, pricing: r.pricing };
-    if (await run(() => updateApplicationFields(app.id, fields))) cancel();
+      setBlocked('Travelers were changed by someone else — review and re-apply your edits.');
+    } else if (failure) setBlocked(failure);
+    else if (ok) cancel();
   }
 
   return (

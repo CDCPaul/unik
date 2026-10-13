@@ -16,6 +16,7 @@ import {
 } from '@unik/shared/domain';
 import type { ApplicationStatus, Counts, Pricing, TourConfig, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord, PaymentRecord } from './applicationDoc';
+import { cleanTraveler, mergeTravelerEdits } from './detailHelpers';
 
 export function recalculate(
   app: ApplicationRecord,
@@ -83,6 +84,33 @@ export function repriceForTravelers(
     pricing = { ...app.pricing, singleSupplements, subtotal, total, depositDue: Math.min(perPaxDeposit * pax, total) };
   }
   return { travelers: next, completeness, pricing, warnings: pricing === app.pricing ? [] : paymentWarnings(app, pricing) };
+}
+
+const sameCounts = (a: Counts, b: Counts) => a.full === b.full && a.tenK === b.tenK && a.companion === b.companion;
+
+export type TxPlan = { fields: Record<string, unknown> } | { conflict: true } | { error: string };
+
+/** 트랜잭션 안에서 최신 문서(live)를 기준으로 참가자 저장 내용을 계산한다. */
+export function planTravelersSave(
+  live: ApplicationRecord,
+  baseCounts: Counts,
+  baseTravelers: Traveler[],
+  draft: Traveler[],
+  config: TourConfig | null,
+): TxPlan {
+  const m = mergeTravelerEdits(baseTravelers, draft, buildTravelers(live.counts, live.travelers), { base: baseCounts, live: live.counts });
+  if ('conflict' in m) return { conflict: true };
+  const r = repriceForTravelers(live, m.merged, config);
+  if ('error' in r) return { error: r.error };
+  return { fields: { travelers: r.travelers.map(cleanTraveler), completeness: r.completeness, pricing: r.pricing } };
+}
+
+/** 트랜잭션 안에서 인원 변경 저장 내용을 계산한다. 편집 시작 후 인원이 바뀌었으면 conflict. */
+export function planCountsApply(live: ApplicationRecord, baseCounts: Counts, newCounts: Counts, config: TourConfig | null): TxPlan {
+  if (!sameCounts(baseCounts, live.counts)) return { conflict: true };
+  const r = recalculate(live, { counts: newCounts }, config);
+  if ('error' in r) return { error: r.error };
+  return { fields: { counts: newCounts, travelers: r.travelers.map(cleanTraveler), completeness: r.completeness, pricing: r.pricing } };
 }
 
 const MAX_AMOUNT = 10_000_000;

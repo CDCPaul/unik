@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord, PaymentRecord } from './applicationDoc';
-import { applyPayment, normalizeLead, parseAmount, recalculate, repriceForTravelers, statusChangeWarnings, validateLead, validateTravelers, withoutPayment } from './edits';
+import { applyPayment, normalizeLead, parseAmount, planCountsApply, planTravelersSave, recalculate, repriceForTravelers, statusChangeWarnings, validateLead, validateTravelers, withoutPayment } from './edits';
 
 const config: TourConfig = {
   acceptingApplications: true,
@@ -129,6 +129,35 @@ describe('repriceForTravelers', () => {
     const r = repriceForTravelers(paid, [{ category: 'full', room: 'single' }, { category: 'full', room: 'twin' }], config);
     if ('error' in r) throw new Error(r.error);
     expect(r.warnings).toHaveLength(1);
+  });
+});
+
+describe('transactional plans', () => {
+  const two: ApplicationRecord = {
+    ...app,
+    counts: { full: 2, tenK: 0, companion: 0 },
+    travelers: [{ category: 'full', passportName: 'A' }, { category: 'full', passportName: 'B' }],
+    pricing: { lines: [{ category: 'full', qty: 2, unitPrice: 80000, amount: 160000 }], singleSupplements: 0, subtotal: 160000, promo: null, total: 160000, depositDue: 20000 },
+  };
+  const baseT = two.travelers;
+  it('merges traveler edits onto the live doc without repricing and keeps other staff edits', () => {
+    const live: ApplicationRecord = { ...two, travelers: [{ category: 'full', passportName: 'A', nationality: 'Filipino' }, { category: 'full', passportName: 'B' }] };
+    const plan = planTravelersSave(live, two.counts, baseT, [{ category: 'full', passportName: 'A' }, { category: 'full', passportName: 'B2' }], { ...config, departures: [{ ...config.departures[0], prices: { full: 1, tenK: 1, companion: 1 } }] });
+    if (!('fields' in plan)) throw new Error('expected fields');
+    expect(plan.fields.travelers).toEqual([{ category: 'full', passportName: 'A', nationality: 'Filipino' }, { category: 'full', passportName: 'B2' }]);
+    expect(plan.fields.pricing).toEqual(two.pricing);
+  });
+  it('conflicts when counts changed live or the same field changed', () => {
+    expect(planTravelersSave({ ...two, counts: { full: 3, tenK: 0, companion: 0 } }, two.counts, baseT, baseT, config)).toEqual({ conflict: true });
+    const live: ApplicationRecord = { ...two, travelers: [{ category: 'full', passportName: 'A LIVE' }, two.travelers[1]] };
+    expect(planTravelersSave(live, two.counts, baseT, [{ category: 'full', passportName: 'A DRAFT' }, two.travelers[1]], config)).toEqual({ conflict: true });
+  });
+  it('applies counts only when the live counts still equal the base counts', () => {
+    const plan = planCountsApply(two, two.counts, { full: 2, tenK: 0, companion: 1 }, config);
+    if (!('fields' in plan)) throw new Error('expected fields');
+    expect(plan.fields).toMatchObject({ counts: { full: 2, tenK: 0, companion: 1 }, pricing: { total: 230000 } });
+    expect(planCountsApply({ ...two, counts: { full: 1, tenK: 0, companion: 0 } }, two.counts, { full: 2, tenK: 0, companion: 1 }, config)).toEqual({ conflict: true });
+    expect(planCountsApply(two, two.counts, { full: 0, tenK: 0, companion: 0 }, config)).toMatchObject({ error: expect.any(String) });
   });
 });
 
