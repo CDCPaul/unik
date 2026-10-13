@@ -1,7 +1,7 @@
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { COLLECTIONS, TOUR_ID } from '@unik/shared/firebase/config';
-import { exceedsCapacity } from '@unik/shared/domain';
+import { exceedsCapacity, isValidPrice, missingPriceCategories } from '@unik/shared/domain';
 import type { Availability, Category, Counts, TourConfig } from '@unik/shared/domain';
 
 export async function fetchTourConfig(): Promise<TourConfig | null> {
@@ -53,12 +53,15 @@ export function departureStatus(
 ): DepartureStatus {
   const dep = config.departures.find((d) => d.id === departureId);
   if (!config.acceptingApplications || !dep || !dep.isOpen) return 'closed';
+  // 고른 유형의 가격이 없는 출발편은 서버도 받지 않는다 (departure_closed)
+  if (missingPriceCategories(dep.prices, counts).length > 0) return 'closed';
   // 남은 자리 문서가 아직 없거나 새 출발편이 반영되기 전이면 서버 판단에 맡긴다.
   if (!availability || !availability.departures[departureId]) return 'open';
   return exceedsCapacity(availability, departureId, counts) ? 'full' : 'open';
 }
 
 export function lowestPrice(config: TourConfig, category: Category): number | null {
-  const prices = config.departures.filter((d) => d.isOpen).map((d) => d.prices[category]);
+  // 가격이 없거나 잘못된 출발편은 건너뛴다 (예전 설정에는 child/infant 가격이 없을 수 있다)
+  const prices = config.departures.filter((d) => d.isOpen).map((d) => d.prices?.[category]).filter(isValidPrice);
   return prices.length > 0 ? Math.min(...prices) : null;
 }

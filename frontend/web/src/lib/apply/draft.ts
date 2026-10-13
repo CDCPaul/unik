@@ -1,3 +1,4 @@
+import { CATEGORIES, normalizeCounts } from '@unik/shared/domain';
 import type { KeyValueStore } from '../store';
 import type { ApplyState } from './model';
 
@@ -5,7 +6,9 @@ const KEY = 'unik.applyDraft.v1';
 /** 임시저장 보관 기간: 마지막 저장 후 14일. 개인정보를 기기에 오래 남기지 않는다. */
 export const DRAFT_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const CATEGORY_KEYS = ['full', 'tenK', 'companion'];
+// 아동·유아 이전의 임시저장에는 child/infant 가 없다 → 처음 세 유형만 필수로 보고, 복원할 때 0 으로 채운다.
+const REQUIRED_COUNT_KEYS = ['full', 'tenK', 'companion'];
+const CATEGORY_KEYS: readonly string[] = CATEGORIES;
 const LEAD_TEXT_KEYS = ['firstName', 'lastName', 'email', 'phoneDial', 'phoneNumber'];
 
 function isDraftShape(s: Record<string, unknown>): boolean {
@@ -16,7 +19,7 @@ function isDraftShape(s: Record<string, unknown>): boolean {
     UUID.test(s.idempotencyKey) &&
     !!counts &&
     typeof counts === 'object' &&
-    CATEGORY_KEYS.every((k) => typeof counts[k] === 'number') &&
+    REQUIRED_COUNT_KEYS.every((k) => typeof counts[k] === 'number') &&
     !!lead &&
     typeof lead === 'object' &&
     LEAD_TEXT_KEYS.every((k) => typeof lead[k] === 'string') &&
@@ -60,7 +63,12 @@ export function loadDraft(store: KeyValueStore | null, now: number = Date.now())
     }
     const { savedAt: _savedAt, ...rest } = s;
     // submitAttempted 가 없던 옛 임시저장은 false 로 본다.
-    return { ...(rest as unknown as ApplyState), website: '', submitAttempted: s.submitAttempted === true };
+    return {
+      ...(rest as unknown as ApplyState),
+      counts: normalizeCounts(s.counts),
+      website: '',
+      submitAttempted: s.submitAttempted === true,
+    };
   } catch {
     return null;
   }

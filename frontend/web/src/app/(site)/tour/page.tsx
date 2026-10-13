@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { formatPHP } from '@unik/shared/domain';
+import { formatPHP, isValidPrice } from '@unik/shared/domain';
 import { ButtonLink } from '@/components/site/ButtonLink';
 import { Section, SectionHeading } from '@/components/site/Section';
 import { EXCLUSIONS, INCLUSIONS, ITINERARY, ITINERARY_NOTE, PACKAGES } from '@/content/tour';
@@ -31,7 +31,8 @@ export default async function TourPage() {
               </h2>
               {d.flightInfo ? <p className="text-sm">{d.flightInfo}</p> : null}
               <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
-                {PACKAGES.map((p) => (
+                {/* 가격이 없는 유형(예전 설정의 child/infant 등)은 보여주지 않는다 */}
+                {PACKAGES.filter((p) => isValidPrice(d.prices?.[p.category])).map((p) => (
                   <div key={p.category} className="rounded-3xl border-2 border-brand-line p-6">
                     <p className="font-race text-2xl font-extrabold uppercase text-brand-ink">{p.title}</p>
                     <p className="text-[26px] font-extrabold text-brand-ink">{formatPHP(d.prices[p.category])}</p>

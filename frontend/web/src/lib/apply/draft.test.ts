@@ -79,6 +79,24 @@ describe('draft', () => {
     saveDraft(s, initialApplyState('key-7'));
     expect(loadDraft(s)).toBeNull();
   });
+  it('restores a draft saved before children/infants existed, filling their counts with 0', () => {
+    const s = savedRaw((raw) => {
+      raw.counts = { full: 2, tenK: 0, companion: 1 };
+      raw.travelers = [{ category: 'full' }, { category: 'full' }, { category: 'companion' }];
+    });
+    expect(loadDraft(s)!.counts).toEqual({ full: 2, tenK: 0, companion: 1, child: 0, infant: 0 });
+  });
+  it('round-trips child and infant travelers and drops invalid child/infant counts to 0', () => {
+    const ok = savedRaw((raw) => {
+      raw.counts = { full: 1, tenK: 0, companion: 0, child: 1, infant: 1 };
+      raw.travelers = [{ category: 'full' }, { category: 'child' }, { category: 'infant' }];
+    });
+    expect(loadDraft(ok)!.travelers.map((t) => t.category)).toEqual(['full', 'child', 'infant']);
+    const bad = savedRaw((raw) => {
+      raw.counts = { full: 1, tenK: 0, companion: 0, child: 'two', infant: -1 };
+    });
+    expect(loadDraft(bad)!.counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 0, infant: 0 });
+  });
   it('rejects a draft with a traveler whose category is unknown', () => {
     const s = savedRaw((raw) => {
       raw.travelers = [{ category: 'x' }];

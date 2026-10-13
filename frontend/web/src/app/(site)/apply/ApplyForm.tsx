@@ -2,7 +2,20 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CATEGORIES, CATEGORY_LABELS, TSHIRT_SIZES, formatPHP, manilaDate, normalizePromoCode, totalPax } from '@unik/shared/domain';
+import {
+  CATEGORIES,
+  CATEGORY_LABELS,
+  RUNNER_CATEGORIES,
+  TSHIRT_SIZES,
+  formatPHP,
+  hasRoomChoice,
+  isValidPrice,
+  manilaDate,
+  missingPriceCategories,
+  normalizePromoCode,
+  totalPax,
+  validateCounts,
+} from '@unik/shared/domain';
 import type { Availability, Category, TourConfig } from '@unik/shared/domain';
 import { DIAL_CODES } from '@/lib/data/dialCodes';
 import { checkPromo, submitWithRetry } from '@/lib/apply/api';
@@ -26,6 +39,19 @@ function newKey(): string {
         (Number(c) ^ (Math.random() * 16) >> (Number(c) / 4)).toString(16),
       );
 }
+
+// 인원 선택 줄의 이름과 안내
+const COUNTER_TITLES: Record<Category, string> = {
+  full: 'Full Marathon runner',
+  tenK: '10K runner',
+  companion: 'Companion (non-runner)',
+  child: CATEGORY_LABELS.child,
+  infant: CATEGORY_LABELS.infant,
+};
+const COUNTER_HINTS: Partial<Record<Category, string>> = {
+  child: 'Ages 2–11 on the travel dates',
+  infant: 'Under 2 years old on the travel dates',
+};
 
 function FieldError({ id, msg }: { id: string; msg?: string }) {
   return msg ? <p id={id} role="alert" className="text-sm font-semibold text-brand-red">{msg}</p> : null;
@@ -102,6 +128,7 @@ export function ApplyForm() {
 
   const pricing = useMemo(() => (data.config ? estimatePricing(state, data.config) : null), [state, data.config]);
   const pax = totalPax(state.counts);
+  const countsError = validateCounts(state.counts);
   const accepting = data.config?.acceptingApplications ?? false;
 
   async function applyPromo() {
@@ -198,6 +225,8 @@ export function ApplyForm() {
   }
 
   const departures = data.config?.departures ?? [];
+  const selectedDeparture = departures.find((d) => d.id === state.departureId);
+  const unpriced = selectedDeparture ? missingPriceCategories(selectedDeparture.prices, state.counts) : [];
 
   return (
     <div className="flex flex-wrap items-start gap-8">
@@ -245,12 +274,19 @@ export function ApplyForm() {
           <legend className={legend}>2. Who&apos;s going?</legend>
           {CATEGORIES.map((c: Category) => {
             const dep = departures.find((d) => d.id === state.departureId);
-            const price = dep ? formatPHP(dep.prices[c]) : 'Choose a departure to see prices';
+            const unit = dep?.prices?.[c];
+            const price = !dep
+              ? 'Choose a departure to see prices'
+              : isValidPrice(unit)
+                ? `${formatPHP(unit)} per person`
+                : 'Not available for this departure';
+            const hint = COUNTER_HINTS[c];
             return (
               <div key={c} className="flex flex-wrap items-center gap-3 border-b border-brand-line py-3.5 last:border-0">
                 <div className="flex-[1_1_240px]">
-                  <p className="font-extrabold text-brand-ink">{c === 'companion' ? 'Companion (non-runner)' : `${CATEGORY_LABELS[c]} runner`}</p>
-                  <p className="text-sm">{price}{dep ? ' per person' : ''}</p>
+                  <p className="font-extrabold text-brand-ink">{COUNTER_TITLES[c]}</p>
+                  {hint ? <p className="text-sm">{hint}</p> : null}
+                  <p className="text-sm">{price}</p>
                 </div>
                 <div className="flex items-center gap-3.5">
                   <button type="button" aria-label={`Remove one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: -1 })} className="h-11 w-11 rounded-full border-2 border-brand-line bg-white text-2xl font-bold text-brand-ink">−</button>
@@ -260,7 +296,10 @@ export function ApplyForm() {
               </div>
             );
           })}
-          <p className="text-sm">Up to 10 travelers per application.</p>
+          <p className="text-sm">Up to 10 travelers per application, including children and infants. Children and infants must travel with an adult.</p>
+          <div data-field="counts" tabIndex={-1} className="outline-none">
+            <FieldError id="err-counts" msg={countsError ?? undefined} />
+          </div>
         </fieldset>
 
         {/* 3. Contact */}
@@ -313,7 +352,7 @@ export function ApplyForm() {
           <p className="text-[15px]">Busy? Skip this section. Our team will collect these details from you later.</p>
           {state.travelers.map((t, i) => {
             const open = openTraveler === i;
-            const isRunner = t.category !== 'companion';
+            const isRunner = RUNNER_CATEGORIES.includes(t.category);
             const text = (f: TravelerField, label: string, extra: Record<string, string> = {}) => (
               <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">
                 {label}
@@ -344,7 +383,7 @@ export function ApplyForm() {
                     {text('nationality', 'Nationality')}
                     {isRunner ? select('tshirtSize', 'T-shirt size', TSHIRT_SIZES.map((s) => [s, s] as const)) : null}
                     {isRunner ? text('expectedFinish', 'Expected finish time', { placeholder: 'e.g. 4:30' }) : null}
-                    {select('room', 'Room', [['twin', 'Twin share'], ['single', 'Single (supplement applies)']])}
+                    {hasRoomChoice(t.category) ? select('room', 'Room', [['twin', 'Twin share'], ['single', 'Single (supplement applies)']]) : null}
                     {text('emergencyContact', 'Emergency contact', { placeholder: 'Name and phone' })}
                   </div>
                 ) : null}
@@ -427,6 +466,7 @@ export function ApplyForm() {
             {pricing.promo ? (
               <div className="flex justify-between gap-3 text-[15px] text-[#145C33]"><span>Promo {pricing.promo.code}</span><span className="font-bold">−{formatPHP(pricing.promo.discountTotal)}</span></div>
             ) : null}
+            {pricing.promo && state.counts.infant > 0 ? <p className="text-sm">Promo discounts do not apply to infants.</p> : null}
             <div className="h-px bg-brand-line" />
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-extrabold text-brand-ink">Estimated total</span>
@@ -437,7 +477,11 @@ export function ApplyForm() {
             </p>
           </>
         ) : (
-          <p className="text-sm">Choose a departure to see your estimated total.</p>
+          <p className="text-sm">
+            {unpriced.length > 0
+              ? `${unpriced.map((c) => CATEGORY_LABELS[c]).join(', ')}: not available for this departure.`
+              : 'Choose a departure to see your estimated total.'}
+          </p>
         )}
       </aside>
     </div>

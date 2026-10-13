@@ -11,7 +11,7 @@ const config = {
   mayaPaymentLinkBase: null,
   notifyEmails: [],
   departures: [
-    { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23', flightInfo: '', seatCapacity: 120, isOpen: true, prices: { full: 80000, tenK: 75000, companion: 70000 }, singleSupplement: 15000 },
+    { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23', flightInfo: '', seatCapacity: 120, isOpen: true, prices: { full: 80000, tenK: 75000, companion: 70000, child: 50000, infant: 8000 }, singleSupplement: 15000 },
   ],
 } satisfies TourConfig;
 
@@ -28,7 +28,7 @@ function filled(): ApplyState {
 describe('applyReducer', () => {
   it('starts with one full marathon runner and the stored promo code', () => {
     const s = initialApplyState('k', 'TA-SUNRISE');
-    expect(s.counts).toEqual({ full: 1, tenK: 0, companion: 0 });
+    expect(s.counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 0, infant: 0 });
     expect(s.travelers).toEqual([{ category: 'full' }]);
     expect(s.promoInput).toBe('TA-SUNRISE');
   });
@@ -62,6 +62,45 @@ describe('applyReducer', () => {
     expect(s.promo?.code).toBe('TA-A');
     s = applyReducer(s, { type: 'setPromoInput', value: 'TA-B' });
     expect(s.promo).toBeNull();
+  });
+});
+
+describe('children and infants', () => {
+  const add = (s: ApplyState, category: 'full' | 'companion' | 'child' | 'infant', delta: 1 | -1 = 1) => applyReducer(s, { type: 'changeCount', category, delta });
+  it('adds child and infant travelers after the adults', () => {
+    const s = add(add(filled(), 'infant'), 'child');
+    expect(s.travelers.map((t) => t.category)).toEqual(['full', 'child', 'infant']);
+  });
+  it('counts children and infants towards the 10-traveler limit', () => {
+    let s = filled();
+    for (let i = 0; i < 12; i++) s = add(s, 'child');
+    expect(s.counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 9, infant: 0 });
+  });
+  it('blocks submission with the shared message when no adult travels', () => {
+    const s = add(add(filled(), 'child'), 'full', -1);
+    expect(s.counts).toEqual({ full: 0, tenK: 0, companion: 0, child: 1, infant: 0 });
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({ counts: 'Children and infants must travel with at least one adult.' });
+  });
+  it('blocks submission when there are more infants than adults', () => {
+    const s = add(add(filled(), 'infant'), 'infant');
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({ counts: 'Each infant must travel with an adult (one infant per adult).' });
+    expect(validateForSubmit(add(s, 'companion'), '2026-10-13')).toEqual({});
+  });
+  it('estimates a family total with no promo on the infant and the infant deposit capped', () => {
+    let s = add(add(add(filled(), 'companion'), 'child'), 'infant');
+    s = applyReducer(s, { type: 'promoApplied', promo: { code: 'TA-A', agencyName: 'A', discountType: 'fixed', discountValue: 2000, description: 'x' } });
+    const p = estimatePricing(s, config)!;
+    expect(p.subtotal).toBe(80000 + 70000 + 50000 + 8000);
+    expect(p.promo?.discountTotal).toBe(6000);
+    expect(p.depositDue).toBe(38000);
+  });
+  it('gives no estimate when the departure has no price for a selected category', () => {
+    const legacy = { ...config, departures: [{ ...config.departures[0], prices: { full: 80000, tenK: 75000, companion: 70000 } as TourConfig['departures'][0]['prices'] }] };
+    expect(estimatePricing(filled(), legacy)?.total).toBe(80000);
+    expect(estimatePricing(add(filled(), 'child'), legacy)).toBeNull();
+  });
+  it('sends all five counts to the server', () => {
+    expect(toSubmitPayload(add(filled(), 'infant')).counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 0, infant: 1 });
   });
 });
 

@@ -4,6 +4,8 @@ export const PACKAGES: { category: Category; title: string; description: string 
   { category: 'full', title: 'Full Marathon Runner', description: 'Race entry for the 42.195 km full marathon.' },
   { category: 'tenK', title: '10K Runner', description: 'Race entry for the 10 km course.' },
   { category: 'companion', title: 'Companion', description: 'For family and friends coming to cheer. No race entry.' },
+  { category: 'child', title: 'Child (under 12)', description: 'For children aged 2–11 travelling with an adult. No race entry.' },
+  { category: 'infant', title: 'Infant (under 2)', description: 'For infants under 2 travelling with an adult. No race entry.' },
 ];
 
 export const INCLUSIONS = [

@@ -11,9 +11,11 @@ import {
   isValidName,
   isValidPassportName,
   isValidPromoCodeFormat,
+  missingPriceCategories,
   normalizePhoneNumber,
   normalizePromoCode,
   totalPax,
+  validateCounts,
 } from '@unik/shared/domain';
 import type { Category, Counts, DiscountType, Pricing, TourConfig, Traveler } from '@unik/shared/domain';
 import type { SubmitPayload } from './api';
@@ -70,7 +72,7 @@ export type ApplyAction =
 export function initialApplyState(idempotencyKey: string, promoCode: string | null = null): ApplyState {
   return {
     departureId: null,
-    counts: { full: 1, tenK: 0, companion: 0 },
+    counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
     lead: { firstName: '', lastName: '', email: '', phoneDial: '+63', phoneNumber: '', viber: false, whatsapp: false },
     travelers: [{ category: 'full' }],
     promoInput: promoCode ?? '',
@@ -90,6 +92,7 @@ export function applyReducer(state: ApplyState, action: ApplyAction): ApplyState
     case 'changeCount': {
       const counts = { ...state.counts, [action.category]: Math.max(0, state.counts[action.category] + action.delta) };
       const pax = totalPax(counts);
+      // 인원 0·10명 초과만 막는다. 성인 동반 규칙은 validateCounts 메시지로 안내한다 (순서대로 고칠 수 있게).
       if (pax < 1 || pax > MAX_PAX_PER_APPLICATION) return state;
       return { ...state, counts, travelers: buildTravelers(counts, state.travelers) };
     }
@@ -131,6 +134,8 @@ const OPTIONAL_TEXT_MAX: Partial<Record<TravelerField, number>> = {
 export function validateForSubmit(state: ApplyState, today: string): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!state.departureId) errors.departureId = 'Please choose a departure.';
+  const countsError = validateCounts(state.counts);
+  if (countsError) errors.counts = countsError;
   if (!isValidName(state.lead.firstName)) errors['lead.firstName'] = 'Please enter your first name.';
   if (!isValidName(state.lead.lastName)) errors['lead.lastName'] = 'Please enter your last name.';
   const email = state.lead.email.trim();
@@ -196,6 +201,8 @@ export function toSubmitPayload(state: ApplyState): SubmitPayload {
 export function estimatePricing(state: ApplyState, config: TourConfig): Pricing | null {
   const departure = config.departures.find((d) => d.id === state.departureId);
   if (!departure) return null;
+  // 가격이 없는 유형이 포함되면 금액을 만들지 않는다 (NaN 방지, 서버도 이 신청을 받지 않는다)
+  if (missingPriceCategories(departure.prices, state.counts).length > 0) return null;
   return computePricing({
     departure,
     counts: state.counts,
