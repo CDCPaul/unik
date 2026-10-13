@@ -2,12 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Menu, X, Home, IdCard } from 'lucide-react';
+import { LogOut, Menu, X, Home, IdCard, Users, Ticket, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from '@/lib/auth';
 
 const menuItems = [
+  { href: '/admin/applicants', icon: Users, label: 'Applicants' },
+  { href: '/admin/promo-codes', icon: Ticket, label: 'Promo codes' },
+  { href: '/admin/tour-settings', icon: Settings, label: 'Tour settings' },
   { href: '/admin/business-cards', icon: IdCard, label: 'Business Cards' },
 ];
 

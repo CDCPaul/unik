@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Chrome, Loader2, ShieldAlert } from 'lucide-react';
 import { signInWithGoogle } from '@/lib/auth';
+import '@/lib/admin/emulators';
 
 export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);

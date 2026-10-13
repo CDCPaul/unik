@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthChange, isAuthorized } from '@/lib/auth';
 import AdminSidebar from '@/components/admin/Sidebar';
 import { Loader2 } from 'lucide-react';
+import '@/lib/admin/emulators';
 
 export default function AdminDashboardLayout({
   children,
