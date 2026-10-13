@@ -8,14 +8,14 @@
 ## D-3 ~ D-1 (사전 준비, 사이트 영향 없음)
 - [ ] 대표 승인: 색상 테마, 랜딩·투어 문구
 - [ ] `LAUNCH=1 pnpm --filter @unik/web test` 통과 (모든 [TBC: …] 제거)
-- [ ] 백업 전용 GCS 버킷 만들기 (최초 1회; Firebase Storage 기본 버킷은 규칙·공개 자산과 섞이므로 백업에 쓰지 않는다):
-  `gcloud storage buckets create gs://unik-90206-backups --location=asia-northeast3 --project=unik-90206 --uniform-bucket-level-access`
-- [ ] Firestore 백업: `gcloud firestore export gs://unik-90206-backups/<YYYY-MM-DD>-pre-launch --project=unik-90206`
-- [ ] 구 `onNewContact` 환경변수 점검: Firebase 콘솔 → Functions → `onNewContact` → "Environment variables"(또는 Cloud Run 리비전의 변수)에서 `RESEND_API_KEY` 가 **일반 환경변수**로 들어 있는지 확인한다. 일반 환경변수이면 새 버전이 같은 이름의 시크릿으로 배포될 때 충돌하므로, D-day 1단계에서 **먼저 삭제 후 배포**한다 (아래 참고).
-- [ ] 아카이브 태그 원격 푸시: `git push origin archive/pre-seoul-2027`
+- [x] (2026-10-13 완료, Firestore 와 같은 asia-southeast1) 백업 전용 GCS 버킷 만들기 (최초 1회; Firebase Storage 기본 버킷은 규칙·공개 자산과 섞이므로 백업에 쓰지 않는다):
+  `gcloud storage buckets create gs://unik-90206-backups --location=asia-southeast1 --project=unik-90206 --uniform-bucket-level-access`
+- [x] (2026-10-13 완료: gs://unik-90206-backups/2026-10-13-pre-launch, 132건) Firestore 백업: `gcloud firestore export gs://unik-90206-backups/<YYYY-MM-DD>-pre-launch --project=unik-90206`
+- [x] (2026-10-13 확인: 이미 시크릿 RESEND_API_KEY v2 사용 → D-day 1단계의 사전 삭제 불필요) 구 `onNewContact` 환경변수 점검: Firebase 콘솔 → Functions → `onNewContact` → "Environment variables"(또는 Cloud Run 리비전의 변수)에서 `RESEND_API_KEY` 가 **일반 환경변수**로 들어 있는지 확인한다. 일반 환경변수이면 새 버전이 같은 이름의 시크릿으로 배포될 때 충돌하므로, D-day 1단계에서 **먼저 삭제 후 배포**한다 (아래 참고).
+- [x] (2026-10-13 완료) 아카이브 태그 원격 푸시: `git push origin archive/pre-seoul-2027`
 - [ ] App Check: reCAPTCHA Enterprise 키 생성(unik.ph, www.unik.ph, localhost, 필요 시 *.vercel.app) → Firebase App Check 웹앱 등록 → Vercel 환경변수 `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` (Production, Preview)
 - [ ] **Firestore·Storage 에는 App Check 강제를 켜지 않는다** (SSR 가격 조회·NFC 명함이 토큰 없이 읽음)
-- [ ] Resend 키: `firebase functions:secrets:set RESEND_API_KEY --project unik-90206`
+- [x] (이미 등록됨) Resend 키: `firebase functions:secrets:set RESEND_API_KEY --project unik-90206`
 - [ ] Firebase Auth 승인 도메인에 unik.ph, www.unik.ph 있는지 확인
 - [ ] 스테이징 확인: Vercel Preview(이 브랜치)에서 공개 페이지·명함(`/profile/<slug>`) 렌더링 확인
 
