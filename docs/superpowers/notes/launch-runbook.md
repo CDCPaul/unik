@@ -14,9 +14,12 @@
 - [ ] 스테이징 확인: Vercel Preview(이 브랜치)에서 공개 페이지·명함(`/profile/<slug>`) 렌더링 확인
 
 ## D-day
-1. [ ] **새 함수만 배포** (구 함수 유지, 구 사이트 영향 없음):
+> 모든 `firebase` 명령은 저장소 루트에서, **병합 전** 오픈할 커밋을 체크아웃한 `feat/seoul-2027` 에서 실행한다.
+
+1. [ ] **새 함수만 배포** (구 함수 spinRoulette·createRouletteWinner·onNewRegistration 은 그대로 유지, 구 사이트 영향 없음):
    `firebase deploy --only functions:submitApplication,functions:checkPromoCode,functions:onApplicationCreated,functions:onApplicationWritten,functions:onTourConfigWritten,functions:onNewContact --project unik-90206`
    - 구 함수 삭제를 묻는 프롬프트가 나오면 **No**.
+   - `onNewContact` 는 이미 존재하므로 이 배포로 **새 버전으로 교체**된다 (수신자를 `tourConfig.notifyEmails` 에서 읽고, 없으면 `ticket@cebudirectclub.com` 으로 보냄. `RESEND_API_KEY` 시크릿 필요).
 2. [ ] **규칙 배포 + 사이트 전환을 연달아** (이 사이 수 분간 구 사이트 일부 기능 정지 — 트래픽 적은 시간대):
    1. `firebase deploy --only firestore:rules --project unik-90206`
    2. `feat/seoul-2027` → `main` 병합 (PR 머지) → Vercel 프로덕션 배포 완료 확인
@@ -31,6 +34,7 @@
 - [ ] Firebase App Check 지표에서 미검증 요청 비율 확인
 
 ## 롤백
-- 사이트: Vercel 대시보드 → 이전 프로덕션 배포 "Promote to Production" (즉시)
-- 규칙: `git checkout archive/pre-seoul-2027 -- firestore.rules && firebase deploy --only firestore:rules --project unik-90206` 후 파일 원복
-- 함수: 새 함수는 구 사이트와 무관하므로 그대로 두어도 된다(필요 시 `functions:delete`)
+- 먼저 어드민에 접속할 수 있으면 Tour settings 에서 "Accepting applications" 를 **끈다**.
+- 사이트: Vercel 대시보드 → 이전 프로덕션 배포 "Promote to Production" (즉시). 문제가 해결되기 전에는 **main 에 push 하지 않는다** (push 하면 새 사이트가 다시 배포된다).
+- 규칙: `git checkout archive/pre-seoul-2027 -- firestore.rules && firebase deploy --only firestore:rules --project unik-90206` 후 `git checkout HEAD -- firestore.rules` 로 파일을 원복한다.
+- 함수: 새 함수는 구 사이트와 무관하므로 그대로 두어도 된다(필요 시 `functions:delete`). 단 `onNewContact` 는 새 버전으로 교체된 상태다. 구 버전으로 되돌리려면 아카이브 태그에서 다시 배포한다: `git worktree add ../unik-archive archive/pre-seoul-2027` 후 그 디렉터리에서 `firebase deploy --only functions:onNewContact --project unik-90206`. 되돌리지 않고 두어도 문의 폼은 계속 동작한다.
