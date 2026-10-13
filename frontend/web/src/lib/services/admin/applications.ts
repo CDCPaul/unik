@@ -7,6 +7,8 @@ import type { ApplicationRecord, PaymentRecord } from '@/lib/admin/applicationDo
 import { applyPayment, withoutPayment } from '@/lib/admin/edits';
 
 const col = () => collection(db, COLLECTIONS.applications);
+// 상태·결제 관련 필드는 changeStatusTx / addPaymentTx / removePaymentTx 로만 바꾼다
+const PROTECTED_FIELDS = ['agreedToTermsAt', 'createdAt', 'appNo', 'status', 'statusHistory', 'payments', 'paidTotal'];
 
 export function subscribeApplications(cb: (apps: ApplicationRecord[]) => void, onError: (e: unknown) => void): () => void {
   return onSnapshot(
@@ -18,7 +20,7 @@ export function subscribeApplications(cb: (apps: ApplicationRecord[]) => void, o
 
 /** 바꾼 필드만 쓴다. agreedToTermsAt 등 다른 필드는 건드리지 않는다. */
 export async function updateApplicationFields(id: string, fields: Record<string, unknown>): Promise<void> {
-  if ('agreedToTermsAt' in fields || 'createdAt' in fields || 'appNo' in fields) throw new Error('Protected field');
+  if (PROTECTED_FIELDS.some((k) => k in fields)) throw new Error('Protected field');
   await updateDoc(doc(col(), id), { ...fields, updatedAt: serverTimestamp() });
 }
 
