@@ -43,7 +43,7 @@ export default function SeoulMarathonPage() {
             partnership, shared between the full marathon and the 10K. We register you with the organizers once your slot is
             confirmed. Entries are first come, first served.
           </p>
-          <p className="text-sm">Full marathon eligibility requirements, if any, will be confirmed with you after you apply. [TBC: eligibility requirements]</p>
+          <p className="text-sm">Full marathon eligibility requirements, if any, will be confirmed with you after you apply.</p>
         </div>
         <div className="relative h-[300px] overflow-hidden rounded-3xl sm:h-[420px]">
           <Image src="/images/seoul-marathon-runners.jpg" alt="Thousands of Seoul Marathon runners filling a city road at dawn" fill sizes="100vw" className="object-cover" />

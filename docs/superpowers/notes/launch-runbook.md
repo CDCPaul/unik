@@ -13,7 +13,7 @@
 - [x] (2026-10-13 완료: gs://unik-90206-backups/2026-10-13-pre-launch, 132건) Firestore 백업: `gcloud firestore export gs://unik-90206-backups/<YYYY-MM-DD>-pre-launch --project=unik-90206`
 - [x] (2026-10-13 확인: 이미 시크릿 RESEND_API_KEY v2 사용 → D-day 1단계의 사전 삭제 불필요) 구 `onNewContact` 환경변수 점검: Firebase 콘솔 → Functions → `onNewContact` → "Environment variables"(또는 Cloud Run 리비전의 변수)에서 `RESEND_API_KEY` 가 **일반 환경변수**로 들어 있는지 확인한다. 일반 환경변수이면 새 버전이 같은 이름의 시크릿으로 배포될 때 충돌하므로, D-day 1단계에서 **먼저 삭제 후 배포**한다 (아래 참고).
 - [x] (2026-10-13 완료) 아카이브 태그 원격 푸시: `git push origin archive/pre-seoul-2027`
-- [ ] App Check: reCAPTCHA Enterprise 키 생성(unik.ph, www.unik.ph, localhost, 필요 시 *.vercel.app) → Firebase App Check 웹앱 등록 → Vercel 환경변수 `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` (Production, Preview)
+- [x] (2026-10-13 완료: 키 6LcbgewtAAAAAH9Po-ehUb3acjlIkaNwnkJHUMqi, 도메인 unik.ph·www.unik.ph·localhost·127.0.0.1, App Check 등록, Vercel Production·Preview 설정) App Check: reCAPTCHA Enterprise 키 생성(unik.ph, www.unik.ph, localhost, 필요 시 *.vercel.app) → Firebase App Check 웹앱 등록 → Vercel 환경변수 `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY` (Production, Preview)
 - [ ] **Firestore·Storage 에는 App Check 강제를 켜지 않는다** (SSR 가격 조회·NFC 명함이 토큰 없이 읽음)
 - [x] (이미 등록됨) Resend 키: `firebase functions:secrets:set RESEND_API_KEY --project unik-90206`
 - [ ] Firebase Auth 승인 도메인에 unik.ph, www.unik.ph 있는지 확인

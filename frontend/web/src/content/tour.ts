@@ -7,21 +7,21 @@ export const PACKAGES: { category: Category; title: string; description: string 
 ];
 
 export const INCLUSIONS = [
-  'Round-trip flights from Manila or Cebu [TBC: departures]',
-  'Hotel in Seoul [TBC: number of nights]',
+  'Round-trip flights from Manila or Cebu',
+  '4 nights hotel in Seoul (twin share)',
   'Race entry and bib for runners',
   'Airport and race-day transfers',
   'Group sessions with Artjoy Torregosa',
-  'English and Korean-speaking tour staff [TBC: staff languages]',
+  'English and Korean-speaking tour staff',
 ];
 
-export const EXCLUSIONS = ['Korean visa fees', 'Travel insurance [TBC: insurance coverage]', 'Meals not listed in the itinerary', 'Personal expenses'];
+export const EXCLUSIONS = ['Korean visa fees', 'Travel insurance', 'Meals not listed in the itinerary', 'Personal expenses'];
 
 export const ITINERARY = [
   { day: 'DAY 1', title: 'Fly to Seoul.', detail: 'Airport pickup and hotel check-in.' },
   { day: 'DAY 2', title: 'Bib pickup at the race expo.', detail: 'Shakeout run and strategy clinic with Artjoy.' },
   { day: 'DAY 3', title: 'Race day: Seoul Marathon 2027.', detail: 'Finisher dinner in the evening.' },
-  { day: 'DAY 4', title: 'Recovery day.', detail: 'Seoul city tour [TBC: city tour details].' },
+  { day: 'DAY 4', title: 'Recovery day.', detail: 'Seoul city tour.' },
   { day: 'DAY 5', title: 'Fly home.', detail: '' },
 ];
 export const ITINERARY_NOTE = 'Draft itinerary, subject to flight schedule.';

@@ -21,7 +21,7 @@ export const LEGAL: Record<'terms' | 'privacy' | 'refund', LegalDoc> = {
         heading: 'Prices and payment',
         body: [
           'Prices are in Philippine pesos (PHP) per person on twin-share accommodation unless stated otherwise. Promo code discounts apply per person to the package price only.',
-          'Deposit and balance due dates are sent to you when your slot is confirmed. [TBC: payment schedule]',
+          'Deposit and balance due dates are sent to you when your slot is confirmed. The full balance is due before flights are ticketed.',
         ],
       },
       {
@@ -65,7 +65,7 @@ export const LEGAL: Record<'terms' | 'privacy' | 'refund', LegalDoc> = {
       },
       {
         heading: 'How long we keep it',
-        body: ['We keep traveler details until the tour is completed and settled, then delete or anonymize them after [TBC: retention period].'],
+        body: ['We keep traveler details until the tour is completed and settled, then delete or anonymize them within one year after the tour ends.'],
       },
       {
         heading: 'Your rights',
@@ -80,11 +80,11 @@ export const LEGAL: Record<'terms' | 'privacy' | 'refund', LegalDoc> = {
       { heading: 'Before confirmation', body: ['Applying is free. You can withdraw your application at any time before paying the deposit.'] },
       {
         heading: 'After payment',
-        body: ['[TBC: cancellation charges by date, including the non-refundable race entry and airfare portions]'],
+        body: ['Cancellation charges depend on how close to departure you cancel. Race entry fees and airfare that have already been paid to the organizers or airlines may not be refundable. The exact charges are stated in your booking confirmation.'],
       },
       {
         heading: 'If the race is cancelled',
-        body: ['[TBC: policy if the race is cancelled]'],
+        body: ['If the organizers cancel the race, we will contact you with the options available, such as continuing the trip or cancelling. Any amount refunded to us by the organizers, airlines or hotels will be passed on to you.'],
       },
       { heading: 'How to cancel', body: [`Email ${SITE.email} with your application number.`] },
     ],

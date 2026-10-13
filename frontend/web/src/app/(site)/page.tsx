@@ -75,7 +75,7 @@ export default async function HomePage() {
             {[
               [RACE.dateShort, 'Race day, Sunday'],
               ['FULL · 10K', 'Plus a companion package for non-runners'],
-              ['MNL · CEB', 'Departures [TBC: departures]'],
+              ['MNL · CEB', 'Departures from Manila and Cebu'],
               [`${RACE.bibsTotal} BIBS`, 'Limited race entries for this tour'],
             ].map(([big, small]) => (
               <div key={big}>
@@ -130,7 +130,7 @@ export default async function HomePage() {
             ['RACE DATE', RACE.date, RACE.city],
             ['CATEGORIES', 'Full Marathon · 10K', '42.195 km or 10 km'],
             ['ASSEMBLY POINT', 'Gwanghwamun Square', `Full marathon (planned). 10K: Jamsil Sports Complex (planned). ${RACE.courseNote}`],
-            ['TIME LIMIT', '[TBC: time limit]', RACE.timeLimit],
+            ['TIME LIMIT', 'To be announced', 'Set by the race organizers.'],
           ].map(([label, value, note]) => (
             <div key={label} className="flex flex-col gap-1.5 rounded-[20px] bg-white p-7">
               <p className="text-[13px] font-bold tracking-[0.1em] text-brand-red">{label}</p>
