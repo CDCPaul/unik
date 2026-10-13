@@ -1,13 +1,29 @@
 // 서울마라톤 2027 투어 도메인 타입. 이 디렉터리는 웹과 Cloud Functions 가 공유하므로
 // 외부 의존성 없이 상대 경로 import 만 사용한다.
 
-export const CATEGORIES = ['full', 'tenK', 'companion'] as const;
+export const CATEGORIES = ['full', 'tenK', 'companion', 'child', 'infant'] as const;
 export type Category = (typeof CATEGORIES)[number];
+
+/** 대회 참가(배번)가 있는 유형 */
+export const RUNNER_CATEGORIES: readonly Category[] = ['full', 'tenK'];
+/** 성인 유형. 아동·유아는 성인과 함께 여행해야 한다. */
+export const ADULT_CATEGORIES: readonly Category[] = ['full', 'tenK', 'companion'];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   full: 'Full Marathon',
   tenK: '10K',
   companion: 'Companion',
+  child: 'Child (under 12)',
+  infant: 'Infant (under 2)',
+};
+
+/** 표·CSV 머리글처럼 짧은 이름이 필요한 곳에 쓴다 */
+export const CATEGORY_SHORT_LABELS: Record<Category, string> = {
+  full: 'Full',
+  tenK: '10K',
+  companion: 'Companion',
+  child: 'Child',
+  infant: 'Infant',
 };
 
 export type Counts = Record<Category, number>;
