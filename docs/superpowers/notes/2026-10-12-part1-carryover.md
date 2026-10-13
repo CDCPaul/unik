@@ -6,7 +6,7 @@
 1. ✅ (2부, 코드 완료 · **콘솔 설정은 사용자 작업으로 남음**) **App Check 강제** — `submitApplication`, `checkPromoCode` 에 `enforceAppCheck: true`. 웹에 App Check(reCAPTCHA Enterprise) 연동 후 켠다.
 2. ✅ (2부) **서버 측 제출 제한(throttle)** — App Check 만으로는 실제 브라우저 스팸을 못 막음. 같은 이메일의 최근 1시간 미취소 신청 N건 초과 시 거절 등 (submit 트랜잭션이 이미 전체 신청을 읽으므로 저비용). → 구현: per-email (5/hour). IP 기반 제한은 두지 않음.
 3. **운영 배포 런북** → `docs/superpowers/notes/launch-runbook.md` — 스펙 §12 의 "규칙·함수 먼저 배포(기존 사이트 무영향)"는 더 이상 사실이 아님. 새 규칙은 구 사이트의 공개 읽기/신청을 막고, `firebase deploy --only functions` 는 구 함수(spinRoulette, createRouletteWinner, onNewRegistration) 삭제를 제안함. 순서:
-   1. Firestore 백업(gcloud export) + 아카이브 태그 푸시 (사용자 확인)
+   1. Firestore 백업 + 아카이브 태그 푸시 (사용자 확인). 백업은 Firebase Storage 기본 버킷이 아니라 전용 버킷으로: `gcloud storage buckets create gs://unik-90206-backups --location=asia-northeast3 --project=unik-90206 --uniform-bucket-level-access` (최초 1회) 후 `gcloud firestore export gs://unik-90206-backups/<YYYY-MM-DD>-pre-launch --project=unik-90206`
    2. `firebase functions:secrets:set RESEND_API_KEY`
    3. 새 함수만 이름 지정 배포: `--only functions:submitApplication,functions:checkPromoCode,functions:onApplicationCreated,functions:onApplicationWritten,functions:onTourConfigWritten,functions:onNewContact`
    4. 규칙 배포와 Vercel 프로덕션 전환을 연달아 (또는 과도기 규칙)
