@@ -97,7 +97,10 @@ describe('parseSubmitInput', () => {
     expect(() => parseSubmitInput(validInput({ lead: { ...validInput().lead, email: 'maria@example' } }))).toThrow(SubmitError);
   });
   it('rejects a malformed promo code', () => {
-    expect(() => parseSubmitInput(validInput({ promoCode: 'TA_SUNRISE' }))).toThrow(SubmitError);
+    expect(() => parseSubmitInput(validInput({ promoCode: 'TA SUNRISE' }))).toThrow(SubmitError);
+  });
+  it('accepts branch codes with an underscore', () => {
+    expect(parseSubmitInput(validInput({ promoCode: 'GRH_C' })).promoCode).toBe('GRH_C');
   });
 
   describe('input hardening', () => {

@@ -145,7 +145,7 @@ export function validateForSubmit(state: ApplyState, today: string): Record<stri
   }
   if (!state.agreedToTerms) errors.agreedToTerms = 'Please agree to the terms to continue.';
   if (!state.promo && state.promoInput.trim() && !isValidPromoCodeFormat(normalizePromoCode(state.promoInput))) {
-    errors.promoInput = 'Promo codes use letters, numbers and hyphens (3–20 characters).';
+    errors.promoInput = 'Promo codes use letters, numbers, hyphens and underscores (3–20 characters).';
   }
   const requests = state.specialRequests.trim();
   if (requests.length > 1000) errors.specialRequests = 'Please shorten your request (max 1000 characters).';

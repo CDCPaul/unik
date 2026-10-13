@@ -44,7 +44,7 @@ export function validatePromoForm(f: PromoForm, opts: { isNew: boolean; existing
   const e: Record<string, string> = {};
   const code = normalizePromoCode(f.code);
   if (opts.isNew) {
-    if (!isValidPromoCodeFormat(code)) e.code = 'Use A–Z, 0–9 and hyphens (3–20 characters).';
+    if (!isValidPromoCodeFormat(code)) e.code = 'Use A–Z, 0–9, hyphens and underscores (3–20 characters).';
     else if (opts.existingCodes.includes(code)) e.code = 'This code already exists.';
   }
   if (!f.agencyName.trim() || f.agencyName.trim().length > 100) e.agencyName = 'Required (max 100 characters).';
