@@ -8,6 +8,7 @@ import {
   exceedsCapacity,
   formatAppNo,
   missingPriceCategories,
+  promoEligiblePax,
   promoUsagePax,
   totalPax,
   type ApplicationStatus,
@@ -91,7 +92,7 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
     if (promoCode) {
       const promoSnap = await tx.get(db.collection(COL.promoCodes).doc(promoCode));
       const found = promoSnap.exists ? ({ ...promoSnap.data(), code: promoCode } as PromoCode) : null;
-      const evaluation = evaluatePromo(found, { now, usedPax: promoUsagePax(summaries, promoCode), requestedPax: pax });
+      const evaluation = evaluatePromo(found, { now, usedPax: promoUsagePax(summaries, promoCode), requestedPax: promoEligiblePax(input.counts) });
       if (!evaluation.valid) {
         throw new SubmitError('promo_invalid', 'This promo code is not valid.', { reason: evaluation.reason });
       }

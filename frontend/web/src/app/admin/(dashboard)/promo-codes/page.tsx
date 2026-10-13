@@ -167,7 +167,12 @@ export default function PromoCodesPage() {
                     <td className="admin-table-cell">{describeDiscount(c.discountType, c.discountValue)}</td>
                     <td className="admin-table-cell">{c.validUntil || 'No expiry'}</td>
                     <td className="admin-table-cell">{s?.applications ?? 0}</td>
-                    <td className="admin-table-cell">{s?.pax ?? 0}{c.maxPax !== null && c.maxPax !== undefined ? ` / ${c.maxPax}` : ''}</td>
+                    <td className="admin-table-cell">
+                      {s?.pax ?? 0}
+                      {c.maxPax !== null && c.maxPax !== undefined ? (
+                        <span className="block text-xs text-slate-500" title="Infants do not count toward the limit">limit {s?.quotaPax ?? 0} / {c.maxPax}</span>
+                      ) : null}
+                    </td>
                     <td className="admin-table-cell font-semibold">{s?.confirmedPax ?? 0}</td>
                     <td className="admin-table-cell">{formatPHP(s?.netSales ?? 0)}</td>
                     <td className="admin-table-cell">
@@ -227,7 +232,7 @@ export default function PromoCodesPage() {
               <input type="date" className="admin-input" value={form.validUntil} onChange={(e) => set('validUntil', e.target.value)} />
               {errors.validUntil ? <span className="text-xs font-semibold text-red-600">{errors.validUntil}</span> : null}
             </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">Max travelers
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">Max travelers (infants not counted)
               <input className="admin-input" inputMode="numeric" placeholder="No limit" value={form.maxPax} onChange={(e) => set('maxPax', e.target.value)} />
               {errors.maxPax ? <span className="text-xs font-semibold text-red-600">{errors.maxPax}</span> : null}
             </label>

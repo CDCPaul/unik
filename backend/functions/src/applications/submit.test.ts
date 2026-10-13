@@ -79,6 +79,18 @@ describe('submitApplicationCore', () => {
     );
   });
 
+  it('does not count infants toward a promo code limit', async () => {
+    await seedPromo('TA-FAM', { maxPax: 3 });
+    const family = { full: 2, tenK: 0, companion: 1, child: 0, infant: 2 };
+    const first = await submitApplicationCore(testDb(), validInput({ promoCode: 'TA-FAM', counts: family }), now);
+    expect(first.status).toBe('new');
+    await expectSubmitError(
+      submitApplicationCore(testDb(), validInput({ promoCode: 'TA-FAM', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 } }), now),
+      'promo_invalid',
+      'limit_reached',
+    );
+  });
+
   it('rejects when applications are closed or the departure is closed', async () => {
     await seedTourConfig({ acceptingApplications: false });
     await expectSubmitError(submitApplicationCore(testDb(), validInput(), now), 'closed');

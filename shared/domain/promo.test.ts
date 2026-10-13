@@ -63,6 +63,12 @@ describe('promoUsagePax', () => {
     ];
     expect(promoUsagePax(apps, 'TA-A')).toBe(4);
   });
+  it('does not count infants toward the limit (they get no discount)', () => {
+    const apps: ApplicationSummary[] = [
+      { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 0, child: 1, infant: 2 }, promoCode: 'TA-A' },
+    ];
+    expect(promoUsagePax(apps, 'TA-A')).toBe(3);
+  });
 });
 
 describe('describeDiscount', () => {
