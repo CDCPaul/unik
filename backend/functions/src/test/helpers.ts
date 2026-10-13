@@ -31,7 +31,7 @@ export const baseConfig: TourConfig = {
       flightInfo: 'TBA',
       seatCapacity: 120,
       isOpen: true,
-      prices: { full: 80000, tenK: 75000, companion: 70000 },
+      prices: { full: 80000, tenK: 75000, companion: 70000, child: 50000, infant: 8000 },
       singleSupplement: 15000,
     },
     {
@@ -42,7 +42,7 @@ export const baseConfig: TourConfig = {
       flightInfo: 'TBA',
       seatCapacity: 80,
       isOpen: true,
-      prices: { full: 85000, tenK: 80000, companion: 75000 },
+      prices: { full: 85000, tenK: 80000, companion: 75000, child: 50000, infant: 8000 },
       singleSupplement: 15000,
     },
   ],
@@ -71,7 +71,7 @@ export function validInput(over: Record<string, unknown> = {}) {
   return {
     idempotencyKey: randomUUID(),
     departureId: 'mnl',
-    counts: { full: 2, tenK: 0, companion: 1 },
+    counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 },
     lead: {
       firstName: 'Maria',
       lastName: 'Santos',

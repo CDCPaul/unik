@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  CATEGORIES,
   EMAIL_PATTERN,
   PHONE_DIAL_PATTERN,
   PHONE_NUMBER_PATTERN,
@@ -34,9 +35,11 @@ const optText = (max: number) =>
 const optPassportName = z.preprocess(blankToUndefined, z.string().refine(isValidPassportName, 'Invalid name').optional());
 const nameText = z.string().trim().refine(isValidName, 'Invalid name');
 const count = z.number().int().min(0).max(10);
+// 아동·유아 이전에 캐시된 웹 폼은 child/infant 를 보내지 않는다 → 0 으로 본다.
+const newCategoryCount = z.preprocess(nullToUndefined, count.default(0));
 
 const travelerSchema = z.object({
-  category: z.enum(['full', 'tenK', 'companion']),
+  category: z.enum(CATEGORIES),
   passportName: optPassportName,
   dob: z.preprocess(blankToUndefined, z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((v) => isValidBirthDate(v, manilaDate(new Date())), 'Invalid date').optional()),
   gender: z.preprocess(blankToUndefined, z.enum(['female', 'male']).optional()),
@@ -51,7 +54,7 @@ const travelerSchema = z.object({
 export const submitInputSchema = z.object({
   idempotencyKey: z.string().uuid(),
   departureId: z.string().min(1).max(20),
-  counts: z.object({ full: count, tenK: count, companion: count }),
+  counts: z.object({ full: count, tenK: count, companion: count, child: newCategoryCount, infant: newCategoryCount }),
   lead: z.object({
     firstName: nameText,
     lastName: nameText,
