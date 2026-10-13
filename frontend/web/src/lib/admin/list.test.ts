@@ -49,6 +49,13 @@ describe('filterApplications', () => {
     expect(filterApplications(apps, { ...DEFAULT_FILTERS, search: '09180001111' }).map((a) => a.id)).toEqual(['a4']);
     expect(filterApplications(apps, { ...DEFAULT_FILTERS, search: 'JOSE@X' }).map((a) => a.id)).toEqual(['a4']);
   });
+  it('finds phones typed in international form (+63 ... without the leading 0)', () => {
+    expect(filterApplications(apps, { ...DEFAULT_FILTERS, search: '639180001111' }).map((a) => a.id)).toEqual(['a4']);
+    expect(filterApplications(apps, { ...DEFAULT_FILTERS, search: '+63 918 000 1111' }).map((a) => a.id)).toEqual(['a4']);
+  });
+  it('still ignores phone searches shorter than 6 digits', () => {
+    expect(filterApplications(apps, { ...DEFAULT_FILTERS, search: '91800' }).map((a) => a.id)).toEqual([]);
+  });
 });
 
 describe('statusCounts / computeKpis', () => {

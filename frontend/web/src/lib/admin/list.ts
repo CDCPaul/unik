@@ -1,4 +1,4 @@
-import { APPLICATION_STATUSES, totalPax } from '@unik/shared/domain';
+import { APPLICATION_STATUSES, internationalDigits, totalPax } from '@unik/shared/domain';
 import type { ApplicationStatus, Counts } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
 
@@ -24,7 +24,11 @@ function matchesSearch(a: ApplicationRecord, raw: string): boolean {
   if (hay.includes(q)) return true;
   // 전화번호 검색: 숫자만, 앞자리 0 제거 후 6자리 이상일 때만 (짧은 숫자가 엉뚱한 번호에 걸리지 않게)
   const digits = q.replace(/\D/g, '').replace(/^0+/, '');
-  return digits.length >= 6 && `${a.lead.phoneDial}${a.lead.phoneNumber}`.replace(/\D/g, '').includes(digits);
+  if (digits.length < 6) return false;
+  // 국내 표기(0917…)와 국제 표기(+63 917…) 모두에 맞춘다
+  const local = `${a.lead.phoneDial}${a.lead.phoneNumber}`.replace(/\D/g, '');
+  const intl = internationalDigits(a.lead.phoneDial, a.lead.phoneNumber) ?? '';
+  return `${local} ${intl}`.includes(digits);
 }
 
 export function filterApplications(apps: ApplicationRecord[], f: ListFilters): ApplicationRecord[] {

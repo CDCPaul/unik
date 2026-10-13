@@ -78,6 +78,10 @@ export function downloadCsv(filename: string, csv: string): void {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  // 일부 브라우저(특히 Firefox)는 DOM에 붙어 있지 않은 링크의 클릭을 무시한다
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  // 다운로드가 시작되기 전에 URL을 해제하면 실패할 수 있어 지연한다
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

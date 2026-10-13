@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { applicationsCsv, toCsv, travelersCsv } from './csv';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { applicationsCsv, downloadCsv, toCsv, travelersCsv } from './csv';
 import type { ApplicationRecord } from './applicationDoc';
 
 const base: ApplicationRecord = {
@@ -56,5 +56,37 @@ describe('travelersCsv', () => {
     // header + 2 travelers; the cancelled application is skipped. 셀 안 줄바꿈(\n)은 행 구분자(\r\n)가 아니다.
     expect(lines).toHaveLength(3);
     expect(lines[1]).toContain("'=HYPERLINK(\"\"x\"\")");
+  });
+});
+
+describe('downloadCsv', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+  it('attaches the link while clicking, removes it, and revokes the URL after a delay', () => {
+    vi.useFakeTimers();
+    const order: string[] = [];
+    const anchor = {
+      href: '',
+      download: '',
+      click: vi.fn(() => order.push('click')),
+      remove: vi.fn(() => order.push('remove')),
+    };
+    const body = { appendChild: vi.fn(() => order.push('append')) };
+    vi.stubGlobal('document', { createElement: vi.fn(() => anchor), body });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:csv');
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+
+    downloadCsv('applications.csv', 'a,b');
+
+    expect(anchor.download).toBe('applications.csv');
+    expect(order).toEqual(['append', 'click', 'remove']);
+    expect(revoke).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(999);
+    expect(revoke).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(revoke).toHaveBeenCalledWith('blob:csv');
   });
 });
