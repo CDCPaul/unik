@@ -5,7 +5,7 @@
 ## 오픈 차단 항목 (Go-live blockers)
 1. ✅ (2부, 코드 완료 · **콘솔 설정은 사용자 작업으로 남음**) **App Check 강제** — `submitApplication`, `checkPromoCode` 에 `enforceAppCheck: true`. 웹에 App Check(reCAPTCHA Enterprise) 연동 후 켠다.
 2. ✅ (2부) **서버 측 제출 제한(throttle)** — App Check 만으로는 실제 브라우저 스팸을 못 막음. 같은 이메일의 최근 1시간 미취소 신청 N건 초과 시 거절 등 (submit 트랜잭션이 이미 전체 신청을 읽으므로 저비용). → 구현: per-email (5/hour). IP 기반 제한은 두지 않음.
-3. **운영 배포 런북** — 스펙 §12 의 "규칙·함수 먼저 배포(기존 사이트 무영향)"는 더 이상 사실이 아님. 새 규칙은 구 사이트의 공개 읽기/신청을 막고, `firebase deploy --only functions` 는 구 함수(spinRoulette, createRouletteWinner, onNewRegistration) 삭제를 제안함. 순서:
+3. **운영 배포 런북** → `docs/superpowers/notes/launch-runbook.md` — 스펙 §12 의 "규칙·함수 먼저 배포(기존 사이트 무영향)"는 더 이상 사실이 아님. 새 규칙은 구 사이트의 공개 읽기/신청을 막고, `firebase deploy --only functions` 는 구 함수(spinRoulette, createRouletteWinner, onNewRegistration) 삭제를 제안함. 순서:
    1. Firestore 백업(gcloud export) + 아카이브 태그 푸시 (사용자 확인)
    2. `firebase functions:secrets:set RESEND_API_KEY`
    3. 새 함수만 이름 지정 배포: `--only functions:submitApplication,functions:checkPromoCode,functions:onApplicationCreated,functions:onApplicationWritten,functions:onTourConfigWritten,functions:onNewContact`
@@ -21,18 +21,18 @@
 - 문의 폼은 `contacts` 에 `{name,email,phone?,subject,message,isRead:false,createdAt: serverTimestamp()}` 만 전송 (phone ≤ 40자, email ≥ 3자).
 - 옛 URL(`/cbm`, `/tour/courtside/*` 등) → `/past-tours` 리다이렉트.
 
-## 2부 → 3부 계약
+## 2부 → 3부 계약 ✅ (3부, 전 항목 반영)
 - 어드민에서 신청서를 고쳐도 `lead.email` 은 항상 트림 + 소문자로 저장한다 (서버 입력 정규화와 동일).
 - `agreedToTermsAt` 은 절대 수정하지 않는다 (이메일당 1시간 신청 제한 계산에 쓰인다).
 - 이름·전화 검증은 `shared/domain` 의 함수만 쓴다: `normalizePhoneNumber`, `isValidName`, `isValidPassportName` (웹 폼·서버와 규칙 일치).
 - 가격·예약금은 0 이상의 정수만 허용한다.
 - Viber/WhatsApp 링크용 전화번호 정규화(+63 / 앞자리 0 → 국제 표기)는 3부에서 처리한다 (2부는 입력값을 그대로 저장).
 
-## 3부(어드민)에서 지킬 것
-- 상품 설정 폼: 가격·예약금·싱글 추가요금은 0 이상의 정수만 (서버는 잘못된 값이면 `departure_closed`).
-- 프로모 정률 할인은 1–100 정수만 허용 (소수 % 는 페소 내림 오차).
-- 신청서 상세에 `notifications.*`(메일 발송 결과) 표시.
-- 상세 URL 규약: `/admin/applicants?id=<docId>`.
+## 3부(어드민)에서 지킬 것 ✅ (3부)
+- ✅ (3부) 상품 설정 폼: 가격·예약금·싱글 추가요금은 0 이상의 정수만 (서버는 잘못된 값이면 `departure_closed`).
+- ✅ (3부) 프로모 정률 할인은 1–100 정수만 허용 (소수 % 는 페소 내림 오차).
+- ✅ (3부) 신청서 상세에 `notifications.*`(메일 발송 결과) 표시.
+- ✅ (3부) 상세 URL 규약: `/admin/applicants?id=<docId>`.
 
 ## 나중에 해도 되는 개선
 - availability 재계산 경합(표시만 영향, 다음 쓰기에 자가 복구) → 트랜잭션 재계산 고려
