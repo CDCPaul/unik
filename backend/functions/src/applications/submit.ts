@@ -7,6 +7,7 @@ import {
   evaluatePromo,
   exceedsCapacity,
   formatAppNo,
+  missingPriceCategories,
   promoUsagePax,
   totalPax,
   type ApplicationStatus,
@@ -51,9 +52,10 @@ export async function submitApplicationCore(db: Firestore, raw: unknown, now = n
   }
 
   // 잘못 입력된 운영 설정으로 NaN·음수 금액의 신청이 저장되는 것을 막는다.
-  const { prices } = departure;
+  // 가격은 신청에 실제로 포함된 유형만 본다 (예전 설정에는 child/infant 가격이 없을 수 있다).
   if (
-    ![prices?.full, prices?.tenK, prices?.companion, departure.singleSupplement, config.depositPerPax].every(isMoney)
+    missingPriceCategories(departure.prices, input.counts).length > 0 ||
+    ![departure.singleSupplement, config.depositPerPax].every(isMoney)
   ) {
     throw new SubmitError('departure_closed', 'This departure is not available.');
   }

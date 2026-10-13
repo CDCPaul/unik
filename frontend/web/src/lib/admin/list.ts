@@ -1,4 +1,4 @@
-import { APPLICATION_STATUSES, internationalDigits, totalPax } from '@unik/shared/domain';
+import { APPLICATION_STATUSES, CATEGORIES, internationalDigits, normalizeCounts, runnerCount, totalPax } from '@unik/shared/domain';
 import type { ApplicationStatus, Counts } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
 
@@ -54,19 +54,17 @@ export function statusCounts(apps: ApplicationRecord[]): Record<ApplicationStatu
 
 export function computeKpis(apps: ApplicationRecord[]) {
   const active = apps.filter((a) => a.status !== 'cancelled');
-  const byCategory: Counts = { full: 0, tenK: 0, companion: 0 };
+  const byCategory: Counts = normalizeCounts({});
   for (const a of active) {
-    byCategory.full += a.counts.full;
-    byCategory.tenK += a.counts.tenK;
-    byCategory.companion += a.counts.companion;
+    for (const c of CATEGORIES) byCategory[c] += a.counts[c];
   }
   return {
     applications: active.length,
     travelers: totalPax(byCategory),
     byCategory,
     confirmedTravelers: active.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + totalPax(a.counts), 0),
-    // 확정 인원 중 번호표(bib)를 쓰는 러너만 (동반자 제외)
-    confirmedRunners: active.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + a.counts.full + a.counts.tenK, 0),
+    // 확정 인원 중 번호표(bib)를 쓰는 러너만 (동반자·아동·유아 제외)
+    confirmedRunners: active.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + runnerCount(a.counts), 0),
     incomplete: active.filter((a) => a.completeness.filled < a.completeness.total).length,
   };
 }

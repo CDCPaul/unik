@@ -1,7 +1,8 @@
-// 로컬 에뮬레이터용 샘플 신청서 3건. seed-emulator.mjs(tourConfig·TA-SUNRISE) 실행 뒤에 돌린다.
+// 로컬 에뮬레이터용 샘플 신청서 4건. seed-emulator.mjs(tourConfig·TA-SUNRISE) 실행 뒤에 돌린다.
 // 운영 프로젝트에는 절대 실행하지 않는다. 문서 모양은 src/applications/submit.ts 가 쓰는 것과 같다.
 // pricing 은 shared/domain 의 computePricing 과 같은 숫자로 직접 적었다(seed-emulator.mjs 의 tourConfig 기준).
 // counters/seoul2027 은 건드리지 않는다.
+// APP-9001~9003 은 아동·유아 도입 이전 모양(counts 에 child/infant 키 없음)으로 두어 하위 호환을 확인한다.
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 
@@ -17,11 +18,12 @@ const CEB = { id: 'ceb', label: 'Cebu (CEB)', departDate: '2027-03-19', returnDa
 
 const RUNNER_FIELDS = ['passportName', 'dob', 'gender', 'nationality', 'tshirtSize', 'expectedFinish', 'room', 'emergencyContact'];
 const COMPANION_FIELDS = ['passportName', 'dob', 'gender', 'nationality', 'room', 'emergencyContact'];
+const INFANT_FIELDS = ['passportName', 'dob', 'gender', 'nationality', 'emergencyContact'];
 function completeness(travelers) {
   let filled = 0;
   let total = 0;
   for (const t of travelers) {
-    const fields = t.category === 'companion' ? COMPANION_FIELDS : RUNNER_FIELDS;
+    const fields = t.category === 'full' || t.category === 'tenK' ? RUNNER_FIELDS : t.category === 'infant' ? INFANT_FIELDS : COMPANION_FIELDS;
     total += fields.length;
     filled += fields.filter((f) => typeof t[f] === 'string' && t[f].trim() !== '').length;
   }
@@ -123,6 +125,36 @@ const apps = [
       { status: 'new', by: 'system' },
       { status: 'cancelled', by: 'staff@cebudirectclub.com' },
     ],
+  },
+  {
+    // MNL 가족: full 1 (80,000) + companion 1 (70,000) + child 1 (60,000) + infant 1 (8,000) = 218,000
+    // TA-SUNRISE fixed 2,000 x 3 pax (유아 제외) = 6,000, 예약금 10,000 x 3 + 유아 8,000 (단가까지만) = 38,000
+    id: '9f1c2a10-0004-4a00-8000-000000009004',
+    appNo: 'APP-9004',
+    status: 'new',
+    departure: MNL,
+    lead: { firstName: 'Carmen', lastName: 'Lim', email: 'carmen.lim@example.com', phoneDial: '+63', phoneNumber: '9171112233', viber: true, whatsapp: true },
+    counts: { full: 1, tenK: 0, companion: 1, child: 1, infant: 1 },
+    travelers: [
+      { category: 'full', passportName: 'LIM CARMEN', dob: '1988-02-03', gender: 'female', nationality: 'Filipino', tshirtSize: 'S', room: 'twin' },
+      { category: 'companion', passportName: 'LIM DAVID', room: 'twin' },
+      { category: 'child', passportName: 'LIM SOFIA', dob: '2018-06-10', gender: 'female', room: 'twin' },
+      { category: 'infant', passportName: 'LIM MATEO', dob: '2026-01-15', gender: 'male' },
+    ],
+    pricing: {
+      lines: [
+        { category: 'full', qty: 1, unitPrice: 80000, amount: 80000 },
+        { category: 'companion', qty: 1, unitPrice: 70000, amount: 70000 },
+        { category: 'child', qty: 1, unitPrice: 60000, amount: 60000 },
+        { category: 'infant', qty: 1, unitPrice: 8000, amount: 8000 },
+      ],
+      singleSupplements: 0,
+      subtotal: 218000,
+      promo: { code: 'TA-SUNRISE', agencyName: 'Sunrise Travel', type: 'fixed', value: 2000, discountTotal: 6000 },
+      total: 212000,
+      depositDue: 38000,
+    },
+    history: [{ status: 'new', by: 'system' }],
   },
 ];
 

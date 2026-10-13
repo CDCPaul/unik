@@ -25,7 +25,7 @@ const hasText = (v: unknown) => typeof v === 'string' && v.trim() !== '';
 
 /** 인원이 줄어들 때 buildTravelers 가 버리게 되는 참가자 (같은 유형 안에서 뒤쪽부터) */
 export function droppedTravelers(travelers: Traveler[], newCounts: Counts): DroppedTraveler[] {
-  const seen: Record<Category, number> = { full: 0, tenK: 0, companion: 0 };
+  const seen = Object.fromEntries(CATEGORIES.map((c) => [c, 0])) as Record<Category, number>;
   const dropped: DroppedTraveler[] = [];
   travelers.forEach((t, i) => {
     if (!CATEGORIES.includes(t.category)) return;

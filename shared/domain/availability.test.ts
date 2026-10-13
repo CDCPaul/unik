@@ -11,10 +11,10 @@ const config = {
 };
 
 const apps: ApplicationSummary[] = [
-  { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 1 }, promoCode: null },
-  { status: 'cancelled', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0 }, promoCode: null },
-  { status: 'waitlist', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0 }, promoCode: null },
-  { status: 'contacted', departureId: 'ceb', counts: { full: 0, tenK: 0, companion: 1 }, promoCode: null },
+  { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, promoCode: null },
+  { status: 'cancelled', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: null },
+  { status: 'waitlist', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: null },
+  { status: 'contacted', departureId: 'ceb', counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 }, promoCode: null },
 ];
 
 describe('computeAvailability', () => {
@@ -28,7 +28,7 @@ describe('computeAvailability', () => {
   it('ignores seats for departures no longer in config but still counts their bibs', () => {
     const av = computeAvailability(config, [
       ...apps,
-      { status: 'new', departureId: 'old', counts: { full: 1, tenK: 0, companion: 2 }, promoCode: null },
+      { status: 'new', departureId: 'old', counts: { full: 1, tenK: 0, companion: 2, child: 0, infant: 0 }, promoCode: null },
     ]);
     expect(av.bibsUsed).toBe(3);
     expect(Object.keys(av.departures)).toEqual(['mnl', 'ceb']);
@@ -38,15 +38,15 @@ describe('computeAvailability', () => {
 describe('exceedsCapacity', () => {
   const av = computeAvailability(config, apps); // bibs 2/3, mnl 3/4
   it('detects bib overflow', () => {
-    expect(exceedsCapacity(av, 'mnl', { full: 2, tenK: 0, companion: 0 })).toBe(true);
+    expect(exceedsCapacity(av, 'mnl', { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe(true);
   });
   it('allows exactly filling bibs and seats', () => {
-    expect(exceedsCapacity(av, 'mnl', { full: 1, tenK: 0, companion: 0 })).toBe(false);
+    expect(exceedsCapacity(av, 'mnl', { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe(false);
   });
   it('detects seat overflow even for companions', () => {
-    expect(exceedsCapacity(av, 'mnl', { full: 0, tenK: 0, companion: 2 })).toBe(true);
+    expect(exceedsCapacity(av, 'mnl', { full: 0, tenK: 0, companion: 2, child: 0, infant: 0 })).toBe(true);
   });
   it('treats an unknown departure as full', () => {
-    expect(exceedsCapacity(av, 'xyz', { full: 0, tenK: 0, companion: 1 })).toBe(true);
+    expect(exceedsCapacity(av, 'xyz', { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 })).toBe(true);
   });
 });

@@ -14,7 +14,7 @@ const app: ApplicationEmailData = {
     whatsapp: false,
   },
   departure: { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23' },
-  counts: { full: 2, tenK: 0, companion: 1 },
+  counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 },
   pricing: {
     lines: [],
     singleSupplements: 0,
@@ -44,6 +44,11 @@ describe('application emails', () => {
     const { subject, html } = staffEmail(app, 'doc-123');
     expect(subject).toBe('[UNIK] APP-0021 Maria <img src=x onerror=alert(1)> | 3 pax | TA-SUNRISE');
     expect(html).toContain('https://unik.ph/admin/applicants?id=doc-123');
+  });
+  it('lists children and infants and counts them as pax', () => {
+    const family = { ...app, counts: { full: 1, tenK: 0, companion: 1, child: 1, infant: 1 } };
+    expect(customerEmail(family).html).toContain('1 Full Marathon, 1 Companion, 1 Child (under 12), 1 Infant (under 2)');
+    expect(staffEmail(family, 'd').subject).toContain('| 4 pax |');
   });
   it('escapes user-provided text', () => {
     for (const { html } of [customerEmail(app), staffEmail(app, 'doc-123')]) {

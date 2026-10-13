@@ -1,16 +1,22 @@
 import {
+  CATEGORIES,
+  CATEGORY_LABELS,
   EMAIL_PATTERN,
   PHONE_DIAL_PATTERN,
   PHONE_NUMBER_PATTERN,
   buildTravelers,
   computeCompleteness,
+  computeDepositDue,
   computePricing,
   formatPHP,
   hasControlChars,
+  inferDepositPerPax,
   isValidBirthDate,
   isValidName,
   isValidPassportName,
+  missingPriceCategories,
   normalizePhoneNumber,
+  singleRoomCount,
   totalPax,
   validateCounts,
 } from '@unik/shared/domain';
@@ -29,11 +35,16 @@ export function recalculate(
   if (!config) return { error: 'Tour settings are not loaded yet.' };
   const departure = config.departures.find((d) => d.id === app.departure.id);
   if (!departure) return { error: 'This departure is no longer in tour settings, so prices cannot be recalculated.' };
+  const unpriced = missingPriceCategories(departure.prices, counts);
+  if (unpriced.length > 0) {
+    return { error: `This departure has no price for ${unpriced.map((c) => CATEGORY_LABELS[c]).join(', ')}. Set it in Tour settings first.` };
+  }
   const travelers = buildTravelers(counts, change.travelers ?? app.travelers);
   const snap = app.pricing.promo;
-  // 신청 당시 1인당 예약금을 유지한다 (설정의 예약금이 바뀌어도 기존 신청은 그대로)
+  // 신청 당시 1인당 예약금을 유지한다 (설정의 예약금이 바뀌어도 기존 신청은 그대로).
+  // 단가로 잘린 유아 예약금이 섞여 있어도 스냅샷의 줄 정보로 1인 금액을 되살린다.
   const paxBefore = totalPax(app.counts);
-  const perPaxDeposit = paxBefore > 0 ? Math.round(app.pricing.depositDue / paxBefore) : config.depositPerPax;
+  const perPaxDeposit = paxBefore > 0 ? inferDepositPerPax(app.pricing, paxBefore) : config.depositPerPax;
   const pricing = computePricing({
     departure,
     counts,
@@ -61,7 +72,12 @@ function paymentWarnings(app: ApplicationRecord, pricing: Pricing): string[] {
   return warnings;
 }
 
-const singleCount = (travelers: Pick<Traveler, 'room'>[]) => travelers.filter((t) => t.room === 'single').length;
+/** 스냅샷 줄 정보로 예약금을 다시 계산한다. 줄 정보가 인원과 맞지 않으면 예전 방식(1인 금액 × 인원). */
+function snapshotDeposit(pricing: Pricing, pax: number, total: number): number {
+  const perPax = inferDepositPerPax(pricing, pax);
+  const linePax = pricing.lines.reduce((s, l) => s + l.qty, 0);
+  return linePax === pax ? computeDepositDue(pricing.lines, perPax, total) : Math.min(perPax * pax, total);
+}
 
 /**
  * 참가자만 저장할 때의 가격 계산. 신청 당시의 단가·할인·1인당 예약금은 그대로 두고,
@@ -75,8 +91,8 @@ export function repriceForTravelers(
   if (!config) return { error: 'Tour settings are not loaded yet.' };
   const next = buildTravelers(app.counts, travelers);
   const completeness = computeCompleteness(next);
-  const before = singleCount(app.travelers);
-  const after = singleCount(next);
+  const before = singleRoomCount(app.travelers);
+  const after = singleRoomCount(next);
   let pricing = app.pricing;
   if (after !== before) {
     const departure = config.departures.find((d) => d.id === app.departure.id);
@@ -86,14 +102,12 @@ export function repriceForTravelers(
     const singleSupplements = after * perSingle;
     const subtotal = base + singleSupplements;
     const total = subtotal - (app.pricing.promo?.discountTotal ?? 0);
-    const pax = totalPax(app.counts);
-    const perPaxDeposit = pax > 0 ? Math.round(app.pricing.depositDue / pax) : 0;
-    pricing = { ...app.pricing, singleSupplements, subtotal, total, depositDue: Math.min(perPaxDeposit * pax, total) };
+    pricing = { ...app.pricing, singleSupplements, subtotal, total, depositDue: snapshotDeposit(app.pricing, totalPax(app.counts), total) };
   }
   return { travelers: next, completeness, pricing, warnings: pricing === app.pricing ? [] : paymentWarnings(app, pricing) };
 }
 
-const sameCounts = (a: Counts, b: Counts) => a.full === b.full && a.tenK === b.tenK && a.companion === b.companion;
+const sameCounts = (a: Counts, b: Counts) => CATEGORIES.every((c) => a[c] === b[c]);
 
 export type TxPlan = { fields: Record<string, unknown> } | { conflict: true } | { error: string };
 

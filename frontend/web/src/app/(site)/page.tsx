@@ -74,7 +74,7 @@ export default async function HomePage() {
           <dl className="mx-auto grid max-w-[1200px] grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-6 px-4 py-7 sm:px-6">
             {[
               [RACE.dateShort, 'Race day, Sunday'],
-              ['FULL · 10K', 'Plus a companion package for non-runners'],
+              ['FULL · 10K', 'Plus companion, child and infant packages for non-runners'],
               ['MNL · CEB', 'Departures from Manila and Cebu'],
               [`${RACE.bibsTotal} BIBS`, 'Limited race entries for this tour'],
             ].map(([big, small]) => (

@@ -11,11 +11,11 @@ const travelers: Traveler[] = [
 
 describe('droppedTravelers', () => {
   it('returns nothing when counts grow or stay', () => {
-    expect(droppedTravelers(travelers, { full: 2, tenK: 1, companion: 1 })).toEqual([]);
-    expect(droppedTravelers(travelers, { full: 3, tenK: 2, companion: 1 })).toEqual([]);
+    expect(droppedTravelers(travelers, { full: 2, tenK: 1, companion: 1, child: 0, infant: 0 })).toEqual([]);
+    expect(droppedTravelers(travelers, { full: 3, tenK: 2, companion: 1, child: 0, infant: 0 })).toEqual([]);
   });
   it('drops the trailing travelers of each shrinking category, numbered by position', () => {
-    const d = droppedTravelers(travelers, { full: 1, tenK: 0, companion: 1 });
+    const d = droppedTravelers(travelers, { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 });
     expect(d.map((x) => [x.position, x.category, x.name, x.hasDetails])).toEqual([
       [2, 'full', null, false],
       [3, 'tenK', null, true],
@@ -23,8 +23,17 @@ describe('droppedTravelers', () => {
     expect(droppedWarning(d[0])).toBe('Traveler 2 (Full Marathon) details will be removed: no details.');
     expect(droppedWarning(d[1])).toContain('partial details');
   });
+  it('handles child and infant travelers', () => {
+    const family: Traveler[] = [{ category: 'full' }, { category: 'child', passportName: 'KID' }, { category: 'infant' }];
+    const d = droppedTravelers(family, { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 });
+    expect(d.map((x) => [x.position, x.category, x.name])).toEqual([
+      [2, 'child', 'KID'],
+      [3, 'infant', null],
+    ]);
+    expect(droppedWarning(d[1])).toBe('Traveler 3 (Infant (under 2)) details will be removed: no details.');
+  });
   it('names the traveler when a passport name exists', () => {
-    const d = droppedTravelers(travelers, { full: 1, tenK: 1, companion: 0 });
+    const d = droppedTravelers(travelers, { full: 1, tenK: 1, companion: 0, child: 0, infant: 0 });
     expect(droppedWarning(d[d.length - 1])).toBe('Traveler 4 (Companion) details will be removed: LEE JIN.');
   });
 });
@@ -68,7 +77,7 @@ describe('mergeTravelerEdits', () => {
     { category: 'full', passportName: 'B TWO' },
     { category: 'companion' },
   ];
-  const counts = { base: { full: 2, tenK: 0, companion: 1 }, live: { full: 2, tenK: 0, companion: 1 } };
+  const counts = { base: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, live: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 } };
   const edit = (i: number, patch: Partial<Traveler>) => base.map((t, j) => (j === i ? { ...t, ...patch } : { ...t }));
 
   it('reapplies only the user-changed fields onto the live travelers (no conflict)', () => {
@@ -104,14 +113,14 @@ describe('mergeTravelerEdits', () => {
   describe('counts guard (index shift)', () => {
     const t: Traveler[] = [{ category: 'full', passportName: 'A' }, { category: 'tenK', passportName: 'B' }, { category: 'tenK' }];
     const editC = t.map((x, i) => (i === 2 ? { ...x, dob: '1990-05-05' } : { ...x }));
-    const c = { full: 1, tenK: 2, companion: 0 };
+    const c = { full: 1, tenK: 2, companion: 0, child: 0, infant: 0 };
     it('earlier category grew -> conflict (indexes shifted)', () => {
       const live: Traveler[] = [t[0], { category: 'full' }, t[1], t[2]];
       expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, full: 2 } })).toEqual({ conflict: true });
     });
     it('later category grew -> conflict', () => {
       const live: Traveler[] = [...t, { category: 'companion' }];
-      expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, companion: 1 } })).toEqual({ conflict: true });
+      expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, companion: 1, child: 0, infant: 0 } })).toEqual({ conflict: true });
     });
     it('counts unchanged + field edits -> merges', () => {
       expect(mergeTravelerEdits(t, editC, t, { base: c, live: { ...c } })).toEqual({ merged: editC });

@@ -8,7 +8,7 @@ const base: ApplicationRecord = {
   status: 'contacted',
   departure: { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23' },
   lead: { firstName: 'Maria', lastName: 'Santos, Jr.', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: true, whatsapp: false },
-  counts: { full: 1, tenK: 0, companion: 1 },
+  counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 },
   travelers: [
     { category: 'full', passportName: '=HYPERLINK("x")', dob: '1990-05-14', tshirtSize: 'M' },
     { category: 'companion', passportName: 'He said "hi"\nbye' },
@@ -35,12 +35,30 @@ describe('applicationsCsv', () => {
   it('has one row per application with Manila time and promo agency', () => {
     const lines = applicationsCsv([base]).replace('﻿', '').trim().split('\r\n');
     expect(lines[0]).toBe(
-      'App no,Status,Applied (Manila),Departure,First name,Last name,Email,Phone,Viber,WhatsApp,Full,10K,Companion,Promo code,Agency,Total PHP,Deposit due PHP,Paid PHP,Info,Special requests,Staff notes',
+      'App no,Status,Applied (Manila),Departure,First name,Last name,Email,Phone,Viber,WhatsApp,Full,10K,Companion,Child,Infant,Promo code,Agency,Total PHP,Deposit due PHP,Paid PHP,Info,Special requests,Staff notes',
     );
     expect(lines[1]).toBe(
       // 전화번호는 '+' 로 시작하므로 수식 방지 접두사 ' 가 붙는다(엑셀에서 텍스트로 표시)
-      "APP-0001,Contacted,2026-10-20 00:30,Manila (MNL),Maria,\"Santos, Jr.\",maria@example.com,'+63 917 123 4567,Yes,No,1,0,1,TA-A,A Travel,146000,20000,20000,4/14,Vegetarian,",
+      "APP-0001,Contacted,2026-10-20 00:30,Manila (MNL),Maria,\"Santos, Jr.\",maria@example.com,'+63 917 123 4567,Yes,No,1,0,1,0,0,TA-A,A Travel,146000,20000,20000,4/14,Vegetarian,",
     );
+  });
+});
+
+describe('child / infant columns', () => {
+  it('exports child and infant counts and traveler categories', () => {
+    const family: ApplicationRecord = {
+      ...base,
+      lead: { ...base.lead, lastName: 'Santos' }, // 쉼표 없는 셀만 두어 split(',') 로 열을 찾는다
+      counts: { full: 1, tenK: 0, companion: 0, child: 2, infant: 1 },
+      travelers: [{ category: 'full' }, { category: 'child' }, { category: 'child' }, { category: 'infant' }],
+    };
+    const [headerLine, rowLine] = applicationsCsv([family]).replace('﻿', '').trim().split('\r\n');
+    const header = headerLine.split(',');
+    const row = rowLine.split(',');
+    expect(row[header.indexOf('Child')]).toBe('2');
+    expect(row[header.indexOf('Infant')]).toBe('1');
+    const travelers = travelersCsv([family]).replace('﻿', '').trim().split('\r\n');
+    expect(travelers.slice(1).map((l) => l.split(',')[4])).toEqual(['Full Marathon', 'Child (under 12)', 'Child (under 12)', 'Infant (under 2)']);
   });
 });
 

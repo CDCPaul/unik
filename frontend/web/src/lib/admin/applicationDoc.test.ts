@@ -10,7 +10,7 @@ describe('fromApplicationDoc', () => {
       status: 'new',
       departure: { id: 'mnl', label: 'Manila', departDate: '2027-03-19', returnDate: '2027-03-23' },
       lead: { firstName: 'Maria', lastName: 'Santos', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: true, whatsapp: false },
-      counts: { full: 1, tenK: 0, companion: 0 },
+      counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
       travelers: [{ category: 'full' }],
       completeness: { filled: 0, total: 8 },
       pricing: { lines: [], singleSupplements: 0, subtotal: 80000, promo: null, total: 80000, depositDue: 10000 },
@@ -31,8 +31,12 @@ describe('fromApplicationDoc', () => {
     const r = fromApplicationDoc('doc2', { appNo: 'APP-0002', status: 'waitlist' });
     expect(r.createdAt).toBeNull();
     expect(r.payments).toEqual([]);
-    expect(r.counts).toEqual({ full: 0, tenK: 0, companion: 0 });
+    expect(r.counts).toEqual({ full: 0, tenK: 0, companion: 0, child: 0, infant: 0 });
     expect(r.travelers).toEqual([]);
+  });
+  it('fills child/infant counts missing from older applications with 0', () => {
+    expect(fromApplicationDoc('old', { counts: { full: 2, tenK: 1, companion: 0 } }).counts).toEqual({ full: 2, tenK: 1, companion: 0, child: 0, infant: 0 });
+    expect(fromApplicationDoc('new', { counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 1 } }).counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 1, infant: 1 });
   });
   it('reads voided payment fields and leaves normal payments without them', () => {
     const r = fromApplicationDoc('doc3', {

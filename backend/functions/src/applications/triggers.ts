@@ -1,5 +1,6 @@
 import { onDocumentCreated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { normalizeCounts } from '../shared-domain';
 import { COL } from '../lib/collections';
 import { RESEND_API_KEY, sendEmail } from '../lib/email';
 import { getNotifyEmails } from '../lib/tourConfig';
@@ -17,7 +18,8 @@ export const onTourConfigWritten = onDocumentWritten(`${COL.tourConfig}/{docId}`
 export const onApplicationCreated = onDocumentCreated({ document: `${COL.applications}/{docId}`, secrets: [RESEND_API_KEY] }, async (event) => {
   const snap = event.data;
   if (!snap) return;
-  const app = snap.data() as ApplicationEmailData;
+  const data = snap.data() as ApplicationEmailData;
+  const app: ApplicationEmailData = { ...data, counts: normalizeCounts(data.counts) };
   const notifyEmails = await getNotifyEmails(getFirestore());
   const notifications: Record<string, unknown> = {};
 

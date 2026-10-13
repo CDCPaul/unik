@@ -55,11 +55,11 @@ describe('evaluatePromo', () => {
 describe('promoUsagePax', () => {
   it('counts every status except cancelled for the given code', () => {
     const apps: ApplicationSummary[] = [
-      { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 1 }, promoCode: 'TA-A' },
-      { status: 'waitlist', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0 }, promoCode: 'TA-A' },
-      { status: 'cancelled', departureId: 'mnl', counts: { full: 4, tenK: 0, companion: 0 }, promoCode: 'TA-A' },
-      { status: 'confirmed', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0 }, promoCode: 'TA-B' },
-      { status: 'new', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0 }, promoCode: null },
+      { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, promoCode: 'TA-A' },
+      { status: 'waitlist', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: 'TA-A' },
+      { status: 'cancelled', departureId: 'mnl', counts: { full: 4, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: 'TA-A' },
+      { status: 'confirmed', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: 'TA-B' },
+      { status: 'new', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: null },
     ];
     expect(promoUsagePax(apps, 'TA-A')).toBe(4);
   });

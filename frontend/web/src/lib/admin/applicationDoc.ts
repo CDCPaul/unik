@@ -1,3 +1,4 @@
+import { normalizeCounts } from '@unik/shared/domain';
 import type {
   ApplicationStatus,
   Counts,
@@ -77,7 +78,8 @@ export function fromApplicationDoc(id: string, data: Obj): ApplicationRecord {
       viber: lead.viber === true,
       whatsapp: lead.whatsapp === true,
     },
-    counts: (data.counts as Counts) ?? { full: 0, tenK: 0, companion: 0 },
+    // 예전 신청서에는 child/infant 키가 없다
+    counts: normalizeCounts(data.counts),
     travelers: Array.isArray(data.travelers) ? (data.travelers as Traveler[]) : [],
     completeness: (data.completeness as { filled: number; total: number }) ?? { filled: 0, total: 0 },
     pricing: (data.pricing as Pricing) ?? EMPTY_PRICING,
