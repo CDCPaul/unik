@@ -13,24 +13,26 @@ type Lead = ApplicationRecord['lead'];
 
 export function ContactSection({ app }: { app: ApplicationRecord }) {
   const [draft, setDraft] = useState<Lead | null>(null);
+  // 편집을 시작한 시점의 값. 저장 때 이것과 비교해야 다른 직원의 수정을 되돌리지 않는다.
+  const [base, setBase] = useState<Lead | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { saving, failed, run, clearFailed } = useSave();
   const l = app.lead;
   const viber = l.viber ? viberLink(l.phoneDial, l.phoneNumber) : null;
   const wa = l.whatsapp ? whatsappLink(l.phoneDial, l.phoneNumber) : null;
 
-  const start = () => { setDraft({ ...l }); setErrors({}); clearFailed(); };
-  const cancel = () => { setDraft(null); setErrors({}); clearFailed(); };
+  const start = () => { setDraft({ ...l }); setBase({ ...l }); setErrors({}); clearFailed(); };
+  const cancel = () => { setDraft(null); setBase(null); setErrors({}); clearFailed(); };
 
   async function save() {
-    if (!draft) return;
+    if (!draft || !base) return;
     const found = validateLead(draft);
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     // 바꾼 필드만 쓴다 (다른 직원이 동시에 고친 다른 필드를 덮지 않도록)
-    const changes = leadChanges(l, normalizeLead(draft));
+    const changes = leadChanges(normalizeLead(base), normalizeLead(draft));
     if (Object.keys(changes).length === 0) return cancel();
-    if (await run(() => updateApplicationFields(app.id, changes))) setDraft(null);
+    if (await run(() => updateApplicationFields(app.id, changes))) cancel();
   }
 
   if (!draft) {

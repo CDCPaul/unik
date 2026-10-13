@@ -25,7 +25,7 @@ export function ApplicantDetail({ app, config, onClose }: { app: ApplicationReco
     <div className="admin-card overflow-hidden">
       <div className="flex items-start justify-between gap-3 px-5 py-4">
         <div className="min-w-0">
-          <h2 ref={headingRef} tabIndex={-1} className="text-lg font-bold text-slate-900 outline-none">{app.appNo} · {app.lead.firstName} {app.lead.lastName}</h2>
+          <h2 id="applicant-detail-heading" ref={headingRef} tabIndex={-1} className="text-lg font-bold text-slate-900 outline-none">{app.appNo} · {app.lead.firstName} {app.lead.lastName}</h2>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
             <span className={`admin-badge ${STATUS_BADGE[app.status]}`}>{STATUS_LABELS[app.status]}</span>
             <span>Applied {formatManila(app.createdAt)} (Manila)</span>

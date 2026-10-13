@@ -1,4 +1,4 @@
-import { CATEGORIES, CATEGORY_LABELS } from '@unik/shared/domain';
+import { CATEGORIES, CATEGORY_LABELS, formatPHP } from '@unik/shared/domain';
 import type { Category, Counts, PaymentMethod, PaymentType, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
 
@@ -50,7 +50,7 @@ export function droppedWarning(d: DroppedTraveler): string {
 /** 지급액이 새 총액보다 많으면 안내 문구 (환불 검토) */
 export function paidExceedsNote(paidTotal: number, newTotal: number): string | null {
   if (newTotal >= paidTotal) return null;
-  return `Paid amount exceeds the new total by PHP ${(paidTotal - newTotal).toLocaleString('en-US')} — consider a refund.`;
+  return `Paid amount exceeds the new total by ${formatPHP(paidTotal - newTotal)} — consider a refund.`;
 }
 
 /** YYYY-MM-DD(마닐라 날짜)를 그날 12:00 마닐라(= 04:00Z)로. 잘못된 날짜는 null. */
@@ -78,4 +78,34 @@ export function leadChanges(prev: ApplicationRecord['lead'], next: ApplicationRe
     if (prev[k] !== next[k]) out[`lead.${k}`] = next[k];
   }
   return out;
+}
+
+/** 예약금을 다 채웠으면 balance, 아니면 deposit */
+export function defaultPaymentType(paidTotal: number, depositDue: number): PaymentType {
+  return paidTotal < depositDue ? 'deposit' : 'balance';
+}
+
+/**
+ * 편집 시작 시점의 snapshot 과 draft 를 비교해 사용자가 실제로 바꾼 (참가자, 필드)만
+ * 최신(live) 참가자 배열에 다시 적용한다. 같은 필드가 그 사이 live 에서 바뀌었거나
+ * 바꾼 참가자가 사라졌으면 conflict.
+ */
+export function mergeTravelerEdits(snapshot: Traveler[], draft: Traveler[], live: Traveler[]): { merged: Traveler[] } | { conflict: true } {
+  const merged = live.map((t) => cleanTraveler(t) as unknown as Record<string, unknown>);
+  for (let i = 0; i < draft.length; i++) {
+    const before = cleanTraveler(snapshot[i] ?? { category: draft[i].category }) as unknown as Record<string, unknown>;
+    const after = cleanTraveler(draft[i]) as unknown as Record<string, unknown>;
+    const fields = new Set([...Object.keys(before), ...Object.keys(after)]);
+    fields.delete('category');
+    const changed = [...fields].filter((f) => before[f] !== after[f]);
+    if (changed.length === 0) continue;
+    const current = merged[i];
+    if (!current || current.category !== before.category) return { conflict: true };
+    for (const f of changed) {
+      if (current[f] !== before[f] && current[f] !== after[f]) return { conflict: true };
+      if (after[f] === undefined) delete current[f];
+      else current[f] = after[f];
+    }
+  }
+  return { merged: merged as unknown as Traveler[] };
 }

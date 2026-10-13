@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Traveler } from '@unik/shared/domain';
-import { cleanTraveler, droppedTravelers, droppedWarning, leadChanges, paidAtFromDate, paidExceedsNote } from './detailHelpers';
+import { cleanTraveler, defaultPaymentType, droppedTravelers, droppedWarning, leadChanges, mergeTravelerEdits, paidAtFromDate, paidExceedsNote } from './detailHelpers';
 
 const travelers: Traveler[] = [
   { category: 'full', passportName: 'SANTOS MARIA' },
@@ -59,5 +59,53 @@ describe('leadChanges', () => {
     const prev = { firstName: 'A', lastName: 'B', email: 'a@b.co', phoneDial: '+63', phoneNumber: '9171234567', viber: true, whatsapp: false };
     expect(leadChanges(prev, { ...prev, email: 'c@d.co', whatsapp: true })).toEqual({ 'lead.email': 'c@d.co', 'lead.whatsapp': true });
     expect(leadChanges(prev, prev)).toEqual({});
+  });
+});
+
+describe('mergeTravelerEdits', () => {
+  const base: Traveler[] = [
+    { category: 'full', passportName: 'A ONE', nationality: 'Filipino' },
+    { category: 'full', passportName: 'B TWO' },
+    { category: 'companion' },
+  ];
+  const edit = (i: number, patch: Partial<Traveler>) => base.map((t, j) => (j === i ? { ...t, ...patch } : { ...t }));
+
+  it('reapplies only the user-changed fields onto the live travelers (no conflict)', () => {
+    const live: Traveler[] = [{ ...base[0], room: 'single' }, { ...base[1], dob: '1990-01-01' }, { ...base[2] }];
+    const r = mergeTravelerEdits(base, edit(1, { passportName: 'B TWO EDITED' }), live);
+    expect(r).toEqual({
+      merged: [{ category: 'full', passportName: 'A ONE', nationality: 'Filipino', room: 'single' }, { category: 'full', passportName: 'B TWO EDITED', dob: '1990-01-01' }, { category: 'companion' }],
+    });
+  });
+  it('treats blank and missing values as equal and can clear a field', () => {
+    const r = mergeTravelerEdits(base, edit(0, { nationality: '' }), base.map((t) => ({ ...t })));
+    expect(r).toEqual({ merged: [{ category: 'full', passportName: 'A ONE' }, base[1], base[2]] });
+  });
+  it('reports a conflict when the same field changed live since the snapshot', () => {
+    const live = base.map((t, i) => (i === 1 ? { ...t, passportName: 'B TWO (STAFF)' } : { ...t }));
+    expect(mergeTravelerEdits(base, edit(1, { passportName: 'B TWO EDITED' }), live)).toEqual({ conflict: true });
+  });
+  it('is not a conflict when live already holds the same value the user typed', () => {
+    const live = base.map((t, i) => (i === 1 ? { ...t, passportName: 'SAME' } : { ...t }));
+    expect(mergeTravelerEdits(base, edit(1, { passportName: 'SAME' }), live)).toEqual({ merged: live });
+  });
+  it('reports a conflict when an edited traveler no longer exists live', () => {
+    expect(mergeTravelerEdits(base, edit(2, { passportName: 'C' }), base.slice(0, 2))).toEqual({ conflict: true });
+  });
+  it('ignores untouched travelers that were removed live', () => {
+    expect(mergeTravelerEdits(base, edit(0, { room: 'twin' }), base.slice(0, 2))).toEqual({ merged: [{ ...base[0], room: 'twin' }, base[1]] });
+  });
+  it('reports a conflict when the live traveler at that index changed category', () => {
+    const live: Traveler[] = [base[0], { category: 'tenK' }, base[2]];
+    expect(mergeTravelerEdits(base, edit(1, { passportName: 'X' }), live)).toEqual({ conflict: true });
+  });
+});
+
+describe('defaultPaymentType', () => {
+  it('is deposit until the deposit is covered', () => {
+    expect(defaultPaymentType(0, 10000)).toBe('deposit');
+    expect(defaultPaymentType(9999, 10000)).toBe('deposit');
+    expect(defaultPaymentType(10000, 10000)).toBe('balance');
+    expect(defaultPaymentType(0, 0)).toBe('balance');
   });
 });
