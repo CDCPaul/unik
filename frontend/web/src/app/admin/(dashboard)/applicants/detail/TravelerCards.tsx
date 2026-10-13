@@ -1,6 +1,6 @@
 'use client';
 
-import { CATEGORY_LABELS, TSHIRT_SIZES, missingFields } from '@unik/shared/domain';
+import { CATEGORY_LABELS, RUNNER_CATEGORIES, TSHIRT_SIZES, hasRoomChoice, missingFields } from '@unik/shared/domain';
 import type { Traveler } from '@unik/shared/domain';
 import { Field } from './ui';
 
@@ -29,7 +29,8 @@ function TravelerCard({
   onChange: (t: Traveler) => void;
 }) {
   const missing = missingFields(traveler);
-  const runner = traveler.category !== 'companion';
+  const runner = RUNNER_CATEGORIES.includes(traveler.category);
+  const roomChoice = hasRoomChoice(traveler.category);
   const err = (f: string) => errors[`travelers.${index}.${f}`];
   const set = <K extends keyof Traveler>(k: K, v: Traveler[K] | '') => onChange({ ...traveler, [k]: v === '' ? undefined : v });
   const text = (k: 'passportName' | 'nationality' | 'expectedFinish' | 'recentMarathon' | 'emergencyContact', label: string) => (
@@ -65,16 +66,18 @@ function TravelerCard({
             ) : null}
             {runner ? text('expectedFinish', 'Expected finish') : null}
             {runner ? <div className="col-span-2">{text('recentMarathon', 'Recent marathon')}</div> : null}
-            <Field label="Room">
-              <select className="admin-input !py-1.5" value={traveler.room ?? ''} onChange={(e) => set('room', e.target.value as Traveler['room'] | '')}>
-                <option value="">—</option><option value="twin">Twin share</option><option value="single">Single</option>
-              </select>
-            </Field>
+            {roomChoice ? (
+              <Field label="Room">
+                <select className="admin-input !py-1.5" value={traveler.room ?? ''} onChange={(e) => set('room', e.target.value as Traveler['room'] | '')}>
+                  <option value="">—</option><option value="twin">Twin share</option><option value="single">Single</option>
+                </select>
+              </Field>
+            ) : null}
             {text('emergencyContact', 'Emergency contact')}
           </div>
         ) : (
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            {([['passportName', traveler.passportName], ['dob', traveler.dob], ['gender', traveler.gender], ['nationality', traveler.nationality], ...(runner ? [['tshirtSize', traveler.tshirtSize], ['expectedFinish', traveler.expectedFinish]] : []), ['room', traveler.room], ['emergencyContact', traveler.emergencyContact]] as [string, string | undefined][]).map(([k, v]) => (
+            {([['passportName', traveler.passportName], ['dob', traveler.dob], ['gender', traveler.gender], ['nationality', traveler.nationality], ...(runner ? [['tshirtSize', traveler.tshirtSize], ['expectedFinish', traveler.expectedFinish]] : []), ...(roomChoice ? [['room', traveler.room]] : []), ['emergencyContact', traveler.emergencyContact]] as [string, string | undefined][]).map(([k, v]) => (
               <div key={k} className="contents"><dt className="text-slate-500">{FIELD_LABELS[k]}</dt><dd>{v || '—'}</dd></div>
             ))}
             {runner && traveler.recentMarathon ? <div className="contents"><dt className="text-slate-500">Recent marathon</dt><dd>{traveler.recentMarathon}</dd></div> : null}

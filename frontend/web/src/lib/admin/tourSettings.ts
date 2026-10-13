@@ -1,4 +1,4 @@
-import { EMAIL_PATTERN, isValidBirthDate, totalPax } from '@unik/shared/domain';
+import { CATEGORIES, EMAIL_PATTERN, isValidBirthDate, totalPax } from '@unik/shared/domain';
 import type { Departure, TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
 
@@ -29,7 +29,7 @@ export function newDeparture(): Departure {
     flightInfo: '',
     seatCapacity: 0,
     isOpen: true,
-    prices: { full: 0, tenK: 0, companion: 0 },
+    prices: { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 },
     singleSupplement: 0,
   };
 }
@@ -74,8 +74,9 @@ export function validateTourConfig(c: TourConfig, usage: DepartureUsage): { erro
     if (!isDate(d.departDate)) errors[`${p}.departDate`] = 'Use a real date, YYYY-MM-DD.';
     if (!isDate(d.returnDate) || (isDate(d.departDate) && d.returnDate < d.departDate)) errors[`${p}.returnDate`] = 'Use a real date, YYYY-MM-DD, on or after departure.';
     if (!isMoney(d.seatCapacity)) errors[`${p}.seatCapacity`] = 'Whole number, 0 or more.';
-    for (const k of ['full', 'tenK', 'companion'] as const) {
-      if (!isMoney(d.prices[k])) errors[`${p}.prices.${k}`] = 'Whole pesos, 0 or more.';
+    // 다섯 유형 모두 필수 (예전 설정에 없던 child/infant 도 저장 전에 입력해야 한다)
+    for (const k of CATEGORIES) {
+      if (!isMoney(d.prices?.[k])) errors[`${p}.prices.${k}`] = 'Whole pesos, 0 or more.';
     }
     if (!isMoney(d.singleSupplement)) errors[`${p}.singleSupplement`] = 'Whole pesos, 0 or more.';
     const used = usage[d.id]?.seatsUsed ?? 0;

@@ -9,7 +9,7 @@ function app(over: Partial<ApplicationRecord>): ApplicationRecord {
     status: 'new',
     departure: { id: 'mnl', label: 'Manila', departDate: '', returnDate: '' },
     lead: { firstName: 'Maria', lastName: 'Santos', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: false, whatsapp: false },
-    counts: { full: 1, tenK: 0, companion: 0 },
+    counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
     travelers: [{ category: 'full' }],
     completeness: { filled: 8, total: 8 },
     pricing: { lines: [], singleSupplements: 0, subtotal: 80000, promo: null, total: 80000, depositDue: 10000 },
@@ -27,7 +27,7 @@ const promo = (code: string, discountTotal = 2000) => ({ code, agencyName: code,
 
 const apps = [
   app({ id: 'a1', appNo: 'APP-0001', createdAt: new Date('2026-10-19T00:00:00Z') }),
-  app({ id: 'a2', appNo: 'APP-0002', status: 'confirmed', counts: { full: 2, tenK: 0, companion: 1 }, pricing: { lines: [], singleSupplements: 0, subtotal: 230000, promo: promo('TA-A', 6000), total: 224000, depositDue: 30000 }, createdAt: new Date('2026-10-20T00:00:00Z') }),
+  app({ id: 'a2', appNo: 'APP-0002', status: 'confirmed', counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, pricing: { lines: [], singleSupplements: 0, subtotal: 230000, promo: promo('TA-A', 6000), total: 224000, depositDue: 30000 }, createdAt: new Date('2026-10-20T00:00:00Z') }),
   app({ id: 'a3', appNo: 'APP-0003', status: 'cancelled', pricing: { lines: [], singleSupplements: 0, subtotal: 80000, promo: promo('TA-A'), total: 78000, depositDue: 10000 }, createdAt: new Date('2026-10-21T00:00:00Z') }),
   app({ id: 'a4', appNo: 'APP-0004', departure: { id: 'ceb', label: 'Cebu', departDate: '', returnDate: '' }, completeness: { filled: 2, total: 8 }, lead: { firstName: 'José', lastName: 'Reyes', email: 'jose@x.com', phoneDial: '+63', phoneNumber: '0918 000 1111', viber: false, whatsapp: true }, createdAt: new Date('2026-10-22T00:00:00Z') }),
 ];
@@ -70,7 +70,7 @@ describe('statusCounts / computeKpis', () => {
     expect(computeKpis(apps)).toEqual({
       applications: 3,
       travelers: 5,
-      byCategory: { full: 4, tenK: 0, companion: 1 },
+      byCategory: { full: 4, tenK: 0, companion: 1, child: 0, infant: 0 },
       confirmedTravelers: 3,
       confirmedRunners: 2,
       incomplete: 1,
@@ -81,13 +81,26 @@ describe('statusCounts / computeKpis', () => {
 describe('confirmedRunners', () => {
   it('counts full + 10K travelers of confirmed statuses only (not companions, not unconfirmed)', () => {
     const k = computeKpis([
-      app({ id: 'r1', status: 'deposit_paid', counts: { full: 1, tenK: 2, companion: 1 } }),
-      app({ id: 'r2', status: 'fully_paid', counts: { full: 2, tenK: 0, companion: 0 } }),
-      app({ id: 'r3', status: 'contacted', counts: { full: 5, tenK: 5, companion: 0 } }),
-      app({ id: 'r4', status: 'cancelled', counts: { full: 9, tenK: 0, companion: 0 } }),
+      app({ id: 'r1', status: 'deposit_paid', counts: { full: 1, tenK: 2, companion: 1, child: 0, infant: 0 } }),
+      app({ id: 'r2', status: 'fully_paid', counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 } }),
+      app({ id: 'r3', status: 'contacted', counts: { full: 5, tenK: 5, companion: 0, child: 0, infant: 0 } }),
+      app({ id: 'r4', status: 'cancelled', counts: { full: 9, tenK: 0, companion: 0, child: 0, infant: 0 } }),
     ]);
     expect(k.confirmedRunners).toBe(5);
     expect(k.confirmedTravelers).toBe(6);
+  });
+});
+
+describe('child / infant KPIs', () => {
+  it('counts children and infants as travelers but never as runners', () => {
+    const k = computeKpis([
+      app({ id: 'f1', status: 'confirmed', counts: { full: 1, tenK: 0, companion: 1, child: 2, infant: 1 } }),
+      app({ id: 'f2', status: 'new', counts: { full: 0, tenK: 1, companion: 0, child: 1, infant: 0 } }),
+    ]);
+    expect(k.byCategory).toEqual({ full: 1, tenK: 1, companion: 1, child: 3, infant: 1 });
+    expect(k.travelers).toBe(7);
+    expect(k.confirmedTravelers).toBe(5);
+    expect(k.confirmedRunners).toBe(1);
   });
 });
 

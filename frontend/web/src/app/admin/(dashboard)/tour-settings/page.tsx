@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import { formatPHP } from '@unik/shared/domain';
-import type { Availability, Departure, TourConfig } from '@unik/shared/domain';
+import { CATEGORIES, CATEGORY_LABELS, CATEGORY_SHORT_LABELS, formatPHP, isValidPrice } from '@unik/shared/domain';
+import type { Availability, Category, Departure, TourConfig } from '@unik/shared/domain';
 import { getCurrentUser } from '@/lib/auth';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { parseAmount } from '@/lib/admin/edits';
@@ -15,6 +15,16 @@ import type { TourConfigMeta } from '@/lib/services/admin/tourConfig';
 
 // 잘못된 입력은 NaN 으로 두어 validateTourConfig 가 오류로 표시하게 한다 (저장 시에만 변환)
 const num = (raw: string): number => (raw.trim() === '' || raw.trim() === '0' ? 0 : parseAmount(raw) ?? NaN);
+// 가격은 다섯 유형 모두 필수: 빈 칸은 0 이 아니라 오류
+const priceNum = (raw: string): number => (raw.trim() === '' ? NaN : num(raw));
+
+const PRICE_FIELD_LABELS: Record<Category, string> = {
+  full: 'Full marathon',
+  tenK: '10K',
+  companion: 'Companion',
+  child: CATEGORY_LABELS.child,
+  infant: CATEGORY_LABELS.infant,
+};
 
 const STALE_MESSAGE = 'Tour settings were changed by someone else. Reload to see their changes before saving.';
 const IN_USE_HINT = 'Has applications — close it instead (untick Open).';
@@ -22,9 +32,7 @@ const IN_USE_HINT = 'Has applications — close it instead (untick Open).';
 // 숫자 칸은 입력 중인 문자열 그대로 보관한다.
 type FormDeparture = Omit<Departure, 'seatCapacity' | 'prices' | 'singleSupplement'> & {
   seatCapacity: string;
-  full: string;
-  tenK: string;
-  companion: string;
+  prices: Record<Category, string>;
   singleSupplement: string;
 };
 type FormState = {
@@ -44,9 +52,8 @@ const toFormDeparture = (d: Departure): FormDeparture => ({
   flightInfo: d.flightInfo,
   isOpen: d.isOpen,
   seatCapacity: String(d.seatCapacity),
-  full: String(d.prices.full),
-  tenK: String(d.prices.tenK),
-  companion: String(d.prices.companion),
+  // 예전 설정에는 child/infant 가격이 없다 → 빈 칸으로 보여주고 저장 전에 입력하게 한다
+  prices: Object.fromEntries(CATEGORIES.map((c) => [c, isValidPrice(d.prices?.[c]) ? String(d.prices[c]) : ''])) as Record<Category, string>,
   singleSupplement: String(d.singleSupplement),
 });
 
@@ -75,15 +82,15 @@ function toConfig(f: FormState, base: TourConfig): TourConfig {
       flightInfo: d.flightInfo,
       isOpen: d.isOpen,
       seatCapacity: num(d.seatCapacity),
-      prices: { full: num(d.full), tenK: num(d.tenK), companion: num(d.companion) },
+      prices: Object.fromEntries(CATEGORIES.map((c) => [c, priceNum(d.prices[c])])) as Record<Category, number>,
       singleSupplement: num(d.singleSupplement),
     })),
   };
 }
 
 const priceLabel = (raw: string) => {
-  const n = num(raw);
-  return formatPHP(Number.isFinite(n) ? n : 0);
+  const n = priceNum(raw);
+  return Number.isFinite(n) ? formatPHP(n) : '—';
 };
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
@@ -288,9 +295,9 @@ export default function TourSettingsPage() {
               <Field label={`Seats (taken ${usage[d.id]?.seatsUsed ?? 0})`} error={errors[`${p}.seatCapacity`]}>
                 <input className="admin-input" inputMode="numeric" value={d.seatCapacity} onChange={(e) => setDep(i, { seatCapacity: e.target.value })} />
               </Field>
-              {(['full', 'tenK', 'companion'] as const).map((k) => (
-                <Field key={k} label={`${k === 'full' ? 'Full marathon' : k === 'tenK' ? '10K' : 'Companion'} price (PHP)`} error={errors[`${p}.prices.${k}`]}>
-                  <input className="admin-input" inputMode="numeric" value={d[k]} onChange={(e) => setDep(i, { [k]: e.target.value })} />
+              {CATEGORIES.map((k) => (
+                <Field key={k} label={`${PRICE_FIELD_LABELS[k]} price (PHP)`} error={errors[`${p}.prices.${k}`]}>
+                  <input className="admin-input" inputMode="numeric" value={d.prices[k]} onChange={(e) => setDep(i, { prices: { ...d.prices, [k]: e.target.value } })} />
                 </Field>
               ))}
               <Field label="Single room supplement (PHP)" error={errors[`${p}.singleSupplement`]}>
@@ -303,7 +310,7 @@ export default function TourSettingsPage() {
               </div>
               <div className="flex items-start justify-between gap-3 sm:col-span-3">
                 <p className="text-xs text-slate-500">
-                  Prices: {priceLabel(d.full)} / {priceLabel(d.tenK)} / {priceLabel(d.companion)}
+                  Prices: {CATEGORIES.map((k) => `${CATEGORY_SHORT_LABELS[k]} ${priceLabel(d.prices[k])}`).join(' / ')}
                 </p>
                 <div className="flex flex-col items-end gap-1">
                   <button

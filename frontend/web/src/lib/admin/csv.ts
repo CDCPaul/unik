@@ -20,7 +20,7 @@ export function toCsv(rows: Cell[][]): string {
 const yesNo = (b: boolean) => (b ? 'Yes' : 'No');
 
 export function applicationsCsv(apps: ApplicationRecord[]): string {
-  const header = ['App no', 'Status', 'Applied (Manila)', 'Departure', 'First name', 'Last name', 'Email', 'Phone', 'Viber', 'WhatsApp', 'Full', '10K', 'Companion', 'Promo code', 'Agency', 'Total PHP', 'Deposit due PHP', 'Paid PHP', 'Info', 'Special requests', 'Staff notes'];
+  const header = ['App no', 'Status', 'Applied (Manila)', 'Departure', 'First name', 'Last name', 'Email', 'Phone', 'Viber', 'WhatsApp', 'Full', '10K', 'Companion', 'Child', 'Infant', 'Promo code', 'Agency', 'Total PHP', 'Deposit due PHP', 'Paid PHP', 'Info', 'Special requests', 'Staff notes'];
   const rows = apps.map((a) => [
     a.appNo,
     STATUS_LABELS[a.status],
@@ -35,6 +35,8 @@ export function applicationsCsv(apps: ApplicationRecord[]): string {
     a.counts.full,
     a.counts.tenK,
     a.counts.companion,
+    a.counts.child,
+    a.counts.infant,
     a.pricing.promo?.code ?? '',
     a.pricing.promo?.agencyName ?? '',
     a.pricing.total,

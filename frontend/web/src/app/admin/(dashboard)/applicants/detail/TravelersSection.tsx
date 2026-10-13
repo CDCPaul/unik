@@ -55,7 +55,7 @@ function CountsEditor({ app, config, draft, setDraft, locked }: { app: Applicati
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         {CATEGORIES.map((c) => (
           <div key={c} className="flex items-center gap-2 text-sm">
-            <span className="w-28 text-slate-700">{CATEGORY_LABELS[c]}</span>
+            <span className="w-32 text-slate-700">{CATEGORY_LABELS[c]}</span>
             <button type="button" aria-label={`Decrease ${CATEGORY_LABELS[c]}`} className="admin-btn-secondary !p-1.5" disabled={counts[c] <= 0 || saving || locked} onClick={() => bump(c, -1)}><Minus className="h-3.5 w-3.5" /></button>
             <span className="w-5 text-center font-bold" aria-live="polite">{counts[c]}</span>
             <button type="button" aria-label={`Increase ${CATEGORY_LABELS[c]}`} className="admin-btn-secondary !p-1.5" disabled={saving || locked} onClick={() => bump(c, 1)}><Plus className="h-3.5 w-3.5" /></button>

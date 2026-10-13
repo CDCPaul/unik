@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Download, Search } from 'lucide-react';
-import { APPLICATION_STATUSES, formatPHP } from '@unik/shared/domain';
+import { APPLICATION_STATUSES, CATEGORIES, CATEGORY_SHORT_LABELS, describeCounts, formatPHP } from '@unik/shared/domain';
 import type { ApplicationStatus, TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { applicationsCsv, downloadCsv, travelersCsv } from '@/lib/admin/csv';
@@ -37,7 +37,7 @@ export function ApplicantsList({
 
   const kpis: [string, string, string?][] = [
     ['Applications', String(kpi.applications)],
-    ['Travelers (incl. waitlist)', String(kpi.travelers), `${kpi.byCategory.full} Full · ${kpi.byCategory.tenK} 10K · ${kpi.byCategory.companion} Companion`],
+    ['Travelers (incl. waitlist)', String(kpi.travelers), CATEGORIES.map((c) => `${kpi.byCategory[c]} ${CATEGORY_SHORT_LABELS[c]}`).join(' · ')],
     ['Confirmed runners', String(kpi.confirmedRunners), `${kpi.confirmedTravelers} travelers${config ? ` · of ${config.bibQuota.total} bibs` : ''}`],
     ['Missing traveler info', String(kpi.incomplete), 'applications need follow-up'],
   ];
@@ -96,7 +96,7 @@ export function ApplicantsList({
       <div className="admin-card overflow-x-auto">
         <table className="w-full min-w-[900px]">
           <thead>
-            <tr>{['App no.', 'Lead', 'Dep.', 'Pax F/10K/C', 'Promo', 'Total', 'Paid', 'Info', 'Status'].map((h) => <th key={h} className="admin-table-header">{h}</th>)}</tr>
+            <tr>{['App no.', 'Lead', 'Dep.', 'Pax F/10K/C/Ch/I', 'Promo', 'Total', 'Paid', 'Info', 'Status'].map((h) => <th key={h} className="admin-table-header">{h}</th>)}</tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? <tr><td colSpan={9} className="admin-table-cell text-slate-500">No applications match these filters.</td></tr> : null}
@@ -107,7 +107,7 @@ export function ApplicantsList({
                   <td className="admin-table-cell"><button type="button" data-app-id={a.id} aria-current={selectedId === a.id ? 'true' : undefined} className="font-bold text-slate-900 underline-offset-2 hover:underline" onClick={(e) => { e.stopPropagation(); onSelect(a.id); }}>{a.appNo}</button></td>
                   <td className="admin-table-cell"><div className="font-semibold">{a.lead.firstName} {a.lead.lastName}</div><div className="text-xs text-slate-500">{formatManila(a.createdAt)}</div></td>
                   <td className="admin-table-cell">{a.departure.id.toUpperCase()}</td>
-                  <td className="admin-table-cell">{a.counts.full} / {a.counts.tenK} / {a.counts.companion}</td>
+                  <td className="admin-table-cell" title={describeCounts(a.counts)}>{CATEGORIES.map((c) => a.counts[c]).join(' / ')}</td>
                   <td className="admin-table-cell">{a.pricing.promo?.code ?? 'Direct'}</td>
                   <td className="admin-table-cell">{formatPHP(a.pricing.total)}</td>
                   <td className="admin-table-cell">{formatPHP(a.paidTotal)}</td>
