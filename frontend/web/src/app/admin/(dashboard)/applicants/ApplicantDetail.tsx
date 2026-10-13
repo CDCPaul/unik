@@ -31,7 +31,7 @@ export function ApplicantDetail({ app, config, onClose }: { app: ApplicationReco
             <span>Applied {formatManila(app.createdAt)} (Manila)</span>
           </div>
           <p className="mt-1 text-sm text-slate-600">{app.departure.label || app.departure.id} · {app.departure.departDate}{app.departure.returnDate ? ` – ${app.departure.returnDate}` : ''}</p>
-          <p className="text-sm text-slate-600">{promo ? `${promo.code} · ${promo.agencyName} · −${formatPHP(promo.discountTotal)}` : 'Direct'}</p>
+          <p className="text-sm text-slate-600">{promo ? `${promo.code} · ${promo.agencyName}${promo.discountTotal > 0 ? ` · −${formatPHP(promo.discountTotal)}` : ''}` : 'Direct'}</p>
         </div>
         <button type="button" aria-label="Close" className="admin-btn-secondary !p-2" onClick={onClose}><X className="h-4 w-4" /></button>
       </div>

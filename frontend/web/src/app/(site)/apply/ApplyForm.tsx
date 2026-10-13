@@ -409,7 +409,9 @@ export function ApplyForm() {
           </div>
           {state.promo ? (
             <p className="rounded-xl bg-[#E8F5EC] px-4 py-3 text-[15px] font-semibold text-[#145C33]">
-              Code applied: {state.promo.agencyName} · {state.promo.description}
+              {state.promo.discountType === 'fixed' && state.promo.discountValue === 0
+                ? <>Referred by {state.promo.agencyName}</>
+                : <>Code applied: {state.promo.agencyName} · {state.promo.description}</>}
             </p>
           ) : null}
           {promoMessage ? <p role="alert" className="text-sm font-semibold text-brand-red">{promoMessage}</p> : null}
@@ -464,10 +466,10 @@ export function ApplyForm() {
             {pricing.singleSupplements > 0 ? (
               <div className="flex justify-between gap-3 text-[15px]"><span>Single room supplement</span><span className="font-bold text-brand-ink">{formatPHP(pricing.singleSupplements)}</span></div>
             ) : null}
-            {pricing.promo ? (
+            {pricing.promo && pricing.promo.discountTotal > 0 ? (
               <div className="flex justify-between gap-3 text-[15px] text-[#145C33]"><span>Promo {pricing.promo.code}</span><span className="font-bold">−{formatPHP(pricing.promo.discountTotal)}</span></div>
             ) : null}
-            {pricing.promo && state.counts.infant > 0 ? <p className="text-sm">Promo discounts do not apply to infants.</p> : null}
+            {pricing.promo && pricing.promo.discountTotal > 0 && state.counts.infant > 0 ? <p className="text-sm">Promo discounts do not apply to infants.</p> : null}
             <div className="h-px bg-brand-line" />
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-extrabold text-brand-ink">Estimated total</span>

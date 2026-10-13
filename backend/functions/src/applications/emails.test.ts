@@ -34,6 +34,12 @@ describe('application emails', () => {
     expect(html).toContain('PHP 224,000');
     expect(html).toContain('No payment is needed yet');
   });
+  it('shows a referral-only code by agency name, without a zero discount', () => {
+    const referral = { ...app, pricing: { ...app.pricing, promo: { code: 'GRH_C', agencyName: 'GRAND HOPE SM', type: 'fixed' as const, value: 0, discountTotal: 0 } } };
+    const { html } = customerEmail(referral);
+    expect(html).toContain('GRH_C (GRAND HOPE SM)');
+    expect(html).not.toContain('−PHP 0');
+  });
   it('customer email explains the waitlist', () => {
     const { subject, html } = customerEmail({ ...app, status: 'waitlist' });
     expect(subject).toBe("You're on the waitlist (APP-0021) | Seoul Marathon 2027 Tour");

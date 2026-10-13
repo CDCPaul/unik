@@ -37,7 +37,12 @@ function summaryTable(app: ApplicationEmailData): string {
   const row = (label: string, value: string) =>
     `<tr><td style="padding:6px 0;color:#5A6680;width:160px">${label}</td><td style="padding:6px 0;font-weight:bold">${value}</td></tr>`;
   const promo = app.pricing.promo
-    ? row('Promo', `${escapeHtml(app.pricing.promo.code)} (−${formatPHP(app.pricing.promo.discountTotal)})`)
+    ? row(
+        'Promo',
+        app.pricing.promo.discountTotal > 0
+          ? `${escapeHtml(app.pricing.promo.code)} (−${formatPHP(app.pricing.promo.discountTotal)})`
+          : `${escapeHtml(app.pricing.promo.code)} (${escapeHtml(app.pricing.promo.agencyName)})`,
+      )
     : '';
   return `<table style="width:100%;border-collapse:collapse">
 ${row('Application no.', escapeHtml(app.appNo))}

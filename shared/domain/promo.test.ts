@@ -77,6 +77,7 @@ describe('promoUsagePax', () => {
 describe('describeDiscount', () => {
   it('describes fixed and percent discounts', () => {
     expect(describeDiscount('fixed', 2000)).toBe('PHP 2,000 off per person');
+    expect(describeDiscount('fixed', 0)).toBe('Referral code (no discount)');
     expect(describeDiscount('percent', 5)).toBe('5% off');
   });
 });
