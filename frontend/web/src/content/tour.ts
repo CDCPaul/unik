@@ -10,20 +10,49 @@ export const PACKAGES: { category: Category; title: string; description: string 
 
 export const INCLUSIONS = [
   'Round-trip flights from Manila or Cebu',
-  '4 nights hotel in Seoul (twin share)',
+  '4 nights hotel in Seoul with breakfast (twin share)',
   'Race entry and bib for runners',
-  'Airport and race-day transfers',
+  'Meals and admission fees as listed in the itinerary',
+  'Airport transfers and tour bus',
+  'English-speaking tour guide',
   'Group sessions with Artjoy Torregosa',
-  'English and Korean-speaking tour staff',
+  'One bottle of water per person per day on the bus',
 ];
 
-export const EXCLUSIONS = ['Korean visa fees', 'Travel insurance', 'Meals not listed in the itinerary', 'Personal expenses'];
+export const EXCLUSIONS = [
+  'Korean visa fees',
+  'Travel insurance',
+  'Guide tips (USD 10 per person per day)',
+  'Drinks during meals',
+  'Meals not listed in the itinerary',
+  'Personal expenses',
+];
 
 export const ITINERARY = [
-  { day: 'DAY 1', title: 'Fly to Seoul.', detail: 'Airport pickup and hotel check-in.' },
-  { day: 'DAY 2', title: 'Bib pickup at the race expo.', detail: 'Shakeout run and strategy clinic with Artjoy.' },
-  { day: 'DAY 3', title: 'Race day: Seoul Marathon 2027.', detail: 'Finisher dinner in the evening.' },
-  { day: 'DAY 4', title: 'Recovery day.', detail: 'Seoul city tour.' },
-  { day: 'DAY 5', title: 'Fly home.', detail: '' },
+  {
+    day: 'DAY 1',
+    title: 'Fri 19 Mar · Arrive in Seoul.',
+    detail:
+      'Land at Incheon International Airport and meet your tour guide. Nami Island, Seokchon Lake and the COEX Starfield Library, then hotel check-in. Meals: breakfast (sandwich), lunch (dak galbi), dinner (gamjatang).',
+  },
+  {
+    day: 'DAY 2',
+    title: 'Sat 20 Mar · Warm-up run on the Han River.',
+    detail:
+      'Shakeout run with Artjoy along the Han River, then Eunpyeong Hanok Village, a ginseng shop and Cheonggyecheon Stream. Meals: hotel breakfast, lunch (samgyetang), dinner (pork BBQ).',
+  },
+  {
+    day: 'DAY 3',
+    title: 'Sun 21 Mar · Race day: Seoul Marathon 2027.',
+    detail:
+      'After the race, relax at a Korean sauna, visit a cosmetics outlet and ride the N Seoul Tower cable car. Meals: hotel breakfast, lunch (galbitang), dinner (samgyeopsal).',
+  },
+  {
+    day: 'DAY 4',
+    title: 'Mon 22 Mar · Seoul city tour.',
+    detail:
+      'Gyeongbokgung Palace, Myeongdong shopping street, the Seaweed Museum with DIY kimbap, and a premium outlet. Meals: hotel breakfast, lunch (shabu-shabu). Dinner on your own.',
+  },
+  { day: 'DAY 5', title: 'Tue 23 Mar · Fly home.', detail: 'Hotel breakfast, then transfer to Incheon International Airport.' },
 ];
-export const ITINERARY_NOTE = 'Draft itinerary, subject to flight schedule.';
+export const ITINERARY_NOTE = 'Draft itinerary. Times and stops may change with the flight schedule, weather and traffic.';
