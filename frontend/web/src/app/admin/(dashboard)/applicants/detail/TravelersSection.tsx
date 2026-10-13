@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { Minus, Pencil, Plus } from 'lucide-react';
-import { CATEGORIES, CATEGORY_LABELS, buildTravelers, computeCompleteness, describeCounts, manilaDate } from '@unik/shared/domain';
+import { CATEGORIES, CATEGORY_LABELS, buildTravelers, describeCounts, manilaDate } from '@unik/shared/domain';
 import type { Category, Counts, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { cleanTraveler, droppedTravelers, droppedWarning, mergeTravelerEdits } from '@/lib/admin/detailHelpers';
-import { recalculate, validateTravelers } from '@/lib/admin/edits';
+import { recalculate, repriceForTravelers, validateTravelers } from '@/lib/admin/edits';
 import type { TourConfig } from '@unik/shared/domain';
 import { updateApplicationFields } from '@/lib/services/admin/applications';
 import { PricePreview } from './PricePreview';
@@ -91,7 +91,7 @@ export function TravelersSection({ app, config }: { app: ApplicationRecord; conf
   const live = useMemo(() => buildTravelers(app.counts, app.travelers), [app.counts, app.travelers]);
   const shown = draft ?? live;
   const departureKnown = !!config?.departures.some((d) => d.id === app.departure.id);
-  const preview = useMemo(() => (draft ? recalculate(app, { travelers: draft.map(cleanTraveler) }, config) : null), [app, config, draft]);
+  const preview = useMemo(() => (draft ? repriceForTravelers(app, draft.map(cleanTraveler), config) : null), [app, config, draft]);
   const priceChanged = preview && !('error' in preview) && (preview.pricing.total !== app.pricing.total || preview.warnings.length > 0);
 
   const start = () => { setEdit({ base: live.map((t) => ({ ...t })), baseCounts: { ...app.counts }, draft: live.map((t) => ({ ...t })) }); setErrors({}); setBlocked(''); clearFailed(); };
@@ -110,15 +110,9 @@ export function TravelersSection({ app, config }: { app: ApplicationRecord; conf
       setErrors({});
       return setBlocked('Travelers were changed by someone else — review and re-apply your edits.');
     }
-    let fields: Record<string, unknown>;
-    if (config && !departureKnown) {
-      // 출발편이 설정에서 사라졌으면 가격은 건드리지 않는다
-      fields = { travelers: m.merged, completeness: computeCompleteness(m.merged) };
-    } else {
-      const r = recalculate(app, { travelers: m.merged }, config);
-      if ('error' in r) return setBlocked(r.error);
-      fields = { travelers: r.travelers.map(cleanTraveler), completeness: r.completeness, pricing: r.pricing };
-    }
+    const r = repriceForTravelers(app, m.merged, config);
+    if ('error' in r) return setBlocked(r.error);
+    const fields = { travelers: r.travelers.map(cleanTraveler), completeness: r.completeness, pricing: r.pricing };
     if (await run(() => updateApplicationFields(app.id, fields))) cancel();
   }
 
@@ -132,7 +126,7 @@ export function TravelersSection({ app, config }: { app: ApplicationRecord; conf
       {draft ? (
         <div className="mt-3 flex flex-col gap-2">
           {priceChanged && preview && !('error' in preview) ? <PricePreview app={app} pricing={preview.pricing} warnings={preview.warnings} /> : null}
-          {config && !departureKnown ? <p className="text-sm text-amber-700">This departure is no longer in tour settings; prices will not be recalculated.</p> : null}
+          {config && !departureKnown ? <p className="text-sm text-amber-700">This departure is no longer in tour settings; the original single-room rate will be used.</p> : null}
           {blocked ? <p role="alert" className="text-sm text-red-600">{blocked}</p> : null}
           {Object.keys(errors).length > 0 ? <p role="alert" className="text-sm text-red-600">Fix the highlighted fields to save.</p> : null}
           <div className="flex gap-2">

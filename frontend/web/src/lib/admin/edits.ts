@@ -41,11 +41,48 @@ export function recalculate(
     promo: snap ? { code: snap.code, agencyName: snap.agencyName, discountType: snap.type, discountValue: snap.value } : null,
     depositPerPax: perPaxDeposit,
   });
+  const warnings = paymentWarnings(app, pricing);
+  return { travelers, completeness: computeCompleteness(travelers), pricing, warnings };
+}
+
+function paymentWarnings(app: ApplicationRecord, pricing: Pricing): string[] {
   const warnings: string[] = [];
   if ((app.status === 'fully_paid' || app.status === 'confirmed') && app.paidTotal < pricing.total) {
     warnings.push(`New total ${formatPHP(pricing.total)} is more than the ${formatPHP(app.paidTotal)} paid — review the status.`);
   }
-  return { travelers, completeness: computeCompleteness(travelers), pricing, warnings };
+  return warnings;
+}
+
+const singleCount = (travelers: Pick<Traveler, 'room'>[]) => travelers.filter((t) => t.room === 'single').length;
+
+/**
+ * 참가자만 저장할 때의 가격 계산. 신청 당시의 단가·할인·1인당 예약금은 그대로 두고,
+ * 싱글룸 수가 바뀐 경우에만 싱글 추가요금(과 그에 따른 소계·총액)을 다시 계산한다.
+ */
+export function repriceForTravelers(
+  app: ApplicationRecord,
+  travelers: Traveler[],
+  config: TourConfig | null,
+): { travelers: Traveler[]; completeness: { filled: number; total: number }; pricing: Pricing; warnings: string[] } | { error: string } {
+  if (!config) return { error: 'Tour settings are not loaded yet.' };
+  const next = buildTravelers(app.counts, travelers);
+  const completeness = computeCompleteness(next);
+  const before = singleCount(app.travelers);
+  const after = singleCount(next);
+  let pricing = app.pricing;
+  if (after !== before) {
+    const departure = config.departures.find((d) => d.id === app.departure.id);
+    // 출발편이 설정에서 사라졌으면 신청에 기록된 싱글 1실 요금을 쓴다 (없으면 0)
+    const perSingle = departure ? departure.singleSupplement : before > 0 ? Math.round(app.pricing.singleSupplements / before) : 0;
+    const base = app.pricing.subtotal - app.pricing.singleSupplements;
+    const singleSupplements = after * perSingle;
+    const subtotal = base + singleSupplements;
+    const total = subtotal - (app.pricing.promo?.discountTotal ?? 0);
+    const pax = totalPax(app.counts);
+    const perPaxDeposit = pax > 0 ? Math.round(app.pricing.depositDue / pax) : 0;
+    pricing = { ...app.pricing, singleSupplements, subtotal, total, depositDue: Math.min(perPaxDeposit * pax, total) };
+  }
+  return { travelers: next, completeness, pricing, warnings: pricing === app.pricing ? [] : paymentWarnings(app, pricing) };
 }
 
 const MAX_AMOUNT = 10_000_000;

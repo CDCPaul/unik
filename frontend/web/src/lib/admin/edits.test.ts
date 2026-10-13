@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord, PaymentRecord } from './applicationDoc';
-import { applyPayment, normalizeLead, parseAmount, recalculate, statusChangeWarnings, validateLead, validateTravelers, withoutPayment } from './edits';
+import { applyPayment, normalizeLead, parseAmount, recalculate, repriceForTravelers, statusChangeWarnings, validateLead, validateTravelers, withoutPayment } from './edits';
 
 const config: TourConfig = {
   acceptingApplications: true,
@@ -74,6 +74,61 @@ describe('recalculate', () => {
     const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1 } }, config);
     if ('error' in r) throw new Error(r.error);
     expect(r.warnings).toEqual([]);
+  });
+});
+
+describe('repriceForTravelers', () => {
+  const snap: ApplicationRecord = {
+    ...app,
+    counts: { full: 2, tenK: 0, companion: 0 },
+    travelers: [{ category: 'full', passportName: 'A', room: 'twin' }, { category: 'full', room: 'twin' }],
+    pricing: {
+      lines: [{ category: 'full', qty: 2, unitPrice: 70000, amount: 140000 }],
+      singleSupplements: 0,
+      subtotal: 140000,
+      promo: { code: 'TA-OLD', agencyName: 'Old', type: 'fixed', value: 2000, discountTotal: 4000 },
+      total: 136000,
+      depositDue: 20000,
+    },
+  };
+  const changed: TourConfig = { ...config, depositPerPax: 99999, departures: [{ ...config.departures[0], prices: { full: 90000, tenK: 85000, companion: 80000 } }] };
+  it('keeps snapshot pricing for a name-only edit even when config prices changed', () => {
+    const r = repriceForTravelers(snap, [{ category: 'full', passportName: 'A EDITED', room: 'twin' }, { category: 'full', room: 'twin' }], changed);
+    if ('error' in r) throw new Error(r.error);
+    expect(r.pricing).toEqual(snap.pricing);
+    expect(r.travelers[0].passportName).toBe('A EDITED');
+  });
+  it('only moves single supplements/subtotal/total when a room becomes single', () => {
+    const r = repriceForTravelers(snap, [{ category: 'full', room: 'single' }, { category: 'full', room: 'twin' }], changed);
+    if ('error' in r) throw new Error(r.error);
+    expect(r.pricing.lines).toEqual(snap.pricing.lines);
+    expect(r.pricing.promo).toEqual(snap.pricing.promo);
+    expect(r.pricing.singleSupplements).toBe(15000);
+    expect(r.pricing.subtotal).toBe(155000);
+    expect(r.pricing.total).toBe(151000);
+    expect(r.pricing.depositDue).toBe(20000);
+  });
+  it('still saves when the departure was removed, using the existing per-single amount', () => {
+    const withSingle: ApplicationRecord = {
+      ...snap,
+      travelers: [{ category: 'full', room: 'single' }, { category: 'full', room: 'twin' }],
+      pricing: { ...snap.pricing, singleSupplements: 12000, subtotal: 152000, total: 148000 },
+    };
+    const gone = { ...config, departures: [] };
+    const two = repriceForTravelers(withSingle, [{ category: 'full', room: 'single' }, { category: 'full', room: 'single' }], gone);
+    if ('error' in two) throw new Error(two.error);
+    expect(two.pricing.singleSupplements).toBe(24000);
+    expect(two.pricing.total).toBe(160000);
+    const none = repriceForTravelers(snap, [{ category: 'full', room: 'single' }, { category: 'full' }], gone);
+    if ('error' in none) throw new Error(none.error);
+    expect(none.pricing.singleSupplements).toBe(0);
+    expect(none.pricing).toEqual(snap.pricing);
+  });
+  it('warns like recalculate when a paid-up application now totals more than was paid', () => {
+    const paid: ApplicationRecord = { ...snap, status: 'fully_paid', paidTotal: 136000 };
+    const r = repriceForTravelers(paid, [{ category: 'full', room: 'single' }, { category: 'full', room: 'twin' }], config);
+    if ('error' in r) throw new Error(r.error);
+    expect(r.warnings).toHaveLength(1);
   });
 });
 
