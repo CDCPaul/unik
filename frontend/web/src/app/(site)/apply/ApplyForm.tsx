@@ -13,7 +13,7 @@ import {
   manilaDate,
   missingPriceCategories,
   normalizePromoCode,
-  totalPax,
+  promoEligiblePax,
   validateCounts,
 } from '@unik/shared/domain';
 import type { Availability, Category, TourConfig } from '@unik/shared/domain';
@@ -127,7 +127,8 @@ export function ApplyForm() {
   }, [hydrated]);
 
   const pricing = useMemo(() => (data.config ? estimatePricing(state, data.config) : null), [state, data.config]);
-  const pax = totalPax(state.counts);
+  // 프로모 인원 제한은 할인 대상(유아 제외) 기준. 서버 입력은 1 이상이어야 한다.
+  const promoPax = Math.max(1, promoEligiblePax(state.counts));
   const countsError = validateCounts(state.counts);
   const accepting = data.config?.acceptingApplications ?? false;
 
@@ -137,7 +138,7 @@ export function ApplyForm() {
     setCheckingPromo(true);
     setPromoMessage('');
     try {
-      const r = await checkPromo(code, pax);
+      const r = await checkPromo(code, promoPax);
       if (normalizePromoCode(promoInputRef.current) !== normalizePromoCode(code)) return; // 확인 중 입력이 바뀜
       if (r.valid) {
         dispatch({

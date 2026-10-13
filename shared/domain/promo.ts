@@ -1,5 +1,5 @@
 import type { ApplicationSummary, DiscountType, PromoCode } from './types';
-import { totalPax } from './counts';
+import { promoEligiblePax } from './pricing';
 import { formatPHP } from './format';
 
 export const PROMO_CODE_PATTERN = /^[A-Z0-9-]{3,20}$/;
@@ -33,10 +33,11 @@ export function evaluatePromo(
   return { valid: true };
 }
 
+/** 프로모 인원 제한(maxPax)에 쓰는 사용 인원. 할인 대상이 아닌 유아는 세지 않는다. */
 export function promoUsagePax(apps: ApplicationSummary[], code: string): number {
   return apps
     .filter((a) => a.promoCode === code && a.status !== 'cancelled')
-    .reduce((sum, a) => sum + totalPax(a.counts), 0);
+    .reduce((sum, a) => sum + promoEligiblePax(a.counts), 0);
 }
 
 export function describeDiscount(type: DiscountType, value: number): string {

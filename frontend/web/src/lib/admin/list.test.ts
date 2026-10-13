@@ -107,7 +107,7 @@ describe('child / infant KPIs', () => {
 describe('promoStats', () => {
   it('aggregates per code excluding cancelled; sales and discounts count confirmed only', () => {
     expect(promoStats(apps)).toEqual({
-      'TA-A': { applications: 1, pax: 3, confirmedPax: 3, netSales: 224000, discountTotal: 6000 },
+      'TA-A': { applications: 1, pax: 3, quotaPax: 3, confirmedPax: 3, netSales: 224000, discountTotal: 6000 },
     });
   });
 });

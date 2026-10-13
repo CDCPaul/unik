@@ -1,4 +1,4 @@
-import { APPLICATION_STATUSES, CATEGORIES, internationalDigits, normalizeCounts, runnerCount, totalPax } from '@unik/shared/domain';
+import { APPLICATION_STATUSES, CATEGORIES, internationalDigits, normalizeCounts, promoEligiblePax, runnerCount, totalPax } from '@unik/shared/domain';
 import type { ApplicationStatus, Counts } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
 
@@ -72,6 +72,8 @@ export function computeKpis(apps: ApplicationRecord[]) {
 export interface PromoStat {
   applications: number;
   pax: number;
+  /** 인원 제한(maxPax) 비교용: 유아 제외 */
+  quotaPax: number;
   confirmedPax: number;
   netSales: number;
   discountTotal: number;
@@ -82,9 +84,10 @@ export function promoStats(apps: ApplicationRecord[]): Record<string, PromoStat>
   for (const a of apps) {
     const code = a.pricing.promo?.code;
     if (!code || a.status === 'cancelled') continue;
-    const s = (out[code] ??= { applications: 0, pax: 0, confirmedPax: 0, netSales: 0, discountTotal: 0 });
+    const s = (out[code] ??= { applications: 0, pax: 0, quotaPax: 0, confirmedPax: 0, netSales: 0, discountTotal: 0 });
     s.applications += 1;
     s.pax += totalPax(a.counts);
+    s.quotaPax += promoEligiblePax(a.counts);
     if (CONFIRMED_STATUSES.includes(a.status)) {
       s.confirmedPax += totalPax(a.counts);
       s.netSales += a.pricing.total;
