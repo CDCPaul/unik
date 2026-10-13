@@ -6,3 +6,4 @@ export * from './promo';
 export * from './completeness';
 export * from './availability';
 export * from './validation';
+export * from './contact';
