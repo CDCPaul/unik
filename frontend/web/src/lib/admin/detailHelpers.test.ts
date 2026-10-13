@@ -68,36 +68,54 @@ describe('mergeTravelerEdits', () => {
     { category: 'full', passportName: 'B TWO' },
     { category: 'companion' },
   ];
+  const counts = { base: { full: 2, tenK: 0, companion: 1 }, live: { full: 2, tenK: 0, companion: 1 } };
   const edit = (i: number, patch: Partial<Traveler>) => base.map((t, j) => (j === i ? { ...t, ...patch } : { ...t }));
 
   it('reapplies only the user-changed fields onto the live travelers (no conflict)', () => {
     const live: Traveler[] = [{ ...base[0], room: 'single' }, { ...base[1], dob: '1990-01-01' }, { ...base[2] }];
-    const r = mergeTravelerEdits(base, edit(1, { passportName: 'B TWO EDITED' }), live);
+    const r = mergeTravelerEdits(base, edit(1, { passportName: 'B TWO EDITED' }), live, counts);
     expect(r).toEqual({
       merged: [{ category: 'full', passportName: 'A ONE', nationality: 'Filipino', room: 'single' }, { category: 'full', passportName: 'B TWO EDITED', dob: '1990-01-01' }, { category: 'companion' }],
     });
   });
   it('treats blank and missing values as equal and can clear a field', () => {
-    const r = mergeTravelerEdits(base, edit(0, { nationality: '' }), base.map((t) => ({ ...t })));
+    const r = mergeTravelerEdits(base, edit(0, { nationality: '' }), base.map((t) => ({ ...t })), counts);
     expect(r).toEqual({ merged: [{ category: 'full', passportName: 'A ONE' }, base[1], base[2]] });
   });
   it('reports a conflict when the same field changed live since the snapshot', () => {
     const live = base.map((t, i) => (i === 1 ? { ...t, passportName: 'B TWO (STAFF)' } : { ...t }));
-    expect(mergeTravelerEdits(base, edit(1, { passportName: 'B TWO EDITED' }), live)).toEqual({ conflict: true });
+    expect(mergeTravelerEdits(base, edit(1, { passportName: 'B TWO EDITED' }), live, counts)).toEqual({ conflict: true });
   });
   it('is not a conflict when live already holds the same value the user typed', () => {
     const live = base.map((t, i) => (i === 1 ? { ...t, passportName: 'SAME' } : { ...t }));
-    expect(mergeTravelerEdits(base, edit(1, { passportName: 'SAME' }), live)).toEqual({ merged: live });
+    expect(mergeTravelerEdits(base, edit(1, { passportName: 'SAME' }), live, counts)).toEqual({ merged: live });
   });
   it('reports a conflict when an edited traveler no longer exists live', () => {
-    expect(mergeTravelerEdits(base, edit(2, { passportName: 'C' }), base.slice(0, 2))).toEqual({ conflict: true });
+    expect(mergeTravelerEdits(base, edit(2, { passportName: 'C' }), base.slice(0, 2), counts)).toEqual({ conflict: true });
   });
   it('ignores untouched travelers that were removed live', () => {
-    expect(mergeTravelerEdits(base, edit(0, { room: 'twin' }), base.slice(0, 2))).toEqual({ merged: [{ ...base[0], room: 'twin' }, base[1]] });
+    expect(mergeTravelerEdits(base, edit(0, { room: 'twin' }), base.slice(0, 2), counts)).toEqual({ merged: [{ ...base[0], room: 'twin' }, base[1]] });
   });
   it('reports a conflict when the live traveler at that index changed category', () => {
     const live: Traveler[] = [base[0], { category: 'tenK' }, base[2]];
-    expect(mergeTravelerEdits(base, edit(1, { passportName: 'X' }), live)).toEqual({ conflict: true });
+    expect(mergeTravelerEdits(base, edit(1, { passportName: 'X' }), live, counts)).toEqual({ conflict: true });
+  });
+
+  describe('counts guard (index shift)', () => {
+    const t: Traveler[] = [{ category: 'full', passportName: 'A' }, { category: 'tenK', passportName: 'B' }, { category: 'tenK' }];
+    const editC = t.map((x, i) => (i === 2 ? { ...x, dob: '1990-05-05' } : { ...x }));
+    const c = { full: 1, tenK: 2, companion: 0 };
+    it('earlier category grew -> conflict (indexes shifted)', () => {
+      const live: Traveler[] = [t[0], { category: 'full' }, t[1], t[2]];
+      expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, full: 2 } })).toEqual({ conflict: true });
+    });
+    it('later category grew -> conflict', () => {
+      const live: Traveler[] = [...t, { category: 'companion' }];
+      expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, companion: 1 } })).toEqual({ conflict: true });
+    });
+    it('counts unchanged + field edits -> merges', () => {
+      expect(mergeTravelerEdits(t, editC, t, { base: c, live: { ...c } })).toEqual({ merged: editC });
+    });
   });
 });
 

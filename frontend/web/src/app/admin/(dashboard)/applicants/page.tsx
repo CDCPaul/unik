@@ -98,9 +98,9 @@ function ApplicantsPageInner() {
         <>
           <div className="fixed inset-0 z-30 bg-slate-900/40 2xl:hidden" aria-hidden="true" onClick={() => select(null)} />
           <aside
-            aria-label={isDrawer ? undefined : 'Applicant details'}
-            role={isDrawer && selected ? 'dialog' : undefined}
-            aria-modal={isDrawer && selected ? true : undefined}
+            aria-label={selected ? (isDrawer ? undefined : 'Applicant details') : 'Application not found'}
+            role={isDrawer ? 'dialog' : undefined}
+            aria-modal={isDrawer ? true : undefined}
             aria-labelledby={isDrawer && selected ? 'applicant-detail-heading' : undefined}
             className="fixed inset-y-0 right-0 z-40 w-full max-w-[480px] overflow-y-auto bg-slate-100 p-3 shadow-2xl 2xl:sticky 2xl:inset-auto 2xl:top-6 2xl:z-auto 2xl:max-h-[calc(100vh-3rem)] 2xl:w-[460px] 2xl:max-w-none 2xl:shrink-0 2xl:bg-transparent 2xl:p-0 2xl:shadow-none"
           >

@@ -81,7 +81,7 @@ function CountsEditor({ app, config, draft, setDraft, locked }: { app: Applicati
 
 export function TravelersSection({ app, config }: { app: ApplicationRecord; config: TourConfig | null }) {
   // base 는 편집을 시작한 시점의 참가자 (저장 때 실제로 바꾼 필드만 최신 값에 다시 적용하기 위함)
-  const [edit, setEdit] = useState<{ base: Traveler[]; draft: Traveler[] } | null>(null);
+  const [edit, setEdit] = useState<{ base: Traveler[]; baseCounts: Counts; draft: Traveler[] } | null>(null);
   const draft = edit?.draft ?? null;
   const [countsDraft, setCountsDraft] = useState<CountsDraft | null>(null);
   const countsDirty = isDirty(countsDraft, app.counts);
@@ -94,7 +94,7 @@ export function TravelersSection({ app, config }: { app: ApplicationRecord; conf
   const preview = useMemo(() => (draft ? recalculate(app, { travelers: draft.map(cleanTraveler) }, config) : null), [app, config, draft]);
   const priceChanged = preview && !('error' in preview) && (preview.pricing.total !== app.pricing.total || preview.warnings.length > 0);
 
-  const start = () => { setEdit({ base: live.map((t) => ({ ...t })), draft: live.map((t) => ({ ...t })) }); setErrors({}); setBlocked(''); clearFailed(); };
+  const start = () => { setEdit({ base: live.map((t) => ({ ...t })), baseCounts: { ...app.counts }, draft: live.map((t) => ({ ...t })) }); setErrors({}); setBlocked(''); clearFailed(); };
   const cancel = () => { setEdit(null); setErrors({}); setBlocked(''); clearFailed(); };
 
   async function save() {
@@ -104,9 +104,9 @@ export function TravelersSection({ app, config }: { app: ApplicationRecord; conf
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     // 바꾼 필드만 최신 참가자에 다시 적용한다 (다른 직원의 동시 수정을 덮지 않기 위해)
-    const m = mergeTravelerEdits(edit.base, edit.draft, live);
+    const m = mergeTravelerEdits(edit.base, edit.draft, live, { base: edit.baseCounts, live: app.counts });
     if ('conflict' in m) {
-      setEdit({ base: live.map((t) => ({ ...t })), draft: live.map((t) => ({ ...t })) });
+      setEdit({ base: live.map((t) => ({ ...t })), baseCounts: { ...app.counts }, draft: live.map((t) => ({ ...t })) });
       setErrors({});
       return setBlocked('Travelers were changed by someone else — review and re-apply your edits.');
     }

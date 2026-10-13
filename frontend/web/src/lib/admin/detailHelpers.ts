@@ -88,9 +88,16 @@ export function defaultPaymentType(paidTotal: number, depositDue: number): Payme
 /**
  * 편집 시작 시점의 snapshot 과 draft 를 비교해 사용자가 실제로 바꾼 (참가자, 필드)만
  * 최신(live) 참가자 배열에 다시 적용한다. 같은 필드가 그 사이 live 에서 바뀌었거나
- * 바꾼 참가자가 사라졌으면 conflict.
+ * 바꾼 참가자가 사라졌거나 인원 구성(counts)이 바뀌었으면 conflict.
  */
-export function mergeTravelerEdits(snapshot: Traveler[], draft: Traveler[], live: Traveler[]): { merged: Traveler[] } | { conflict: true } {
+export function mergeTravelerEdits(
+  snapshot: Traveler[],
+  draft: Traveler[],
+  live: Traveler[],
+  counts: { base: Counts; live: Counts },
+): { merged: Traveler[] } | { conflict: true } {
+  // 인원이 한 유형이라도 바뀌면 배열 인덱스가 밀리므로 병합하지 않고 충돌로 처리한다
+  if (CATEGORIES.some((c) => counts.base[c] !== counts.live[c])) return { conflict: true };
   const merged = live.map((t) => cleanTraveler(t) as unknown as Record<string, unknown>);
   for (let i = 0; i < draft.length; i++) {
     const before = cleanTraveler(snapshot[i] ?? { category: draft[i].category }) as unknown as Record<string, unknown>;
