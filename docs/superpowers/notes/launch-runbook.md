@@ -46,3 +46,9 @@
 - 사이트: Vercel 대시보드 → 이전 프로덕션 배포 "Promote to Production" (즉시). 문제가 해결되기 전에는 **main 에 push 하지 않는다** (push 하면 새 사이트가 다시 배포된다).
 - 규칙: `git checkout archive/pre-seoul-2027 -- firestore.rules && firebase deploy --only firestore:rules --project unik-90206` 후 `git checkout HEAD -- firestore.rules` 로 파일을 원복한다.
 - 함수: 새 함수는 구 사이트와 무관하므로 그대로 두어도 된다(필요 시 `functions:delete`). 단 `onNewContact` 는 새 버전으로 교체된 상태다. 구 버전으로 되돌리려면 아카이브 태그에서 다시 배포한다: `git worktree add ../unik-archive archive/pre-seoul-2027` 후 `npm ci --prefix ../unik-archive/backend/functions` 를 실행하고, 그 디렉터리(`../unik-archive`)에서 `firebase deploy --only functions:onNewContact --project unik-90206`. 끝나면 `git worktree remove ../unik-archive` 로 정리한다. 되돌리지 않고 두어도 문의 폼은 계속 동작한다.
+
+## 백업 (2026-10-14 설정)
+- Firestore 자동 백업: 매일 1회, 14일 보관 (`gcloud firestore backups schedules list --database='(default)' --project=unik-90206`).
+- 백업 목록: `gcloud firestore backups list --location=asia-southeast1 --project=unik-90206`
+- 복구는 **새 데이터베이스로** 한다 (운영 DB 를 덮어쓰지 않는다): `gcloud firestore databases restore --source-backup=<백업 이름> --destination-database=restored-<YYYYMMDD> --project=unik-90206` 후 필요한 문서만 옮긴다.
+- 오픈 전 수동 백업: `gs://unik-90206-backups/2026-10-13-pre-launch`
