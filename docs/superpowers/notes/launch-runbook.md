@@ -38,7 +38,7 @@
 7. [ ] TA 에 추천 링크 배포.
 
 ## D+1 이후
-- [ ] 안정 확인 후 구 함수 삭제: `firebase functions:delete spinRoulette createRouletteWinner onNewRegistration --region asia-northeast3 --project unik-90206`
+- [x] (2026-10-14 완료, gcloud functions delete --gen2) 안정 확인 후 구 함수 삭제: `firebase functions:delete spinRoulette createRouletteWinner onNewRegistration --region asia-northeast3 --project unik-90206`
 - [ ] Firebase App Check 지표에서 미검증 요청 비율 확인
 
 ## 롤백
