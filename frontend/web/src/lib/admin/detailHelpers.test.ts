@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Traveler } from '@unik/shared/domain';
-import { cleanTraveler, defaultPaymentType, droppedTravelers, droppedWarning, leadChanges, mergeTravelerEdits, paidAtFromDate, paidExceedsNote } from './detailHelpers';
+import { cleanTraveler, defaultPaymentType, droppedTravelers, droppedWarning as droppedWarningMsg, leadChanges, mergeTravelerEdits, paidAtFromDate, paidExceedsNote as paidExceedsMsg } from './detailHelpers';
+import { translate } from './i18n/translate';
+
+const droppedWarning = (d: Parameters<typeof droppedWarningMsg>[0]) => translate('en', droppedWarningMsg(d));
+const paidExceedsNote = (paid: number, total: number) => {
+  const m = paidExceedsMsg(paid, total);
+  return m && translate('en', m);
+};
 
 const travelers: Traveler[] = [
   { category: 'full', passportName: 'SANTOS MARIA' },
@@ -35,6 +42,10 @@ describe('droppedTravelers', () => {
   it('names the traveler when a passport name exists', () => {
     const d = droppedTravelers(travelers, { full: 1, tenK: 1, companion: 0, child: 0, infant: 0 });
     expect(droppedWarning(d[d.length - 1])).toBe('Traveler 4 (Companion) details will be removed: LEE JIN.');
+  });
+  it('translates the warning into Korean', () => {
+    const d = droppedTravelers(travelers, { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 });
+    expect(translate('ko', droppedWarningMsg(d[0]))).toBe('참가자 2 (풀코스)의 정보가 삭제됩니다: 입력된 정보 없음.');
   });
 });
 

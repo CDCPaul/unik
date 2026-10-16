@@ -6,6 +6,7 @@ import { fromApplicationDoc } from '@/lib/admin/applicationDoc';
 import type { ApplicationRecord, PaymentRecord } from '@/lib/admin/applicationDoc';
 import { applyPayment, planCountsApply, planTravelersSave, voidPayment } from '@/lib/admin/edits';
 import type { TxPlan } from '@/lib/admin/edits';
+import { MessageError } from '@/lib/admin/i18n/translate';
 
 const col = () => collection(db, COLLECTIONS.applications);
 // 상태·결제 관련 필드는 changeStatusTx / addPaymentTx / voidPaymentTx 로만 바꾼다
@@ -58,7 +59,7 @@ async function applyPlanTx(id: string, plan: (live: ApplicationRecord) => TxPlan
     if (!snap.exists()) throw new Error('Application not found');
     const result = plan(fromApplicationDoc(snap.id, snap.data()));
     if ('conflict' in result) throw new Error('conflict');
-    if ('error' in result) throw new Error(result.error);
+    if ('error' in result) throw new MessageError(result.error);
     tx.update(ref, { ...result.fields, updatedAt: serverTimestamp() });
   });
 }

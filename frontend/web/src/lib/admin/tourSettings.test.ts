@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { canRemoveDeparture, computeDepartureUsage, defaultTourConfig, newDeparture, validateTourConfig } from './tourSettings';
+import { translate } from './i18n/translate';
+import type { Msg } from './i18n/translate';
+
+const en = (m: Msg | undefined) => (m ? translate('en', m) : m);
 
 function valid() {
   const c = defaultTourConfig();
@@ -54,9 +58,11 @@ describe('validateTourConfig', () => {
   it('warns when capacity drops below seats used', () => {
     const c = valid();
     c.departures[0].seatCapacity = 10;
-    expect(validateTourConfig(c, { mnl: { seatsUsed: 12, applications: 5 } }).warnings).toEqual([
+    const { warnings } = validateTourConfig(c, { mnl: { seatsUsed: 12, applications: 5 } });
+    expect(warnings.map(en)).toEqual([
       'Manila (MNL): capacity 10 is below the 12 seats already taken. New applications will go to the waitlist.',
     ]);
+    expect(translate('ko', warnings[0])).toBe('Manila (MNL): 좌석 10석이 이미 사용 중인 12석보다 적습니다. 새 신청은 대기자로 접수됩니다.');
   });
 });
 
@@ -65,7 +71,7 @@ describe('validateTourConfig: in-use departures and dates', () => {
     const usage = { mnl: { seatsUsed: 3, applications: 2 } };
     const removed = valid();
     removed.departures = [];
-    expect(validateTourConfig(removed, usage).errors['departures.removed']).toBe('Departure(s) in use cannot be removed or renamed: mnl. Close them instead.');
+    expect(en(validateTourConfig(removed, usage).errors['departures.removed'])).toBe('Departure(s) in use cannot be removed or renamed: mnl. Close them instead.');
     expect(validateTourConfig(valid(), usage).errors).not.toHaveProperty('departures.removed');
   });
   it('rejects dates that do not exist on the calendar', () => {
@@ -93,6 +99,6 @@ describe('computeDepartureUsage', () => {
     const usage = computeDepartureUsage([mk('ceb', 'cancelled', 1)]);
     expect(canRemoveDeparture(usage, 'ceb')).toBe(false);
     const c = valid();
-    expect(validateTourConfig(c, usage).errors['departures.removed']).toContain('ceb');
+    expect(en(validateTourConfig(c, usage).errors['departures.removed'])).toContain('ceb');
   });
 });

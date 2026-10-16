@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord, PaymentRecord } from './applicationDoc';
-import { applyPayment, normalizeLead, parseAmount, planCountsApply, planTravelersSave, recalculate, repriceForTravelers, paidTotalOf, statusChangeWarnings, validateLead, validateTravelers, voidPayment } from './edits';
+import { applyPayment, countsError, normalizeLead, parseAmount, planCountsApply, planTravelersSave, recalculate, repriceForTravelers, paidTotalOf, statusChangeWarnings, validateLead, validateTravelers, voidPayment } from './edits';
+import { translate } from './i18n/translate';
+import type { Msg } from './i18n/translate';
+import { validateCounts } from '@unik/shared/domain';
+import type { Counts } from '@unik/shared/domain';
+
+/** lib 문구(Msg)를 영어 문장으로 (기존 영어 문구가 그대로인지 확인) */
+const en = (m: Msg) => translate('en', m);
+const errorText = (r: object) => ('error' in r ? en(r.error as Msg) : null);
+const texts = (e: Record<string, Msg>) => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, en(v)]));
 
 const config: TourConfig = {
   acceptingApplications: true,
@@ -37,7 +46,7 @@ const pay = (over: Partial<PaymentRecord> = {}): PaymentRecord => ({ id: 'p1', t
 describe('recalculate', () => {
   it('keeps the original promo terms when counts change, even if the departure is now closed', () => {
     const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, config);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.travelers).toEqual([{ category: 'full', passportName: 'SANTOS MARIA' }, { category: 'companion' }]);
     expect(r.pricing.promo).toMatchObject({ code: 'TA-OLD', discountTotal: 4000 });
     expect(r.pricing.total).toBe(146000);
@@ -46,46 +55,47 @@ describe('recalculate', () => {
   });
   it('reprices single supplements when a traveler room changes', () => {
     const r = recalculate(app, { travelers: [{ category: 'full', room: 'single' }] }, config);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing.singleSupplements).toBe(15000);
   });
   it('rejects invalid counts and a departure missing from settings', () => {
-    expect(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 } }, config)).toEqual({ error: 'At least one traveler is required' });
-    expect(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 } }, { ...config, departures: [] })).toMatchObject({ error: expect.stringContaining('tour settings') });
-    expect(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 } }, null)).toMatchObject({ error: expect.any(String) });
+    expect(errorText(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 } }, config))).toBe('At least one traveler is required');
+    expect(errorText(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 } }, { ...config, departures: [] }))).toContain('tour settings');
+    expect(errorText(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 } }, null))).toBe('Tour settings are not loaded yet.');
   });
   it('keeps the original per-traveler deposit when the current config deposit changes', () => {
     const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, { ...config, depositPerPax: 15000 });
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing.depositDue).toBe(20000);
   });
   it('warns when a paid-up application now totals more than was paid', () => {
     const grown = { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } };
     const paid: ApplicationRecord = { ...app, status: 'fully_paid', paidTotal: 78000 };
     const r = recalculate(paid, grown, config);
-    if ('error' in r) throw new Error(r.error);
-    expect(r.warnings).toEqual(['New total PHP 146,000 is more than the PHP 78,000 paid — review the status.']);
+    if ('error' in r) throw new Error(en(r.error));
+    expect(r.warnings.map(en)).toEqual(['New total PHP 146,000 is more than the PHP 78,000 paid — review the status.']);
     const confirmed: ApplicationRecord = { ...app, status: 'confirmed', paidTotal: 78000 };
     const c = recalculate(confirmed, grown, config);
-    if ('error' in c) throw new Error(c.error);
+    if ('error' in c) throw new Error(en(c.error));
     expect(c.warnings).toHaveLength(1);
   });
   it('warns when added travelers push the deposit due above what was paid', () => {
     const grown = { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } };
     const paid: ApplicationRecord = { ...app, status: 'deposit_paid', paidTotal: 10000 };
     const r = recalculate(paid, grown, config);
-    if ('error' in r) throw new Error(r.error);
-    expect(r.warnings).toEqual(['Deposit now due is PHP 20,000; PHP 10,000 has been paid.']);
+    if ('error' in r) throw new Error(en(r.error));
+    expect(r.warnings.map(en)).toEqual(['Deposit now due is PHP 20,000; PHP 10,000 has been paid.']);
+    expect(translate('ko', r.warnings[0])).toBe('현재 예약금은 PHP 20,000이며, 입금액은 PHP 10,000입니다.');
     const noChange = recalculate(paid, { counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 } }, config);
-    if ('error' in noChange) throw new Error(noChange.error);
+    if ('error' in noChange) throw new Error(en(noChange.error));
     expect(noChange.warnings).toEqual([]);
     const early = recalculate({ ...app, paidTotal: 0 }, grown, config);
-    if ('error' in early) throw new Error(early.error);
+    if ('error' in early) throw new Error(en(early.error));
     expect(early.warnings).toEqual([]);
   });
   it('gives no warning for an unpaid application', () => {
     const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, config);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.warnings).toEqual([]);
   });
 });
@@ -93,7 +103,7 @@ describe('recalculate', () => {
 describe('recalculate with children and infants', () => {
   it('prices new categories with the original promo (no infant discount) and original per-traveler deposit', () => {
     const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 1 } }, config);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.travelers.map((t) => t.category)).toEqual(['full', 'child', 'infant']);
     expect(r.pricing.lines.map((l) => [l.category, l.amount])).toEqual([['full', 80000], ['child', 50000], ['infant', 8000]]);
     expect(r.pricing.promo).toMatchObject({ code: 'TA-OLD', discountTotal: 4000 }); // 2,000 × 2 (유아 제외)
@@ -116,19 +126,19 @@ describe('recalculate with children and infants', () => {
       },
     };
     const r = recalculate(family, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 1 } }, { ...config, depositPerPax: 99999 });
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing.depositDue).toBe(10000 + 10000 + 8000);
   });
   it('applies the shared adult rules', () => {
-    expect(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, child: 1, infant: 0 } }, config)).toEqual({ error: 'Children and infants must travel with at least one adult.' });
-    expect(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 2 } }, config)).toEqual({ error: 'Each infant must travel with an adult (one infant per adult).' });
+    expect(errorText(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, child: 1, infant: 0 } }, config))).toBe('Children and infants must travel with at least one adult.');
+    expect(errorText(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 2 } }, config))).toBe('Each infant must travel with an adult (one infant per adult).');
   });
   it('refuses to price a category the departure has no price for', () => {
     const legacy: TourConfig = { ...config, departures: [{ ...config.departures[0], prices: { full: 80000, tenK: 75000, companion: 70000 } as TourConfig['departures'][0]['prices'] }] };
     expect(recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, legacy)).not.toHaveProperty('error');
-    expect(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 0 } }, legacy)).toEqual({
-      error: 'This departure has no price for Child (under 12). Set it in Tour settings first.',
-    });
+    expect(errorText(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 0 } }, legacy))).toBe(
+      'This departure has no price for Child (under 12). Set it in Tour settings first.',
+    );
   });
   it('applies counts with new categories transactionally', () => {
     const plan = planCountsApply(app, app.counts, { full: 1, tenK: 0, companion: 0, child: 0, infant: 1 }, config);
@@ -158,14 +168,14 @@ describe('repriceForTravelers with children and infants', () => {
   };
   it('charges a single supplement for a child room and keeps the capped deposit', () => {
     const r = repriceForTravelers(family, [{ category: 'full', room: 'twin' }, { category: 'child', room: 'single' }, { category: 'infant' }], config);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing.singleSupplements).toBe(15000);
     expect(r.pricing.total).toBe(153000);
     expect(r.pricing.depositDue).toBe(28000);
   });
   it('ignores a room on an infant (no room choice)', () => {
     const r = repriceForTravelers(family, [{ category: 'full', room: 'twin' }, { category: 'child', room: 'twin' }, { category: 'infant', room: 'single' }], config);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing).toEqual(family.pricing);
     expect(r.travelers[2].room).toBeUndefined();
   });
@@ -188,13 +198,13 @@ describe('repriceForTravelers', () => {
   const changed: TourConfig = { ...config, depositPerPax: 99999, departures: [{ ...config.departures[0], prices: { full: 90000, tenK: 85000, companion: 80000, child: 50000, infant: 8000 } }] };
   it('keeps snapshot pricing for a name-only edit even when config prices changed', () => {
     const r = repriceForTravelers(snap, [{ category: 'full', passportName: 'A EDITED', room: 'twin' }, { category: 'full', room: 'twin' }], changed);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing).toEqual(snap.pricing);
     expect(r.travelers[0].passportName).toBe('A EDITED');
   });
   it('only moves single supplements/subtotal/total when a room becomes single', () => {
     const r = repriceForTravelers(snap, [{ category: 'full', room: 'single' }, { category: 'full', room: 'twin' }], changed);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing.lines).toEqual(snap.pricing.lines);
     expect(r.pricing.promo).toEqual(snap.pricing.promo);
     expect(r.pricing.singleSupplements).toBe(15000);
@@ -210,18 +220,18 @@ describe('repriceForTravelers', () => {
     };
     const gone = { ...config, departures: [] };
     const two = repriceForTravelers(withSingle, [{ category: 'full', room: 'single' }, { category: 'full', room: 'single' }], gone);
-    if ('error' in two) throw new Error(two.error);
+    if ('error' in two) throw new Error(en(two.error));
     expect(two.pricing.singleSupplements).toBe(24000);
     expect(two.pricing.total).toBe(160000);
     const none = repriceForTravelers(snap, [{ category: 'full', room: 'single' }, { category: 'full' }], gone);
-    if ('error' in none) throw new Error(none.error);
+    if ('error' in none) throw new Error(en(none.error));
     expect(none.pricing.singleSupplements).toBe(0);
     expect(none.pricing).toEqual(snap.pricing);
   });
   it('warns like recalculate when a paid-up application now totals more than was paid', () => {
     const paid: ApplicationRecord = { ...snap, status: 'fully_paid', paidTotal: 136000 };
     const r = repriceForTravelers(paid, [{ category: 'full', room: 'single' }, { category: 'full', room: 'twin' }], config);
-    if ('error' in r) throw new Error(r.error);
+    if ('error' in r) throw new Error(en(r.error));
     expect(r.warnings).toHaveLength(1);
   });
 });
@@ -251,7 +261,7 @@ describe('transactional plans', () => {
     if (!('fields' in plan)) throw new Error('expected fields');
     expect(plan.fields).toMatchObject({ counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, pricing: { total: 230000 } });
     expect(planCountsApply({ ...two, counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 } }, two.counts, { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, config)).toEqual({ conflict: true });
-    expect(planCountsApply(two, two.counts, { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 }, config)).toMatchObject({ error: expect.any(String) });
+    expect(planCountsApply(two, two.counts, { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 }, config)).toMatchObject({ error: { key: 'counts.error.atLeastOne' } });
   });
 });
 
@@ -322,7 +332,7 @@ describe('payments', () => {
 
 describe('statusChangeWarnings', () => {
   it('warns when confirming with missing traveler info or unpaid balance', () => {
-    expect(statusChangeWarnings(app, 'confirmed')).toEqual([
+    expect(statusChangeWarnings(app, 'confirmed').map(en)).toEqual([
       'Traveler details are incomplete (1/8).',
       'Only PHP 0 of PHP 78,000 has been recorded as paid.',
     ]);
@@ -339,8 +349,8 @@ describe('lead and traveler edits', () => {
     expect(normalizeLead({ ...app.lead, phoneDial: ' +63 ' }).phoneDial).toBe('+63');
   });
   it('uses a character-cleanup message for control characters and a length message for overlong text', () => {
-    expect(validateTravelers([{ category: 'full', nationality: 'PH\u0007' }], '2026-10-20')).toEqual({ 'travelers.0.nationality': 'Remove unusual characters.' });
-    expect(validateTravelers([{ category: 'full', nationality: 'x'.repeat(61) }], '2026-10-20')).toEqual({ 'travelers.0.nationality': 'Max 60 characters.' });
+    expect(texts(validateTravelers([{ category: 'full', nationality: 'PH\u0007' }], '2026-10-20'))).toEqual({ 'travelers.0.nationality': 'Remove unusual characters.' });
+    expect(texts(validateTravelers([{ category: 'full', nationality: 'x'.repeat(61) }], '2026-10-20'))).toEqual({ 'travelers.0.nationality': 'Max 60 characters.' });
   });
   it('validates lead fields with the shared rules', () => {
     expect(validateLead(app.lead)).toEqual({});
@@ -348,9 +358,29 @@ describe('lead and traveler edits', () => {
   });
   it('validates only filled traveler fields', () => {
     expect(validateTravelers([{ category: 'full' }], '2026-10-20')).toEqual({});
-    expect(validateTravelers([{ category: 'full', passportName: 'www.x.com', dob: '2027-02-30' }], '2026-10-20')).toEqual({
-      'travelers.0.passportName': expect.any(String),
-      'travelers.0.dob': expect.any(String),
+    expect(texts(validateTravelers([{ category: 'full', passportName: 'www.x.com', dob: '2027-02-30' }], '2026-10-20'))).toEqual({
+      'travelers.0.passportName': 'Check the passport name.',
+      'travelers.0.dob': 'Invalid date of birth.',
     });
+  });
+});
+
+describe('countsError', () => {
+  it('reports an error exactly when the shared validateCounts does, with the same English text', () => {
+    const cases: Counts[] = [
+      { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
+      { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 },
+      { full: 11, tenK: 0, companion: 0, child: 0, infant: 0 },
+      { full: 0, tenK: 0, companion: 0, child: 1, infant: 0 },
+      { full: 1, tenK: 0, companion: 0, child: 0, infant: 2 },
+      { full: 1, tenK: 0, companion: 1, child: 1, infant: 2 },
+    ];
+    for (const c of cases) {
+      const m = countsError(c);
+      expect(m && en(m)).toBe(validateCounts(c));
+    }
+  });
+  it('flags a non-integer count', () => {
+    expect(countsError({ full: 1.5, tenK: 0, companion: 0, child: 0, infant: 0 })).toMatchObject({ key: 'counts.error.invalid' });
   });
 });

@@ -1,17 +1,22 @@
-import { CATEGORIES, CATEGORY_LABELS, formatPHP } from '@unik/shared/domain';
+import { CATEGORIES, formatPHP } from '@unik/shared/domain';
 import type { Category, Counts, PaymentMethod, PaymentType, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
+import { CATEGORY_KEYS } from './format';
+import { msg } from './i18n/translate';
+import type { MessageKey, Msg } from './i18n/translate';
 
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  maya_link: 'Maya payment link',
-  maya_qr: 'Maya QR',
-  maya_terminal: 'Maya terminal',
-  bank_transfer: 'Bank transfer',
-  cash: 'Cash',
-  maya_checkout: 'Maya Checkout (online)',
+/** 결제 수단 이름의 번역 키 */
+export const PAYMENT_METHOD_KEYS: Record<PaymentMethod, MessageKey> = {
+  maya_link: 'paymentMethod.maya_link',
+  maya_qr: 'paymentMethod.maya_qr',
+  maya_terminal: 'paymentMethod.maya_terminal',
+  bank_transfer: 'paymentMethod.bank_transfer',
+  cash: 'paymentMethod.cash',
+  maya_checkout: 'paymentMethod.maya_checkout',
 };
 
-export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = { deposit: 'Deposit', balance: 'Balance', other: 'Other' };
+/** 결제 유형 이름의 번역 키 */
+export const PAYMENT_TYPE_KEYS: Record<PaymentType, MessageKey> = { deposit: 'paymentType.deposit', balance: 'paymentType.balance', other: 'paymentType.other' };
 
 export interface DroppedTraveler {
   /** app.travelers 안의 1부터 시작하는 위치 (카드 번호와 동일) */
@@ -42,15 +47,15 @@ export function droppedTravelers(travelers: Traveler[], newCounts: Counts): Drop
   return dropped;
 }
 
-export function droppedWarning(d: DroppedTraveler): string {
-  const what = d.name ?? (d.hasDetails ? 'unnamed traveler with partial details' : 'no details');
-  return `Traveler ${d.position} (${CATEGORY_LABELS[d.category]}) details will be removed: ${what}.`;
+export function droppedWarning(d: DroppedTraveler): Msg {
+  const what = d.name ?? msg(d.hasDetails ? 'detail.dropped.partial' : 'detail.dropped.noDetails');
+  return msg('detail.dropped', { n: d.position, category: msg(CATEGORY_KEYS[d.category]), what });
 }
 
 /** 지급액이 새 총액보다 많으면 안내 문구 (환불 검토) */
-export function paidExceedsNote(paidTotal: number, newTotal: number): string | null {
+export function paidExceedsNote(paidTotal: number, newTotal: number): Msg | null {
   if (newTotal >= paidTotal) return null;
-  return `Paid amount exceeds the new total by ${formatPHP(paidTotal - newTotal)} — consider a refund.`;
+  return msg('detail.paidExceeds', { amount: formatPHP(paidTotal - newTotal) });
 }
 
 /** YYYY-MM-DD(마닐라 날짜)를 그날 12:00 마닐라(= 04:00Z)로. 잘못된 날짜는 null. */
