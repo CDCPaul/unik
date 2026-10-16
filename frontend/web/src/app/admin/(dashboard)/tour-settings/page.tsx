@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import { CATEGORIES, CATEGORY_LABELS, CATEGORY_SHORT_LABELS, formatPHP, isValidPrice } from '@unik/shared/domain';
+import { CATEGORIES, formatPHP, isValidPrice } from '@unik/shared/domain';
 import type { Availability, Category, Departure, TourConfig } from '@unik/shared/domain';
 import { getCurrentUser } from '@/lib/auth';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
@@ -12,22 +12,22 @@ import type { DepartureUsage } from '@/lib/admin/tourSettings';
 import { subscribeApplications } from '@/lib/services/admin/applications';
 import { saveTourConfig, subscribeAvailability, subscribeTourConfig } from '@/lib/services/admin/tourConfig';
 import type { TourConfigMeta } from '@/lib/services/admin/tourConfig';
+import { CATEGORY_SHORT_KEYS } from '@/lib/admin/format';
+import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
+import type { MessageKey, Msg } from '@/lib/admin/i18n/translate';
 
 // 잘못된 입력은 NaN 으로 두어 validateTourConfig 가 오류로 표시하게 한다 (저장 시에만 변환)
 const num = (raw: string): number => (raw.trim() === '' || raw.trim() === '0' ? 0 : parseAmount(raw) ?? NaN);
 // 가격은 다섯 유형 모두 필수: 빈 칸은 0 이 아니라 오류
 const priceNum = (raw: string): number => (raw.trim() === '' ? NaN : num(raw));
 
-const PRICE_FIELD_LABELS: Record<Category, string> = {
-  full: 'Full marathon',
-  tenK: '10K',
-  companion: 'Companion',
-  child: CATEGORY_LABELS.child,
-  infant: CATEGORY_LABELS.infant,
+const PRICE_FIELD_LABELS: Record<Category, MessageKey> = {
+  full: 'tour.departure.price.full',
+  tenK: 'tour.departure.price.tenK',
+  companion: 'tour.departure.price.companion',
+  child: 'tour.departure.price.child',
+  infant: 'tour.departure.price.infant',
 };
-
-const STALE_MESSAGE = 'Tour settings were changed by someone else. Reload to see their changes before saving.';
-const IN_USE_HINT = 'Has applications — close it instead (untick Open).';
 
 // 숫자 칸은 입력 중인 문자열 그대로 보관한다.
 type FormDeparture = Omit<Departure, 'seatCapacity' | 'prices' | 'singleSupplement'> & {
@@ -106,6 +106,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 type Loaded = { exists: boolean; updatedAtMs: number | null };
 
 export default function TourSettingsPage() {
+  const { t } = useAdminT();
   const [form, setForm] = useState<FormState | null>(null);
   const [base, setBase] = useState<TourConfig>(defaultTourConfig);
   const [exists, setExists] = useState(true);
@@ -113,10 +114,10 @@ export default function TourSettingsPage() {
   const [apps, setApps] = useState<ApplicationRecord[]>([]);
   const [appsLoaded, setAppsLoaded] = useState(false);
   const [availability, setAvailability] = useState<Availability | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState('');
+  const [errors, setErrors] = useState<Record<string, Msg>>({});
+  const [message, setMessage] = useState<MessageKey | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState('');
+  const [loadError, setLoadError] = useState<MessageKey | null>(null);
   const [stale, setStale] = useState(false);
 
   // 폼을 채운 시점의 서버 상태 / 최신 스냅샷 / 내 저장 직후 스냅샷 흡수 여부
@@ -132,7 +133,7 @@ export default function TourSettingsPage() {
     setSavedIds(c?.departures.map((d) => d.id) ?? []);
     setStale(false);
     setErrors({});
-    setMessage('');
+    setMessage(null);
     loadedRef.current = { exists: c !== null, updatedAtMs: meta.updatedAtMs };
   }, []);
 
@@ -155,14 +156,14 @@ export default function TourSettingsPage() {
         }
         setStale(true);
       },
-      () => setLoadError('Could not load tour settings.'),
+      () => setLoadError('tour.loadFailed'),
     );
     const offApps = subscribeApplications(
       (list) => {
         setApps(list);
         setAppsLoaded(true);
       },
-      () => setLoadError('Could not load applications.'),
+      () => setLoadError('common.loadApplicationsFailed'),
     );
     const offAv = subscribeAvailability(setAvailability);
     return () => {
@@ -174,14 +175,14 @@ export default function TourSettingsPage() {
 
   const usage: DepartureUsage = useMemo(() => computeDepartureUsage(apps), [apps]);
 
-  if (loadError) return <p className="admin-card p-6 text-red-600">{loadError}</p>;
-  if (!form || !appsLoaded) return <Loader2 aria-label="Loading" className="h-6 w-6 animate-spin text-slate-400" />;
+  if (loadError) return <p className="admin-card p-6 text-red-600">{t(loadError)}</p>;
+  if (!form || !appsLoaded) return <Loader2 aria-label={t('common.loading')} className="h-6 w-6 animate-spin text-slate-400" />;
 
   // 편집하면 이전 저장 결과/오류 표시를 지운다
   const edit = (fn: (f: FormState) => FormState) => {
     setForm(fn(form));
     setErrors({});
-    setMessage('');
+    setMessage(null);
   };
   const setDep = (i: number, patch: Partial<FormDeparture>) =>
     edit((f) => ({ ...f, departures: f.departures.map((d, j) => (j === i ? { ...d, ...patch } : d)) }));
@@ -194,82 +195,85 @@ export default function TourSettingsPage() {
   async function save() {
     if (!form || !appsLoaded) return;
     if (stale) {
-      setMessage(STALE_MESSAGE);
+      setMessage('tour.stale');
       return;
     }
     const config = toConfig(form, base);
     const { errors: found, warnings } = validateTourConfig(config, usage);
     setErrors(found);
     if (Object.keys(found).length > 0) {
-      setMessage('Please fix the highlighted fields.');
+      setMessage('tour.fixFields');
       return;
     }
-    if (warnings.length > 0 && !window.confirm(`${warnings.join('\n')}\n\nSave anyway?`)) return;
+    if (warnings.length > 0 && !window.confirm(t('tour.saveAnyway', { warnings: warnings.map((w) => t(w)).join('\n') }))) return;
     setSaving(true);
-    setMessage('');
+    setMessage(null);
     adoptRef.current = true;
     try {
       await saveTourConfig(config, getCurrentUser()?.email ?? 'unknown');
       setSavedIds(config.departures.map((d) => d.id));
       setExists(true);
-      setMessage('Saved.');
+      setMessage('tour.saved');
     } catch (e) {
       console.error(e);
       adoptRef.current = false;
-      setMessage('Save failed. Please try again.');
+      setMessage('common.saveFailed');
     } finally {
       setSaving(false);
     }
   }
 
+  const err = (k: string) => (errors[k] ? t(errors[k]) : undefined);
+  const inUseHint = t('tour.inUseHint');
+
   return (
     <div className="flex max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">Tour settings</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{t('nav.tourSettings')}</h1>
         <div className="flex items-center gap-3">
-          {message ? <span role="status" className="text-sm font-semibold text-slate-600">{message}</span> : null}
+          {message ? <span role="status" className="text-sm font-semibold text-slate-600">{t(message)}</span> : null}
           <button type="button" onClick={() => void save()} disabled={saving} className="admin-btn-primary">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {t('common.save')}
           </button>
         </div>
       </div>
       {stale ? (
         <div role="alert" className="admin-card flex flex-wrap items-center justify-between gap-3 border border-amber-300 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
-          <span>{STALE_MESSAGE}</span>
-          <button type="button" className="admin-btn-secondary" onClick={reload}>Reload</button>
+          <span>{t('tour.stale')}</span>
+          <button type="button" className="admin-btn-secondary" onClick={reload}>{t('common.reload')}</button>
         </div>
       ) : null}
-      {!exists ? <p className="admin-card p-4 text-sm text-amber-800">Not set up yet — fill in and save.</p> : null}
+      {!exists ? <p className="admin-card p-4 text-sm text-amber-800">{t('tour.notSetUp')}</p> : null}
 
       <section className="admin-card grid gap-4 p-6 sm:grid-cols-2">
-        <h2 className="text-lg font-bold text-slate-900 sm:col-span-2">Applications</h2>
+        <h2 className="text-lg font-bold text-slate-900 sm:col-span-2">{t('tour.applications')}</h2>
         <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 sm:col-span-2">
           <input type="checkbox" className="h-5 w-5" checked={form.acceptingApplications} onChange={(e) => edit((f) => ({ ...f, acceptingApplications: e.target.checked }))} />
-          Accepting applications on the website
+          {t('tour.accepting')}
         </label>
-        <Field label="Deposit per traveler (PHP)" error={errors.depositPerPax}>
+        <Field label={t('tour.depositPerPax')} error={err('depositPerPax')}>
           <input className="admin-input" inputMode="numeric" value={form.depositPerPax} onChange={(e) => edit((f) => ({ ...f, depositPerPax: e.target.value }))} />
         </Field>
-        <Field label={`Race bibs (used ${availability?.bibsUsed ?? 0})`} error={errors['bibQuota.total']}>
+        <Field label={t('tour.bibs', { n: availability?.bibsUsed ?? 0 })} error={err('bibQuota.total')}>
           <input className="admin-input" inputMode="numeric" value={form.bibTotal} onChange={(e) => edit((f) => ({ ...f, bibTotal: e.target.value }))} />
         </Field>
-        <Field label="Maya payment link (optional)" error={errors.mayaPaymentLinkBase}>
+        <Field label={t('tour.maya')} error={err('mayaPaymentLinkBase')}>
           <input className="admin-input" placeholder="https://mymaya.me/yourstore" value={form.maya} onChange={(e) => edit((f) => ({ ...f, maya: e.target.value }))} />
         </Field>
-        <Field label="Staff notification emails (one per line)" error={errors.notifyEmails}>
+        <Field label={t('tour.notifyEmails')} error={err('notifyEmails')}>
           <textarea className="admin-input" rows={3} value={form.emails} onChange={(e) => edit((f) => ({ ...f, emails: e.target.value }))} />
         </Field>
       </section>
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Departures</h2>
+          <h2 className="text-lg font-bold text-slate-900">{t('tour.departures')}</h2>
           <button type="button" className="admin-btn-secondary" onClick={() => edit((f) => ({ ...f, departures: [...f.departures, toFormDeparture(newDeparture())] }))}>
-            <Plus className="h-4 w-4" /> Add departure
+            <Plus className="h-4 w-4" /> {t('tour.addDeparture')}
           </button>
         </div>
         {errors['departures.removed'] ? (
-          <p role="alert" className="admin-card p-4 text-sm font-semibold text-red-600">{errors['departures.removed']}</p>
+          <p role="alert" className="admin-card p-4 text-sm font-semibold text-red-600">{err('departures.removed')}</p>
         ) : null}
         {form.departures.map((d, i) => {
           const p = `departures.${i}`;
@@ -277,53 +281,53 @@ export default function TourSettingsPage() {
           const removable = canRemoveDeparture(usage, d.id);
           return (
             <div key={i} className="admin-card grid gap-4 p-6 sm:grid-cols-3">
-              <Field label="ID" error={errors[`${p}.id`]}>
+              <Field label={t('tour.departure.id')} error={err(`${p}.id`)}>
                 <input className="admin-input" value={d.id} readOnly={locked} onChange={(e) => setDep(i, { id: e.target.value.trim().toLowerCase() })} />
               </Field>
-              <Field label="Label" error={errors[`${p}.label`]}>
+              <Field label={t('tour.departure.label')} error={err(`${p}.label`)}>
                 <input className="admin-input" value={d.label} onChange={(e) => setDep(i, { label: e.target.value })} />
               </Field>
               <label className="flex items-center gap-2 self-end pb-2 text-sm font-semibold text-slate-800">
-                <input type="checkbox" className="h-5 w-5" checked={d.isOpen} onChange={(e) => setDep(i, { isOpen: e.target.checked })} /> Open for applications
+                <input type="checkbox" className="h-5 w-5" checked={d.isOpen} onChange={(e) => setDep(i, { isOpen: e.target.checked })} /> {t('tour.departure.open')}
               </label>
-              <Field label="Depart" error={errors[`${p}.departDate`]}>
+              <Field label={t('tour.departure.depart')} error={err(`${p}.departDate`)}>
                 <input type="date" className="admin-input" value={d.departDate} onChange={(e) => setDep(i, { departDate: e.target.value })} />
               </Field>
-              <Field label="Return" error={errors[`${p}.returnDate`]}>
+              <Field label={t('tour.departure.return')} error={err(`${p}.returnDate`)}>
                 <input type="date" className="admin-input" value={d.returnDate} onChange={(e) => setDep(i, { returnDate: e.target.value })} />
               </Field>
-              <Field label={`Seats (taken ${usage[d.id]?.seatsUsed ?? 0})`} error={errors[`${p}.seatCapacity`]}>
+              <Field label={t('tour.departure.seats', { n: usage[d.id]?.seatsUsed ?? 0 })} error={err(`${p}.seatCapacity`)}>
                 <input className="admin-input" inputMode="numeric" value={d.seatCapacity} onChange={(e) => setDep(i, { seatCapacity: e.target.value })} />
               </Field>
               {CATEGORIES.map((k) => (
-                <Field key={k} label={`${PRICE_FIELD_LABELS[k]} price (PHP)`} error={errors[`${p}.prices.${k}`]}>
+                <Field key={k} label={t(PRICE_FIELD_LABELS[k])} error={err(`${p}.prices.${k}`)}>
                   <input className="admin-input" inputMode="numeric" value={d.prices[k]} onChange={(e) => setDep(i, { prices: { ...d.prices, [k]: e.target.value } })} />
                 </Field>
               ))}
-              <Field label="Single room supplement (PHP)" error={errors[`${p}.singleSupplement`]}>
+              <Field label={t('tour.departure.single')} error={err(`${p}.singleSupplement`)}>
                 <input className="admin-input" inputMode="numeric" value={d.singleSupplement} onChange={(e) => setDep(i, { singleSupplement: e.target.value })} />
               </Field>
               <div className="sm:col-span-2">
-                <Field label="Flight info (shown on the Tour page)">
+                <Field label={t('tour.departure.flightInfo')}>
                   <textarea className="admin-input" rows={2} value={d.flightInfo} onChange={(e) => setDep(i, { flightInfo: e.target.value })} />
                 </Field>
               </div>
               <div className="flex items-start justify-between gap-3 sm:col-span-3">
                 <p className="text-xs text-slate-500">
-                  Prices: {CATEGORIES.map((k) => `${CATEGORY_SHORT_LABELS[k]} ${priceLabel(d.prices[k])}`).join(' / ')}
+                  {t('tour.departure.prices', { list: CATEGORIES.map((k) => t('tour.departure.priceItem', { category: { key: CATEGORY_SHORT_KEYS[k] }, price: priceLabel(d.prices[k]) })).join(' / ') })}
                 </p>
                 <div className="flex flex-col items-end gap-1">
                   <button
                     type="button"
                     className="admin-btn-danger disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={!removable}
-                    aria-label={`Remove departure ${d.label || d.id}`}
-                    title={removable ? 'Remove departure' : IN_USE_HINT}
+                    aria-label={t('tour.departure.removeLabel', { name: d.label || d.id })}
+                    title={removable ? t('tour.departure.removeTitle') : inUseHint}
                     onClick={() => edit((f) => ({ ...f, departures: f.departures.filter((_, j) => j !== i) }))}
                   >
-                    <Trash2 className="h-4 w-4" /> Remove
+                    <Trash2 className="h-4 w-4" /> {t('tour.departure.remove')}
                   </button>
-                  {!removable ? <p className="text-xs text-slate-500">{IN_USE_HINT}</p> : null}
+                  {!removable ? <p className="text-xs text-slate-500">{inUseHint}</p> : null}
                 </div>
               </div>
             </div>

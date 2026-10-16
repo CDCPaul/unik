@@ -191,7 +191,6 @@ export const en = {
   'detail.emails.state.sent': 'sent',
   'detail.emails.state.skipped': 'skipped',
   'detail.emails.state.failed': 'failed',
-  'detail.emails.state.unknown': 'unknown',
 
   // 참가자 카드
   'traveler.title': 'Traveler {n}',

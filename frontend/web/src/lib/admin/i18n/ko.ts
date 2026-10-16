@@ -193,7 +193,6 @@ export const ko: Record<MessageKey, string> = {
   'detail.emails.state.sent': '발송됨',
   'detail.emails.state.skipped': '건너뜀',
   'detail.emails.state.failed': '실패',
-  'detail.emails.state.unknown': '알 수 없음',
 
   // 참가자 카드
   'traveler.title': '참가자 {n}',

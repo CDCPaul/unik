@@ -15,7 +15,7 @@ const STATE_KEYS: Record<string, MessageKey> = {
 function Row({ label, state, error }: { label: string; state?: string; error?: string }) {
   const { t } = useAdminT();
   if (!state && !error) return null;
-  const stateText = state === undefined ? t('detail.emails.state.unknown') : STATE_KEYS[state] ? t(STATE_KEYS[state]) : state;
+  const stateText = state === undefined ? t('common.unknown') : STATE_KEYS[state] ? t(STATE_KEYS[state]) : state;
   return (
     <li>
       {label}: <span className={state === 'failed' ? 'font-semibold text-red-600' : ''}>{stateText}</span>
