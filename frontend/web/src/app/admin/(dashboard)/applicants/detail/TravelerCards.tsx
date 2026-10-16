@@ -46,6 +46,12 @@ function TravelerCard({
     <Field label={fieldLabel(k)} error={err(k)}><input className="admin-input !py-1.5" value={traveler[k] ?? ''} onChange={(e) => set(k, e.target.value)} /></Field>
   );
 
+  function displayValue(k: string, v: string | undefined): string {
+    if (!v) return '—';
+    if (k === 'gender' && (v === 'female' || v === 'male')) return t(`traveler.gender.${v}`);
+    if (k === 'room' && (v === 'twin' || v === 'single')) return t(`traveler.room.${v}`);
+    return v;
+  }
   return (
     <details className="rounded-lg border border-slate-200" open={editing || undefined}>
       <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-sm">
@@ -87,7 +93,7 @@ function TravelerCard({
         ) : (
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
             {([['passportName', traveler.passportName], ['dob', traveler.dob], ['gender', traveler.gender], ['nationality', traveler.nationality], ...(runner ? [['tshirtSize', traveler.tshirtSize], ['expectedFinish', traveler.expectedFinish]] : []), ...(roomChoice ? [['room', traveler.room]] : []), ['emergencyContact', traveler.emergencyContact]] as [string, string | undefined][]).map(([k, v]) => (
-              <div key={k} className="contents"><dt className="text-slate-500">{fieldLabel(k)}</dt><dd>{v || '—'}</dd></div>
+              <div key={k} className="contents"><dt className="text-slate-500">{fieldLabel(k)}</dt><dd>{displayValue(k, v)}</dd></div>
             ))}
             {runner && traveler.recentMarathon ? <div className="contents"><dt className="text-slate-500">{fieldLabel('recentMarathon')}</dt><dd>{traveler.recentMarathon}</dd></div> : null}
           </dl>
