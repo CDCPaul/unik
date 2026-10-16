@@ -7,11 +7,13 @@ import type { TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { subscribeApplications } from '@/lib/services/admin/applications';
 import { subscribeTourConfig } from '@/lib/services/admin/tourConfig';
+import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
 import { ApplicantsList } from './ApplicantsList';
 import { ApplicantDetail } from './ApplicantDetail';
 
 function Loader() {
-  return <Loader2 className="h-6 w-6 animate-spin text-slate-400" aria-label="Loading" role="status" />;
+  const { t } = useAdminT();
+  return <Loader2 className="h-6 w-6 animate-spin text-slate-400" aria-label={t('common.loading')} role="status" />;
 }
 
 // 2xl(1536px) 미만에서는 상세를 오버레이 드로어로 띄운다 (1366px 노트북에서 나란히 두면 좁다)
@@ -30,17 +32,18 @@ function useIsDrawer(): boolean {
 }
 
 function ApplicantsPageInner() {
+  const { t } = useAdminT();
   const router = useRouter();
   const params = useSearchParams();
   const selectedId = params.get('id');
   const [apps, setApps] = useState<ApplicationRecord[] | null>(null);
   const [config, setConfig] = useState<TourConfig | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const isDrawer = useIsDrawer();
   const prevSelected = useRef<string | null>(null);
 
   useEffect(() => {
-    const off1 = subscribeApplications(setApps, () => setError('Could not load applications. Check your connection and refresh.'));
+    const off1 = subscribeApplications(setApps, () => setError(true));
     const off2 = subscribeTourConfig(setConfig, () => undefined);
     return () => {
       off1();
@@ -86,7 +89,7 @@ function ApplicantsPageInner() {
     }
   }, [selectedId]);
 
-  if (error) return <p className="admin-card p-6 text-red-600">{error}</p>;
+  if (error) return <p className="admin-card p-6 text-red-600">{t('applicants.loadFailed')}</p>;
   if (!apps) return <Loader />;
 
   return (
@@ -98,7 +101,7 @@ function ApplicantsPageInner() {
         <>
           <div className="fixed inset-0 z-30 bg-slate-900/40 2xl:hidden" aria-hidden="true" onClick={() => select(null)} />
           <aside
-            aria-label={selected ? (isDrawer ? undefined : 'Applicant details') : 'Application not found'}
+            aria-label={selected ? (isDrawer ? undefined : t('applicants.detailsLabel')) : t('applicants.notFoundLabel')}
             role={isDrawer ? 'dialog' : undefined}
             aria-modal={isDrawer ? true : undefined}
             aria-labelledby={isDrawer && selected ? 'applicant-detail-heading' : undefined}
@@ -108,8 +111,8 @@ function ApplicantsPageInner() {
               <ApplicantDetail key={selected.id} app={selected} config={config} onClose={() => select(null)} />
             ) : (
               <div className="admin-card flex flex-col items-start gap-3 p-6 text-sm text-slate-600">
-                <p>Application not found. It may have been removed from this list.</p>
-                <button type="button" className="admin-btn-secondary" onClick={() => select(null)}>Back to list</button>
+                <p>{t('applicants.notFound')}</p>
+                <button type="button" className="admin-btn-secondary" onClick={() => select(null)}>{t('applicants.backToList')}</button>
               </div>
             )}
           </aside>

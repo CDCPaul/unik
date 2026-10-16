@@ -7,15 +7,19 @@ import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { leadChanges } from '@/lib/admin/detailHelpers';
 import { normalizeLead, validateLead } from '@/lib/admin/edits';
 import { updateApplicationFields } from '@/lib/services/admin/applications';
+import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
+import type { Msg } from '@/lib/admin/i18n/translate';
 import { Field, Section, SaveError, useSave } from './ui';
 
 type Lead = ApplicationRecord['lead'];
 
 export function ContactSection({ app }: { app: ApplicationRecord }) {
+  const { t } = useAdminT();
   const [draft, setDraft] = useState<Lead | null>(null);
   // 편집을 시작한 시점의 값. 저장 때 이것과 비교해야 다른 직원의 수정을 되돌리지 않는다.
   const [base, setBase] = useState<Lead | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, Msg>>({});
+  const err = (k: string) => (errors[k] ? t(errors[k]) : undefined);
   const { saving, failed, run, clearFailed } = useSave();
   const l = app.lead;
   const viber = l.viber ? viberLink(l.phoneDial, l.phoneNumber) : null;
@@ -40,11 +44,11 @@ export function ContactSection({ app }: { app: ApplicationRecord }) {
 
   if (!draft) {
     return (
-      <Section title="Contact" actions={<button type="button" className="admin-btn-secondary !px-3 !py-1 text-sm" onClick={start}><Pencil className="h-3.5 w-3.5" /> Edit</button>}>
+      <Section title={t('detail.contact.title')} actions={<button type="button" className="admin-btn-secondary !px-3 !py-1 text-sm" onClick={start}><Pencil className="h-3.5 w-3.5" /> {t('common.edit')}</button>}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-slate-500">Email</dt>
+          <dt className="text-slate-500">{t('detail.contact.email')}</dt>
           <dd className="break-all"><a className="text-blue-700 underline" href={`mailto:${l.email}`}>{l.email}</a></dd>
-          <dt className="text-slate-500">Phone</dt>
+          <dt className="text-slate-500">{t('detail.contact.phone')}</dt>
           <dd><a className="text-blue-700 underline" href={`tel:${tel}`}>{l.phoneDial} {l.phoneNumber}</a></dd>
         </dl>
         {viber || wa ? (
@@ -59,19 +63,19 @@ export function ContactSection({ app }: { app: ApplicationRecord }) {
 
   const set = <K extends keyof Lead>(k: K, v: Lead[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));
   return (
-    <Section title="Contact">
+    <Section title={t('detail.contact.title')}>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="First name" error={errors['lead.firstName']}><input className="admin-input" value={draft.firstName} onChange={(e) => set('firstName', e.target.value)} /></Field>
-        <Field label="Last name" error={errors['lead.lastName']}><input className="admin-input" value={draft.lastName} onChange={(e) => set('lastName', e.target.value)} /></Field>
-        <Field label="Email" className="col-span-2" error={errors['lead.email']}><input type="email" className="admin-input" value={draft.email} onChange={(e) => set('email', e.target.value)} /></Field>
-        <Field label="Country code"><input className="admin-input" value={draft.phoneDial} onChange={(e) => set('phoneDial', e.target.value)} /></Field>
-        <Field label="Mobile number" error={errors['lead.phoneNumber']}><input className="admin-input" inputMode="tel" value={draft.phoneNumber} onChange={(e) => set('phoneNumber', e.target.value)} /></Field>
+        <Field label={t('detail.contact.firstName')} error={err('lead.firstName')}><input className="admin-input" value={draft.firstName} onChange={(e) => set('firstName', e.target.value)} /></Field>
+        <Field label={t('detail.contact.lastName')} error={err('lead.lastName')}><input className="admin-input" value={draft.lastName} onChange={(e) => set('lastName', e.target.value)} /></Field>
+        <Field label={t('detail.contact.email')} className="col-span-2" error={err('lead.email')}><input type="email" className="admin-input" value={draft.email} onChange={(e) => set('email', e.target.value)} /></Field>
+        <Field label={t('detail.contact.countryCode')}><input className="admin-input" value={draft.phoneDial} onChange={(e) => set('phoneDial', e.target.value)} /></Field>
+        <Field label={t('detail.contact.mobile')} error={err('lead.phoneNumber')}><input className="admin-input" inputMode="tel" value={draft.phoneNumber} onChange={(e) => set('phoneNumber', e.target.value)} /></Field>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={draft.viber} onChange={(e) => set('viber', e.target.checked)} /> Viber</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={draft.whatsapp} onChange={(e) => set('whatsapp', e.target.checked)} /> WhatsApp</label>
       </div>
       <div className="mt-3 flex gap-2">
-        <button type="button" className="admin-btn-primary !py-1.5" disabled={saving} onClick={save}>{saving ? 'Saving…' : 'Save contact'}</button>
-        <button type="button" className="admin-btn-secondary !py-1.5" disabled={saving} onClick={cancel}>Cancel</button>
+        <button type="button" className="admin-btn-primary !py-1.5" disabled={saving} onClick={save}>{saving ? t('common.saving') : t('detail.contact.save')}</button>
+        <button type="button" className="admin-btn-secondary !py-1.5" disabled={saving} onClick={cancel}>{t('common.cancel')}</button>
       </div>
       <SaveError show={failed} />
     </Section>

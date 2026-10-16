@@ -27,6 +27,16 @@ import {
 } from '@/lib/services/admin/businessCards';
 import { COMPANY_INFO } from '@/lib/businessCardConfig';
 import type { BusinessCard } from '@unik/shared/types';
+import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
+import type { TFunction } from '@/lib/admin/i18n/translate';
+
+// 서비스가 던지는 영어 오류 중 직원이 마주칠 수 있는 것만 번역한다 (그 외는 원문 그대로)
+const SLUG_EXISTS = /^Slug "(.+)" already exists\.$/;
+function saveErrorText(error: unknown, t: TFunction): string {
+  if (!(error instanceof Error)) return t('cards.saveFailed');
+  const slug = SLUG_EXISTS.exec(error.message)?.[1];
+  return slug ? t('cards.error.slugExists', { slug }) : error.message;
+}
 
 type DraftCard = Partial<BusinessCard> & { _originalSlug?: string };
 
@@ -48,6 +58,7 @@ const emptyDraft = (): DraftCard => ({
 });
 
 export default function BusinessCardsAdminPage() {
+  const { t } = useAdminT();
   const [cards, setCards] = useState<BusinessCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [draft, setDraft] = useState<DraftCard | null>(null);
@@ -65,7 +76,7 @@ export default function BusinessCardsAdminPage() {
       setCards(await listBusinessCards());
     } catch (error) {
       console.error(error);
-      alert('Failed to load business cards');
+      alert(t('cards.loadFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -82,19 +93,19 @@ export default function BusinessCardsAdminPage() {
   async function handleSave() {
     if (!draft) return;
     if (!draft.slug || !isValidSlug(draft.slug)) {
-      alert('Slug는 영문 소문자 / 숫자 / 하이픈만 사용 가능합니다 (2~40자).');
+      alert(t('cards.error.slug'));
       return;
     }
     if (!draft.name?.trim()) {
-      alert('이름은 필수 입력 항목입니다.');
+      alert(t('cards.error.name'));
       return;
     }
     if (!draft.phone?.trim()) {
-      alert('휴대폰 번호는 필수 입력 항목입니다.');
+      alert(t('cards.error.phone'));
       return;
     }
     if (!draft.email?.trim()) {
-      alert('이메일은 필수 입력 항목입니다.');
+      alert(t('cards.error.email'));
       return;
     }
 
@@ -135,14 +146,14 @@ export default function BusinessCardsAdminPage() {
       setDraft(null);
     } catch (error) {
       console.error(error);
-      alert(error instanceof Error ? error.message : 'Failed to save');
+      alert(saveErrorText(error, t));
     } finally {
       setIsSaving(false);
     }
   }
 
   async function handleDelete(card: BusinessCard) {
-    if (!confirm(`"${card.name}" 명함을 삭제할까요? URL(${card.slug})도 함께 사라집니다.`)) {
+    if (!confirm(t('cards.deleteConfirm', { name: card.name, slug: card.slug }))) {
       return;
     }
     try {
@@ -150,14 +161,14 @@ export default function BusinessCardsAdminPage() {
       await reload();
     } catch (error) {
       console.error(error);
-      alert('Failed to delete');
+      alert(t('cards.deleteFailed'));
     }
   }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !draft?.slug) {
-      if (!draft?.slug) alert('사진 업로드 전에 Slug를 먼저 입력해주세요.');
+      if (!draft?.slug) alert(t('cards.error.slugBeforePhoto'));
       return;
     }
     setIsUploading(true);
@@ -166,7 +177,7 @@ export default function BusinessCardsAdminPage() {
       setDraft({ ...draft, photoUrl: url });
     } catch (error) {
       console.error(error);
-      alert('Failed to upload photo');
+      alert(t('cards.uploadFailed'));
     } finally {
       setIsUploading(false);
     }
@@ -179,7 +190,7 @@ export default function BusinessCardsAdminPage() {
       setCopiedSlug(slug);
       setTimeout(() => setCopiedSlug((curr) => (curr === slug ? null : curr)), 1500);
     } catch {
-      window.prompt('Copy this URL:', url);
+      window.prompt(t('cards.copyUrlPrompt'), url);
     }
   }
 
@@ -188,14 +199,14 @@ export default function BusinessCardsAdminPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Business Cards</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t('nav.businessCards')}</h1>
           <p className="text-slate-500 mt-1">
-            NFC 모바일 명함 — <code className="text-xs">/profile/{'{slug}'}</code>
+            {t('cards.subtitle')} <code className="text-xs">/profile/{'{slug}'}</code>
           </p>
         </div>
         <button onClick={handleAdd} className="admin-btn-primary">
           <Plus className="w-4 h-4" />
-          명함 추가
+          {t('cards.add')}
         </button>
       </div>
 
@@ -207,7 +218,7 @@ export default function BusinessCardsAdminPage() {
       ) : cards.length === 0 ? (
         <div className="admin-card p-12 text-center">
           <UserCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500">아직 등록된 명함이 없습니다.</p>
+          <p className="text-slate-500">{t('cards.empty')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -242,7 +253,7 @@ export default function BusinessCardsAdminPage() {
                     <h3 className="font-bold text-slate-900 truncate">{card.name}</h3>
                     {!card.isActive && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                        비활성
+                        {t('cards.inactive')}
                       </span>
                     )}
                   </div>
@@ -263,7 +274,8 @@ export default function BusinessCardsAdminPage() {
                 <button
                   onClick={() => copyProfileUrl(card.slug)}
                   className="text-slate-500 hover:text-blue-600 transition-colors shrink-0"
-                  title="URL 복사"
+                  title={t('cards.copyUrl')}
+                  aria-label={t('cards.copyUrl')}
                 >
                   {copiedSlug === card.slug ? (
                     <Check className="w-4 h-4 text-green-600" />
@@ -281,21 +293,21 @@ export default function BusinessCardsAdminPage() {
                   className="admin-btn-secondary text-xs py-2"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  미리보기
+                  {t('cards.preview')}
                 </a>
                 <button
                   onClick={() => handleEdit(card)}
                   className="admin-btn-secondary text-xs py-2"
                 >
                   <Edit className="w-3 h-3" />
-                  수정
+                  {t('common.edit')}
                 </button>
                 <button
                   onClick={() => handleDelete(card)}
                   className="inline-flex items-center justify-center gap-1 text-xs py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                 >
                   <Trash2 className="w-3 h-3" />
-                  삭제
+                  {t('common.delete')}
                 </button>
               </div>
             </motion.div>
@@ -314,11 +326,12 @@ export default function BusinessCardsAdminPage() {
             <div className="p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900">
-                  {draft._originalSlug ? '명함 수정' : '명함 추가'}
+                  {draft._originalSlug ? t('cards.editTitle') : t('cards.add')}
                 </h2>
                 <button
                   onClick={() => setDraft(null)}
                   className="p-2 hover:bg-slate-100 rounded-lg"
+                  aria-label={t('common.close')}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -328,8 +341,8 @@ export default function BusinessCardsAdminPage() {
             <div className="p-6 space-y-5">
               {/* Slug */}
               <Field
-                label="URL Slug *"
-                hint="예: gildong-hong → /profile/gildong-hong"
+                label={t('cards.field.slug')}
+                hint={t('cards.field.slugHint')}
               >
                 <input
                   className="admin-input"
@@ -342,12 +355,12 @@ export default function BusinessCardsAdminPage() {
               </Field>
 
               {/* Photo */}
-              <Field label="프로필 사진" hint="선택. JPG/PNG 권장 600x600">
+              <Field label={t('cards.field.photo')} hint={t('cards.field.photoHint')}>
                 <div className="flex items-center gap-4">
                   {draft.photoUrl ? (
                     <Image
                       src={draft.photoUrl}
-                      alt="profile"
+                      alt={t('cards.field.photoAlt')}
                       width={80}
                       height={80}
                       sizes="80px"
@@ -362,12 +375,12 @@ export default function BusinessCardsAdminPage() {
                     {isUploading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        업로드 중...
+                        {t('cards.field.uploading')}
                       </>
                     ) : (
                       <>
                         <Upload className="w-4 h-4" />
-                        사진 업로드
+                        {t('cards.field.uploadPhoto')}
                       </>
                     )}
                     <input
@@ -383,7 +396,7 @@ export default function BusinessCardsAdminPage() {
                       onClick={() => setDraft({ ...draft, photoUrl: '' })}
                       className="text-xs text-red-500 hover:underline"
                     >
-                      제거
+                      {t('cards.field.removePhoto')}
                     </button>
                   )}
                 </div>
@@ -391,7 +404,7 @@ export default function BusinessCardsAdminPage() {
 
               {/* Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="이름 *">
+                <Field label={t('cards.field.name')}>
                   <input
                     className="admin-input"
                     value={draft.name ?? ''}
@@ -399,7 +412,7 @@ export default function BusinessCardsAdminPage() {
                     placeholder="홍길동"
                   />
                 </Field>
-                <Field label="영문 이름" hint="선택, vCard 보조 표시용">
+                <Field label={t('cards.field.nameEn')} hint={t('cards.field.nameEnHint')}>
                   <input
                     className="admin-input"
                     value={draft.nameEn ?? ''}
@@ -410,29 +423,29 @@ export default function BusinessCardsAdminPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="부서" hint="선택">
+                <Field label={t('cards.field.department')} hint={t('cards.field.optional')}>
                   <input
                     className="admin-input"
                     value={draft.department ?? ''}
                     onChange={(e) =>
                       setDraft({ ...draft, department: e.target.value })
                     }
-                    placeholder="영업팀"
+                    placeholder={t('cards.field.departmentPlaceholder')}
                   />
                 </Field>
-                <Field label="직함" hint="선택">
+                <Field label={t('cards.field.title')} hint={t('cards.field.optional')}>
                   <input
                     className="admin-input"
                     value={draft.title ?? ''}
                     onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                    placeholder="대리"
+                    placeholder={t('cards.field.titlePlaceholder')}
                   />
                 </Field>
               </div>
 
               <Field
-                label="휴대폰 *"
-                hint="하이픈(-) 없이 스페이스로 구분해 입력하세요. 회사 사무실 전화(+63 32 345 8908) 스타일과 통일됩니다."
+                label={t('cards.field.phone')}
+                hint={t('cards.field.phoneHint')}
               >
                 <input
                   className="admin-input"
@@ -446,8 +459,8 @@ export default function BusinessCardsAdminPage() {
               </Field>
 
               <Field
-                label="카카오톡 ID"
-                hint="선택. 입력하면 명함에서 휴대폰과 사무실 전화 사이에 표시됩니다."
+                label={t('cards.field.kakao')}
+                hint={t('cards.field.kakaoHint')}
               >
                 <input
                   className="admin-input"
@@ -457,7 +470,7 @@ export default function BusinessCardsAdminPage() {
                 />
               </Field>
 
-              <Field label="이메일 *">
+              <Field label={t('cards.field.email')}>
                 <input
                   className="admin-input"
                   type="email"
@@ -468,8 +481,8 @@ export default function BusinessCardsAdminPage() {
               </Field>
 
               <Field
-                label="사무실 전화"
-                hint="회사 공통값이 기본으로 채워집니다. 지사·부서가 다르면 이 칸만 바꾸세요. 비우면 공통값이 표시됩니다."
+                label={t('cards.field.officePhone')}
+                hint={t('cards.field.officePhoneHint')}
               >
                 <input
                   className="admin-input"
@@ -483,8 +496,8 @@ export default function BusinessCardsAdminPage() {
               </Field>
 
               <Field
-                label="사무실 주소"
-                hint="회사 공통값이 기본으로 채워집니다. 비우면 공통값이 표시됩니다."
+                label={t('cards.field.officeAddress')}
+                hint={t('cards.field.officeAddressHint')}
               >
                 <textarea
                   className="admin-input min-h-[84px] resize-y"
@@ -495,7 +508,7 @@ export default function BusinessCardsAdminPage() {
               </Field>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="정렬 순서" hint="작은 숫자가 위에 표시">
+                <Field label={t('cards.field.order')} hint={t('cards.field.orderHint')}>
                   <input
                     className="admin-input"
                     type="number"
@@ -505,7 +518,7 @@ export default function BusinessCardsAdminPage() {
                     }
                   />
                 </Field>
-                <Field label="활성 상태" hint="비활성 시 /profile 페이지 접근 차단">
+                <Field label={t('cards.field.active')} hint={t('cards.field.activeHint')}>
                   <label className="flex items-center gap-2 mt-2">
                     <input
                       type="checkbox"
@@ -515,7 +528,7 @@ export default function BusinessCardsAdminPage() {
                       }
                       className="w-5 h-5 rounded text-blue-600"
                     />
-                    <span className="text-sm text-slate-700">활성화</span>
+                    <span className="text-sm text-slate-700">{t('cards.field.activate')}</span>
                   </label>
                 </Field>
               </div>
@@ -523,7 +536,7 @@ export default function BusinessCardsAdminPage() {
 
             <div className="p-6 border-t border-slate-200 sticky bottom-0 bg-white flex justify-end gap-2">
               <button onClick={() => setDraft(null)} className="admin-btn-secondary">
-                취소
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
@@ -533,10 +546,10 @@ export default function BusinessCardsAdminPage() {
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    저장 중...
+                    {t('common.saving')}
                   </>
                 ) : (
-                  '저장'
+                  t('common.save')
                 )}
               </button>
             </div>

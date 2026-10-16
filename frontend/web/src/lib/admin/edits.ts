@@ -1,9 +1,10 @@
 import {
   CATEGORIES,
-  CATEGORY_LABELS,
   EMAIL_PATTERN,
+  MAX_PAX_PER_APPLICATION,
   PHONE_DIAL_PATTERN,
   PHONE_NUMBER_PATTERN,
+  adultCount,
   buildTravelers,
   computeCompleteness,
   computeDepositDue,
@@ -23,21 +24,42 @@ import {
 import type { ApplicationStatus, Counts, Pricing, TourConfig, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord, PaymentRecord } from './applicationDoc';
 import { cleanTraveler, mergeTravelerEdits } from './detailHelpers';
+import { CATEGORY_KEYS } from './format';
+import { msg } from './i18n/translate';
+import type { Msg } from './i18n/translate';
+
+/**
+ * 공용 validateCounts 가 판정한 오류를 어드민 화면용 문구(Msg)로 바꾼다.
+ * 유효성 판정 자체는 validateCounts 가 기준이고, 여기서는 같은 순서로 어떤 오류인지만 고른다.
+ */
+export function countsError(counts: Counts): Msg | null {
+  if (!validateCounts(counts)) return null;
+  const bad = CATEGORIES.find((c) => !Number.isInteger(counts[c]) || counts[c] < 0);
+  if (bad) return msg('counts.error.invalid', { category: msg(CATEGORY_KEYS[bad]) });
+  const total = totalPax(counts);
+  if (total < 1) return msg('counts.error.atLeastOne');
+  if (total > MAX_PAX_PER_APPLICATION) return msg('counts.error.max', { max: MAX_PAX_PER_APPLICATION });
+  const adults = adultCount(counts);
+  if (counts.child + counts.infant > 0 && adults < 1) return msg('counts.error.needAdult');
+  return msg('counts.error.infantPerAdult');
+}
+
+type Recalculated = { travelers: Traveler[]; completeness: { filled: number; total: number }; pricing: Pricing; warnings: Msg[] } | { error: Msg };
 
 export function recalculate(
   app: ApplicationRecord,
   change: { counts?: Counts; travelers?: Traveler[] },
   config: TourConfig | null,
-): { travelers: Traveler[]; completeness: { filled: number; total: number }; pricing: Pricing; warnings: string[] } | { error: string } {
+): Recalculated {
   const counts = change.counts ?? app.counts;
-  const countsError = validateCounts(counts);
-  if (countsError) return { error: countsError };
-  if (!config) return { error: 'Tour settings are not loaded yet.' };
+  const invalid = countsError(counts);
+  if (invalid) return { error: invalid };
+  if (!config) return { error: msg('edits.configNotLoaded') };
   const departure = config.departures.find((d) => d.id === app.departure.id);
-  if (!departure) return { error: 'This departure is no longer in tour settings, so prices cannot be recalculated.' };
+  if (!departure) return { error: msg('edits.departureGone') };
   const unpriced = missingPriceCategories(departure.prices, counts);
   if (unpriced.length > 0) {
-    return { error: `This departure has no price for ${unpriced.map((c) => CATEGORY_LABELS[c]).join(', ')}. Set it in Tour settings first.` };
+    return { error: msg('edits.noPrice', { categories: unpriced.map((c) => msg(CATEGORY_KEYS[c])) }) };
   }
   const travelers = buildTravelers(counts, change.travelers ?? app.travelers);
   const snap = app.pricing.promo;
@@ -59,15 +81,15 @@ export function recalculate(
     totalPax(counts) > paxBefore &&
     app.paidTotal < pricing.depositDue
   ) {
-    warnings.push(`Deposit now due is ${formatPHP(pricing.depositDue)}; ${formatPHP(app.paidTotal)} has been paid.`);
+    warnings.push(msg('edits.warn.depositDue', { due: formatPHP(pricing.depositDue), paid: formatPHP(app.paidTotal) }));
   }
   return { travelers, completeness: computeCompleteness(travelers), pricing, warnings };
 }
 
-function paymentWarnings(app: ApplicationRecord, pricing: Pricing): string[] {
-  const warnings: string[] = [];
+function paymentWarnings(app: ApplicationRecord, pricing: Pricing): Msg[] {
+  const warnings: Msg[] = [];
   if ((app.status === 'fully_paid' || app.status === 'confirmed') && app.paidTotal < pricing.total) {
-    warnings.push(`New total ${formatPHP(pricing.total)} is more than the ${formatPHP(app.paidTotal)} paid — review the status.`);
+    warnings.push(msg('edits.warn.totalAbovePaid', { total: formatPHP(pricing.total), paid: formatPHP(app.paidTotal) }));
   }
   return warnings;
 }
@@ -87,8 +109,8 @@ export function repriceForTravelers(
   app: ApplicationRecord,
   travelers: Traveler[],
   config: TourConfig | null,
-): { travelers: Traveler[]; completeness: { filled: number; total: number }; pricing: Pricing; warnings: string[] } | { error: string } {
-  if (!config) return { error: 'Tour settings are not loaded yet.' };
+): Recalculated {
+  if (!config) return { error: msg('edits.configNotLoaded') };
   const next = buildTravelers(app.counts, travelers);
   const completeness = computeCompleteness(next);
   const before = singleRoomCount(app.travelers);
@@ -109,7 +131,7 @@ export function repriceForTravelers(
 
 const sameCounts = (a: Counts, b: Counts) => CATEGORIES.every((c) => a[c] === b[c]);
 
-export type TxPlan = { fields: Record<string, unknown> } | { conflict: true } | { error: string };
+export type TxPlan = { fields: Record<string, unknown> } | { conflict: true } | { error: Msg };
 
 /** 트랜잭션 안에서 최신 문서(live)를 기준으로 참가자 저장 내용을 계산한다. */
 export function planTravelersSave(
@@ -169,14 +191,14 @@ export function voidPayment(app: ApplicationRecord, paymentId: string, by: strin
   return { payments, paidTotal: paidTotalOf(payments) };
 }
 
-export function statusChangeWarnings(app: ApplicationRecord, next: ApplicationStatus): string[] {
+export function statusChangeWarnings(app: ApplicationRecord, next: ApplicationStatus): Msg[] {
   if (next !== 'confirmed') return [];
-  const warnings: string[] = [];
+  const warnings: Msg[] = [];
   if (app.completeness.filled < app.completeness.total) {
-    warnings.push(`Traveler details are incomplete (${app.completeness.filled}/${app.completeness.total}).`);
+    warnings.push(msg('edits.warn.incomplete', { filled: app.completeness.filled, total: app.completeness.total }));
   }
   if (app.paidTotal < app.pricing.total) {
-    warnings.push(`Only ${formatPHP(app.paidTotal)} of ${formatPHP(app.pricing.total)} has been recorded as paid.`);
+    warnings.push(msg('edits.warn.unpaid', { paid: formatPHP(app.paidTotal), total: formatPHP(app.pricing.total) }));
   }
   return warnings;
 }
@@ -192,30 +214,30 @@ export function normalizeLead(lead: ApplicationRecord['lead']): ApplicationRecor
   };
 }
 
-export function validateLead(lead: ApplicationRecord['lead']): Record<string, string> {
+export function validateLead(lead: ApplicationRecord['lead']): Record<string, Msg> {
   const l = normalizeLead(lead);
-  const e: Record<string, string> = {};
-  if (!isValidName(l.firstName)) e['lead.firstName'] = 'Enter a valid first name.';
-  if (!isValidName(l.lastName)) e['lead.lastName'] = 'Enter a valid last name.';
-  if (!EMAIL_PATTERN.test(l.email) || l.email.length > 120) e['lead.email'] = 'Enter a valid email.';
-  if (!PHONE_DIAL_PATTERN.test(l.phoneDial) || !PHONE_NUMBER_PATTERN.test(l.phoneNumber)) e['lead.phoneNumber'] = 'Enter a valid mobile number.';
+  const e: Record<string, Msg> = {};
+  if (!isValidName(l.firstName)) e['lead.firstName'] = msg('edits.lead.firstName');
+  if (!isValidName(l.lastName)) e['lead.lastName'] = msg('edits.lead.lastName');
+  if (!EMAIL_PATTERN.test(l.email) || l.email.length > 120) e['lead.email'] = msg('edits.lead.email');
+  if (!PHONE_DIAL_PATTERN.test(l.phoneDial) || !PHONE_NUMBER_PATTERN.test(l.phoneNumber)) e['lead.phoneNumber'] = msg('edits.lead.phone');
   return e;
 }
 
 const TEXT_MAX: Partial<Record<keyof Traveler, number>> = { nationality: 60, expectedFinish: 20, recentMarathon: 120, emergencyContact: 120 };
 
-export function validateTravelers(travelers: Traveler[], today: string): Record<string, string> {
-  const e: Record<string, string> = {};
+export function validateTravelers(travelers: Traveler[], today: string): Record<string, Msg> {
+  const e: Record<string, Msg> = {};
   travelers.forEach((t, i) => {
     const name = t.passportName?.trim();
-    if (name && !isValidPassportName(name)) e[`travelers.${i}.passportName`] = 'Check the passport name.';
+    if (name && !isValidPassportName(name)) e[`travelers.${i}.passportName`] = msg('edits.traveler.passportName');
     const dob = t.dob?.trim();
-    if (dob && !isValidBirthDate(dob, today)) e[`travelers.${i}.dob`] = 'Invalid date of birth.';
+    if (dob && !isValidBirthDate(dob, today)) e[`travelers.${i}.dob`] = msg('edits.traveler.dob');
     for (const [field, max] of Object.entries(TEXT_MAX) as [keyof Traveler, number][]) {
       const v = (t[field] as string | undefined)?.trim();
       if (!v) continue;
-      if (hasControlChars(v)) e[`travelers.${i}.${field}`] = 'Remove unusual characters.';
-      else if (v.length > max) e[`travelers.${i}.${field}`] = `Max ${max} characters.`;
+      if (hasControlChars(v)) e[`travelers.${i}.${field}`] = msg('edits.traveler.unusualChars');
+      else if (v.length > max) e[`travelers.${i}.${field}`] = msg('edits.traveler.maxChars', { max });
     }
   });
   return e;

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from './promoAdmin';
+import { describeDiscount } from '@unik/shared/domain';
+import { discountLabel, emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from './promoAdmin';
+import { translate } from './i18n/translate';
 
 const form = () => ({ ...emptyPromoForm(), code: 'ta-sunrise', agencyName: 'Sunrise Travel', discountValue: '2,000' });
 
@@ -46,6 +48,27 @@ describe('toPromoDoc / promoToForm / referralLink', () => {
   });
   it('builds the shareable link', () => {
     expect(referralLink('TA-SUNRISE')).toBe('https://unik.ph/apply?code=TA-SUNRISE');
+  });
+});
+
+describe('validatePromoForm messages', () => {
+  it('keeps the English wording and translates to Korean', () => {
+    const e = validatePromoForm(form(), { isNew: true, existingCodes: ['TA-SUNRISE'] });
+    expect(translate('en', e.code)).toBe('This code already exists.');
+    expect(translate('ko', e.code)).toBe('이미 있는 코드입니다.');
+  });
+});
+
+describe('discountLabel', () => {
+  it('matches the shared describeDiscount in English', () => {
+    for (const [type, value] of [['fixed', 0], ['fixed', 2000], ['percent', 5]] as const) {
+      expect(translate('en', discountLabel(type, value))).toBe(describeDiscount(type, value));
+    }
+  });
+  it('translates to Korean', () => {
+    expect(translate('ko', discountLabel('fixed', 0))).toBe('추천 코드(할인 없음)');
+    expect(translate('ko', discountLabel('fixed', 2000))).toBe('1인당 PHP 2,000 할인');
+    expect(translate('ko', discountLabel('percent', 5))).toBe('5% 할인');
   });
 });
 

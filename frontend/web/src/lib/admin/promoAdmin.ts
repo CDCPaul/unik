@@ -1,6 +1,8 @@
-import { isValidBirthDate, isValidPromoCodeFormat, normalizePromoCode } from '@unik/shared/domain';
+import { formatPHP, isValidBirthDate, isValidPromoCodeFormat, normalizePromoCode } from '@unik/shared/domain';
 import type { DiscountType, PromoCode } from '@unik/shared/domain';
 import { parseAmount } from './edits';
+import { msg } from './i18n/translate';
+import type { Msg } from './i18n/translate';
 
 export interface PromoForm {
   code: string;
@@ -40,27 +42,33 @@ function discountNumber(f: PromoForm): number | null {
   return parseAmount(raw);
 }
 
-export function validatePromoForm(f: PromoForm, opts: { isNew: boolean; existingCodes: string[] }): Record<string, string> {
-  const e: Record<string, string> = {};
+export function validatePromoForm(f: PromoForm, opts: { isNew: boolean; existingCodes: string[] }): Record<string, Msg> {
+  const e: Record<string, Msg> = {};
   const code = normalizePromoCode(f.code);
   if (opts.isNew) {
-    if (!isValidPromoCodeFormat(code)) e.code = 'Use A–Z, 0–9, hyphens and underscores (3–20 characters).';
-    else if (opts.existingCodes.includes(code)) e.code = 'This code already exists.';
+    if (!isValidPromoCodeFormat(code)) e.code = msg('promo.error.codeFormat');
+    else if (opts.existingCodes.includes(code)) e.code = msg('promo.error.codeExists');
   }
-  if (!f.agencyName.trim() || f.agencyName.trim().length > 100) e.agencyName = 'Required (max 100 characters).';
+  if (!f.agencyName.trim() || f.agencyName.trim().length > 100) e.agencyName = msg('promo.error.agencyName');
   const v = discountNumber(f);
   if (f.discountType === 'percent') {
-    if (v === null || v < 1 || v > 100) e.discountValue = 'Whole percent from 1 to 100.';
+    if (v === null || v < 1 || v > 100) e.discountValue = msg('promo.error.percent');
   } else if (v === null || v > 1_000_000) {
-    e.discountValue = 'Whole pesos from 0 to 1,000,000.';
+    e.discountValue = msg('promo.error.fixed');
   }
   // 날짜 유효성은 생년월일 검증기를 재사용(형식·실존 날짜), 범위는 넉넉히
-  if (f.validUntil.trim() && !isValidBirthDate(f.validUntil.trim(), '2100-12-31')) e.validUntil = 'Use a real date (YYYY-MM-DD).';
+  if (f.validUntil.trim() && !isValidBirthDate(f.validUntil.trim(), '2100-12-31')) e.validUntil = msg('promo.error.validUntil');
   if (f.maxPax.trim()) {
     const n = parseAmount(f.maxPax);
-    if (n === null) e.maxPax = 'Whole number, 1 or more.';
+    if (n === null) e.maxPax = msg('promo.error.maxPax');
   }
   return e;
+}
+
+/** 할인 설명 (공용 describeDiscount 의 어드민 화면용). 고정 0원은 할인 없는 추천 코드. */
+export function discountLabel(type: DiscountType, value: number): Msg {
+  if (type === 'fixed' && value === 0) return msg('promo.discount.referral');
+  return type === 'fixed' ? msg('promo.discount.fixed', { amount: formatPHP(value) }) : msg('promo.discount.percent', { value });
 }
 
 export function toPromoDoc(f: PromoForm): Omit<PromoCode, 'code'> {

@@ -6,15 +6,19 @@ import { LogOut, Menu, X, Home, IdCard, Users, Ticket, Settings } from 'lucide-r
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOut } from '@/lib/auth';
+import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
+import type { MessageKey } from '@/lib/admin/i18n/translate';
+import { LanguageToggle } from './LanguageToggle';
 
-const menuItems = [
-  { href: '/admin/applicants', icon: Users, label: 'Applicants' },
-  { href: '/admin/promo-codes', icon: Ticket, label: 'Promo codes' },
-  { href: '/admin/tour-settings', icon: Settings, label: 'Tour settings' },
-  { href: '/admin/business-cards', icon: IdCard, label: 'Business Cards' },
+const menuItems: { href: string; icon: typeof Users; label: MessageKey }[] = [
+  { href: '/admin/applicants', icon: Users, label: 'nav.applicants' },
+  { href: '/admin/promo-codes', icon: Ticket, label: 'nav.promoCodes' },
+  { href: '/admin/tour-settings', icon: Settings, label: 'nav.tourSettings' },
+  { href: '/admin/business-cards', icon: IdCard, label: 'nav.businessCards' },
 ];
 
 export default function AdminSidebar() {
+  const { t } = useAdminT();
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -33,7 +37,7 @@ export default function AdminSidebar() {
             UNI<span className="text-blue-600">K</span>
           </span>
           <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
-            Admin
+            {t('nav.admin')}
           </span>
         </Link>
       </div>
@@ -52,7 +56,7 @@ export default function AdminSidebar() {
               className={`admin-sidebar-link ${isActive ? 'admin-sidebar-link-active' : ''}`}
             >
               <item.icon className="w-5 h-5" />
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
             </Link>
           );
         })}
@@ -65,19 +69,20 @@ export default function AdminSidebar() {
             className="admin-sidebar-link text-slate-500 hover:text-slate-700"
           >
             <Home className="w-5 h-5" />
-            <span>View Site</span>
+            <span>{t('nav.viewSite')}</span>
           </Link>
         </div>
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-slate-200">
+      {/* Language + Logout */}
+      <div className="p-4 border-t border-slate-200 space-y-3">
+        <LanguageToggle className="px-2" />
         <button
           onClick={handleLogout}
           className="admin-sidebar-link w-full text-red-600 hover:bg-red-50 hover:text-red-700"
         >
           <LogOut className="w-5 h-5" />
-          <span>Logout</span>
+          <span>{t('nav.signOut')}</span>
         </button>
       </div>
     </>
@@ -88,6 +93,8 @@ export default function AdminSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
+        aria-label={isMobileOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+        aria-expanded={isMobileOpen}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md"
       >
         {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

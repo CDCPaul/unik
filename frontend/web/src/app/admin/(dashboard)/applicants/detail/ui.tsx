@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
 
 export function Section({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) {
   return (
@@ -26,7 +27,8 @@ export function Field({ label, error, children, className = '' }: { label: strin
 }
 
 export function SaveError({ show }: { show: boolean }) {
-  return show ? <p role="alert" className="mt-2 text-sm text-red-600">Save failed. Please try again.</p> : null;
+  const { t } = useAdminT();
+  return show ? <p role="alert" className="mt-2 text-sm text-red-600">{t('common.saveFailed')}</p> : null;
 }
 
 /** 저장 진행/실패 상태. run 은 성공하면 true. */
@@ -52,6 +54,7 @@ export function useSave() {
 
 /** 클립보드 복사 (실패하면 prompt 로 대체). 성공 시 2초간 copied 키를 돌려준다. */
 export function useCopy() {
+  const { t } = useAdminT();
   const [copied, setCopied] = useState<string | null>(null);
   const copy = useCallback(async (key: string, text: string) => {
     try {
@@ -59,8 +62,8 @@ export function useCopy() {
       setCopied(key);
       setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
     } catch {
-      window.prompt('Copy this link:', text);
+      window.prompt(t('common.copyLinkPrompt'), text);
     }
-  }, []);
+  }, [t]);
   return { copied, copy };
 }
