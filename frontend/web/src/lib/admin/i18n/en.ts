@@ -17,6 +17,7 @@ export const en = {
   'common.saveFailed': 'Save failed. Please try again.',
   'common.all': 'All',
   'common.none': 'None',
+  'common.unknown': 'unknown',
   'common.direct': 'Direct',
   'common.loadApplicationsFailed': 'Could not load applications.',
 

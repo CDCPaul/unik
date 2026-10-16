@@ -6,9 +6,18 @@ import { onAuthChange, isAuthorized } from '@/lib/auth';
 import AdminSidebar from '@/components/admin/Sidebar';
 import { Loader2 } from 'lucide-react';
 import { loginUrlFor } from '@/lib/admin/loginRedirect';
+import { AdminLocaleProvider } from '@/lib/admin/i18n/AdminLocaleProvider';
 import '@/lib/admin/emulators';
 
-export default function AdminDashboardLayout({
+export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminLocaleProvider>
+      <AdminDashboardShell>{children}</AdminDashboardShell>
+    </AdminLocaleProvider>
+  );
+}
+
+function AdminDashboardShell({
   children,
 }: {
   children: React.ReactNode;

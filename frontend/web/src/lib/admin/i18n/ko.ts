@@ -19,6 +19,7 @@ export const ko: Record<MessageKey, string> = {
   'common.saveFailed': '저장하지 못했습니다. 다시 시도하세요.',
   'common.all': '전체',
   'common.none': '없음',
+  'common.unknown': '알 수 없음',
   'common.direct': '직접 신청',
   'common.loadApplicationsFailed': '신청서를 불러오지 못했습니다.',
 
