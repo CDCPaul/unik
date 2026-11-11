@@ -61,16 +61,9 @@ export default async function HomePage() {
             </div>
             <p className="text-sm text-white/70">Booking through a travel agency? Use their link or have their promo code ready.</p>
           </div>
-          <div className="relative h-[420px] min-w-0 flex-[1_1_380px] overflow-hidden rounded-3xl sm:h-[520px]">
-            <Image
-              src="/images/seoul-marathon-runners.jpg"
-              alt="Thousands of Seoul Marathon runners filling a city road at dawn"
-              fill
-              priority
-              sizes="(max-width: 900px) 100vw, 560px"
-              className="object-cover"
-            />
-            <PhotoCredit />
+          {/* 맨 위: 아트조이 포스터 (세로 2:3, 잘리지 않게 비율 고정) */}
+          <div className="relative mx-auto aspect-[2/3] w-full max-w-[400px] min-w-0 flex-[1_1_320px] overflow-hidden rounded-3xl">
+            <Image src={ARTJOY.image} alt={ARTJOY.imageAlt} fill priority sizes="(max-width: 900px) 100vw, 400px" className="object-cover" />
           </div>
         </div>
         <div className="border-t border-white/15">
@@ -93,8 +86,15 @@ export default async function HomePage() {
       {/* Artjoy */}
       <Section id="artjoy">
         <div className="flex flex-wrap items-center gap-14">
-          <div className="relative aspect-[2/3] w-full max-w-[460px] flex-[1_1_380px] overflow-hidden rounded-3xl">
-            <Image src={ARTJOY.image} alt={ARTJOY.imageAlt} fill sizes="(max-width: 900px) 100vw, 460px" className="object-cover" />
+          <div className="relative aspect-[4/5] w-full max-w-[460px] flex-[1_1_380px] overflow-hidden rounded-3xl">
+            <Image
+              src="/images/seoul-marathon-runners.jpg"
+              alt="Thousands of Seoul Marathon runners filling a city road at dawn"
+              fill
+              sizes="(max-width: 900px) 100vw, 460px"
+              className="object-cover"
+            />
+            <PhotoCredit />
           </div>
           <div className="flex min-w-0 flex-[1_1_480px] flex-col gap-5">
             <SectionHeading

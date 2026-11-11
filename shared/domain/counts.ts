@@ -47,6 +47,8 @@ export function validateCounts(counts: Counts): string | null {
   const adults = adultCount(counts);
   if (totalPax(counts) - adults > 0 && adults < 1) return 'Children and infants must travel with at least one adult.';
   if (counts.infant > adults) return 'Each infant must travel with an adult (one infant per adult).';
+  // 침대 없는 아동(10K·응원)은 부모 침대를 함께 쓰므로 어른 1명당 1명까지
+  if (counts.childTenKNoBed + counts.childNoBed > adults) return 'Each child without a bed must share with an adult (one child without a bed per adult).';
   return null;
 }
 

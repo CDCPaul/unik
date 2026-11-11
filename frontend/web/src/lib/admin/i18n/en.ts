@@ -83,6 +83,7 @@ export const en = {
   'counts.error.max': 'Maximum {max} travelers per application',
   'counts.error.needAdult': 'Children and infants must travel with at least one adult.',
   'counts.error.infantPerAdult': 'Each infant must travel with an adult (one infant per adult).',
+  'counts.error.noBedPerAdult': 'Each child without a bed must share with an adult (one child without a bed per adult).',
 
   // 결제 수단·유형
   'paymentMethod.maya_link': 'Maya payment link',
