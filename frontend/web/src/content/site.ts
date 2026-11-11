@@ -2,7 +2,7 @@ import { COMPANY_INFO } from '@/lib/businessCardConfig';
 
 export const SITE = {
   name: 'UNIK',
-  operator: 'CDC Travel (Cebu Direct Club)',
+  operator: 'UNIK',
   address: COMPANY_INFO.address,
   phone: COMPANY_INFO.officePhone,
   email: COMPANY_INFO.representativeEmail,
