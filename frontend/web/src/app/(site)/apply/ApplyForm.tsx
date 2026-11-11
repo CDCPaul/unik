@@ -339,7 +339,7 @@ export function ApplyForm() {
                 />
                 <span>
                   Each full marathon runner in this application has an official full marathon finish of <b>4:59:59 or faster</b> in a race run
-                  between 1 January 2024 and 30 November 2026, and will send us the race certificate. *
+                  between 1 January 2024 and 10 December 2026, and will send us the race certificate by 10 December 2026. *
                 </span>
               </label>
               <p className="text-sm">No qualifying time? Choose the 10K instead. It needs no record.</p>
