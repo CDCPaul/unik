@@ -35,7 +35,7 @@ const optText = (max: number) =>
 const optPassportName = z.preprocess(blankToUndefined, z.string().refine(isValidPassportName, 'Invalid name').optional());
 const nameText = z.string().trim().refine(isValidName, 'Invalid name');
 const count = z.number().int().min(0).max(10);
-// 아동·유아 이전에 캐시된 웹 폼은 child/infant 를 보내지 않는다 → 0 으로 본다.
+// 예전에 캐시된 웹 폼은 child/infant 나 아동 10K·침대 없음 유형을 보내지 않는다 → 0 으로 본다.
 const newCategoryCount = z.preprocess(nullToUndefined, count.default(0));
 
 const travelerSchema = z.object({
@@ -54,7 +54,16 @@ const travelerSchema = z.object({
 export const submitInputSchema = z.object({
   idempotencyKey: z.string().uuid(),
   departureId: z.string().min(1).max(20),
-  counts: z.object({ full: count, tenK: count, companion: count, child: newCategoryCount, infant: newCategoryCount }),
+  counts: z.object({
+    full: count,
+    tenK: count,
+    companion: count,
+    childTenK: newCategoryCount,
+    childTenKNoBed: newCategoryCount,
+    child: newCategoryCount,
+    childNoBed: newCategoryCount,
+    infant: newCategoryCount,
+  }),
   lead: z.object({
     firstName: nameText,
     lastName: nameText,

@@ -14,7 +14,7 @@ const app: ApplicationEmailData = {
     whatsapp: false,
   },
   departure: { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23' },
-  counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 },
+  counts: { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
   pricing: {
     lines: [],
     singleSupplements: 0,
@@ -30,7 +30,7 @@ describe('application emails', () => {
   it('customer email confirms number, travelers and estimated total', () => {
     const { subject, html } = customerEmail(app);
     expect(subject).toBe('We received your application APP-0021 | Seoul Marathon 2027 Tour');
-    expect(html).toContain('2 Full Marathon, 1 Companion');
+    expect(html).toContain('2 Full Marathon (18+), 1 Companion');
     expect(html).toContain('PHP 224,000');
     expect(html).toContain('No payment is needed yet');
   });
@@ -52,9 +52,16 @@ describe('application emails', () => {
     expect(html).toContain('https://unik.ph/admin/applicants?id=doc-123');
   });
   it('lists children and infants and counts them as pax', () => {
-    const family = { ...app, counts: { full: 1, tenK: 0, companion: 1, child: 1, infant: 1 } };
-    expect(customerEmail(family).html).toContain('1 Full Marathon, 1 Companion, 1 Child (under 12), 1 Infant (under 2)');
+    const family = { ...app, counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 } };
+    expect(customerEmail(family).html).toContain('1 Full Marathon (18+), 1 Companion, 1 Child (with bed), 1 Infant (under 2)');
     expect(staffEmail(family, 'd').subject).toContain('| 4 pax |');
+  });
+  it('lists all four child types in category order', () => {
+    const family = { ...app, counts: { full: 0, tenK: 1, companion: 1, childTenK: 1, childTenKNoBed: 2, child: 1, childNoBed: 1, infant: 1 } };
+    expect(customerEmail(family).html).toContain(
+      '1 10K, 1 Companion, 1 Child 10K (with bed), 2 Child 10K (no bed), 1 Child (with bed), 1 Child (no bed), 1 Infant (under 2)',
+    );
+    expect(staffEmail(family, 'd').subject).toContain('| 8 pax |');
   });
   it('escapes user-provided text', () => {
     for (const { html } of [customerEmail(app), staffEmail(app, 'doc-123')]) {
