@@ -35,7 +35,10 @@ export const CATEGORY_KEYS: Record<Category, MessageKey> = {
   full: 'category.full',
   tenK: 'category.tenK',
   companion: 'category.companion',
+  childTenK: 'category.childTenK',
+  childTenKNoBed: 'category.childTenKNoBed',
   child: 'category.child',
+  childNoBed: 'category.childNoBed',
   infant: 'category.infant',
 };
 
@@ -44,7 +47,10 @@ export const CATEGORY_SHORT_KEYS: Record<Category, MessageKey> = {
   full: 'categoryShort.full',
   tenK: 'categoryShort.tenK',
   companion: 'categoryShort.companion',
+  childTenK: 'categoryShort.childTenK',
+  childTenKNoBed: 'categoryShort.childTenKNoBed',
   child: 'categoryShort.child',
+  childNoBed: 'categoryShort.childNoBed',
   infant: 'categoryShort.infant',
 };
 

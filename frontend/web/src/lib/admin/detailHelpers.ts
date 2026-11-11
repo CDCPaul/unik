@@ -1,4 +1,4 @@
-import { CATEGORIES, formatPHP } from '@unik/shared/domain';
+import { CATEGORIES, RACE_DATE, ageOn, formatPHP, isUnderageFullRunner } from '@unik/shared/domain';
 import type { Category, Counts, PaymentMethod, PaymentType, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
 import { CATEGORY_KEYS } from './format';
@@ -27,6 +27,22 @@ export interface DroppedTraveler {
 }
 
 const hasText = (v: unknown) => typeof v === 'string' && v.trim() !== '';
+
+/**
+ * 풀코스 참가자가 대회일(2027-03-21)에 18세 미만이면 대회일 나이, 아니면 null.
+ * 직원용 경고에만 쓴다 (신청·저장을 막지 않는다).
+ */
+export function underageFullAge(t: Pick<Traveler, 'category' | 'dob'>): number | null {
+  return isUnderageFullRunner(t) ? ageOn(t.dob, RACE_DATE) : null;
+}
+
+/** 18세 미만 풀코스 참가자 경고 (카드 번호 = 배열 위치 + 1) */
+export function underageFullWarnings(travelers: Pick<Traveler, 'category' | 'dob'>[]): Msg[] {
+  return travelers.flatMap((t, i) => {
+    const age = underageFullAge(t);
+    return age === null ? [] : [msg('edits.warn.underageFull', { n: i + 1, age })];
+  });
+}
 
 /** 인원이 줄어들 때 buildTravelers 가 버리게 되는 참가자 (같은 유형 안에서 뒤쪽부터) */
 export function droppedTravelers(travelers: Traveler[], newCounts: Counts): DroppedTraveler[] {

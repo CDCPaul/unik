@@ -31,7 +31,7 @@ export function newDeparture(): Departure {
     flightInfo: '',
     seatCapacity: 0,
     isOpen: true,
-    prices: { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 },
+    prices: { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
     singleSupplement: 0,
   };
 }
@@ -76,7 +76,7 @@ export function validateTourConfig(c: TourConfig, usage: DepartureUsage): { erro
     if (!isDate(d.departDate)) errors[`${p}.departDate`] = msg('tour.error.date');
     if (!isDate(d.returnDate) || (isDate(d.departDate) && d.returnDate < d.departDate)) errors[`${p}.returnDate`] = msg('tour.error.returnDate');
     if (!isMoney(d.seatCapacity)) errors[`${p}.seatCapacity`] = msg('tour.error.wholeNumber');
-    // 다섯 유형 모두 필수 (예전 설정에 없던 child/infant 도 저장 전에 입력해야 한다)
+    // 여덟 유형 모두 필수 (예전 설정에 없던 아동 10K·침대 없음 등도 저장 전에 입력해야 한다)
     for (const k of CATEGORIES) {
       if (!isMoney(d.prices?.[k])) errors[`${p}.prices.${k}`] = msg('tour.error.wholePesos');
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Traveler } from '@unik/shared/domain';
-import { cleanTraveler, defaultPaymentType, droppedTravelers, droppedWarning as droppedWarningMsg, leadChanges, mergeTravelerEdits, paidAtFromDate, paidExceedsNote as paidExceedsMsg } from './detailHelpers';
+import { cleanTraveler, defaultPaymentType, droppedTravelers, droppedWarning as droppedWarningMsg, leadChanges, mergeTravelerEdits, paidAtFromDate, paidExceedsNote as paidExceedsMsg, underageFullAge, underageFullWarnings } from './detailHelpers';
 import { translate } from './i18n/translate';
 
 const droppedWarning = (d: Parameters<typeof droppedWarningMsg>[0]) => translate('en', droppedWarningMsg(d));
@@ -18,21 +18,21 @@ const travelers: Traveler[] = [
 
 describe('droppedTravelers', () => {
   it('returns nothing when counts grow or stay', () => {
-    expect(droppedTravelers(travelers, { full: 2, tenK: 1, companion: 1, child: 0, infant: 0 })).toEqual([]);
-    expect(droppedTravelers(travelers, { full: 3, tenK: 2, companion: 1, child: 0, infant: 0 })).toEqual([]);
+    expect(droppedTravelers(travelers, { full: 2, tenK: 1, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toEqual([]);
+    expect(droppedTravelers(travelers, { full: 3, tenK: 2, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toEqual([]);
   });
   it('drops the trailing travelers of each shrinking category, numbered by position', () => {
-    const d = droppedTravelers(travelers, { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 });
+    const d = droppedTravelers(travelers, { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
     expect(d.map((x) => [x.position, x.category, x.name, x.hasDetails])).toEqual([
       [2, 'full', null, false],
       [3, 'tenK', null, true],
     ]);
-    expect(droppedWarning(d[0])).toBe('Traveler 2 (Full Marathon) details will be removed: no details.');
+    expect(droppedWarning(d[0])).toBe('Traveler 2 (Full Marathon (18+)) details will be removed: no details.');
     expect(droppedWarning(d[1])).toContain('partial details');
   });
   it('handles child and infant travelers', () => {
     const family: Traveler[] = [{ category: 'full' }, { category: 'child', passportName: 'KID' }, { category: 'infant' }];
-    const d = droppedTravelers(family, { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 });
+    const d = droppedTravelers(family, { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
     expect(d.map((x) => [x.position, x.category, x.name])).toEqual([
       [2, 'child', 'KID'],
       [3, 'infant', null],
@@ -40,12 +40,12 @@ describe('droppedTravelers', () => {
     expect(droppedWarning(d[1])).toBe('Traveler 3 (Infant (under 2)) details will be removed: no details.');
   });
   it('names the traveler when a passport name exists', () => {
-    const d = droppedTravelers(travelers, { full: 1, tenK: 1, companion: 0, child: 0, infant: 0 });
+    const d = droppedTravelers(travelers, { full: 1, tenK: 1, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
     expect(droppedWarning(d[d.length - 1])).toBe('Traveler 4 (Companion) details will be removed: LEE JIN.');
   });
   it('translates the warning into Korean', () => {
-    const d = droppedTravelers(travelers, { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 });
-    expect(translate('ko', droppedWarningMsg(d[0]))).toBe('참가자 2 (풀코스)의 정보가 삭제됩니다: 입력된 정보 없음.');
+    const d = droppedTravelers(travelers, { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
+    expect(translate('ko', droppedWarningMsg(d[0]))).toBe('참가자 2 (풀코스(18세 이상))의 정보가 삭제됩니다: 입력된 정보 없음.');
   });
 });
 
@@ -88,7 +88,7 @@ describe('mergeTravelerEdits', () => {
     { category: 'full', passportName: 'B TWO' },
     { category: 'companion' },
   ];
-  const counts = { base: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, live: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 } };
+  const counts = { base: { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, live: { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } };
   const edit = (i: number, patch: Partial<Traveler>) => base.map((t, j) => (j === i ? { ...t, ...patch } : { ...t }));
 
   it('reapplies only the user-changed fields onto the live travelers (no conflict)', () => {
@@ -124,14 +124,14 @@ describe('mergeTravelerEdits', () => {
   describe('counts guard (index shift)', () => {
     const t: Traveler[] = [{ category: 'full', passportName: 'A' }, { category: 'tenK', passportName: 'B' }, { category: 'tenK' }];
     const editC = t.map((x, i) => (i === 2 ? { ...x, dob: '1990-05-05' } : { ...x }));
-    const c = { full: 1, tenK: 2, companion: 0, child: 0, infant: 0 };
+    const c = { full: 1, tenK: 2, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 };
     it('earlier category grew -> conflict (indexes shifted)', () => {
       const live: Traveler[] = [t[0], { category: 'full' }, t[1], t[2]];
       expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, full: 2 } })).toEqual({ conflict: true });
     });
     it('later category grew -> conflict', () => {
       const live: Traveler[] = [...t, { category: 'companion' }];
-      expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, companion: 1, child: 0, infant: 0 } })).toEqual({ conflict: true });
+      expect(mergeTravelerEdits(t, editC, live, { base: c, live: { ...c, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } })).toEqual({ conflict: true });
     });
     it('counts unchanged + field edits -> merges', () => {
       expect(mergeTravelerEdits(t, editC, t, { base: c, live: { ...c } })).toEqual({ merged: editC });
@@ -145,5 +145,30 @@ describe('defaultPaymentType', () => {
     expect(defaultPaymentType(9999, 10000)).toBe('deposit');
     expect(defaultPaymentType(10000, 10000)).toBe('balance');
     expect(defaultPaymentType(0, 0)).toBe('balance');
+  });
+});
+
+describe('under-18 full-marathon warning (race day 21 March 2027)', () => {
+  it('gives the race-day age of a full-marathon traveler under 18 only', () => {
+    expect(underageFullAge({ category: 'full', dob: '2009-03-22' })).toBe(17);
+    expect(underageFullAge({ category: 'full', dob: '2009-03-21' })).toBeNull();
+    expect(underageFullAge({ category: 'full' })).toBeNull();
+    expect(underageFullAge({ category: 'tenK', dob: '2014-01-01' })).toBeNull();
+    expect(underageFullAge({ category: 'childTenK', dob: '2018-01-01' })).toBeNull();
+  });
+  it('lists one warning per under-18 full-marathon traveler, numbered by card position, in en and ko', () => {
+    const list: Traveler[] = [{ category: 'full', dob: '1990-01-01' }, { category: 'tenK', dob: '2012-01-01' }, { category: 'full', dob: '2011-06-30' }];
+    const warnings = underageFullWarnings(list);
+    expect(warnings.map((m) => translate('en', m))).toEqual(['Traveler 3 (Full Marathon) is 15 on race day; full marathon is for adults 18 and over.']);
+    expect(warnings.map((m) => translate('ko', m))).toEqual(['참가자 3(풀코스)은 대회일 기준 15세입니다. 풀코스는 18세 이상만 참가할 수 있습니다.']);
+    expect(underageFullWarnings([{ category: 'full', dob: '1990-01-01' }])).toEqual([]);
+  });
+  it('translates the traveler-card note in en and ko', () => {
+    expect(translate('en', 'traveler.warn.underageFull', { age: 16 })).toBe(
+      'Age 16 on race day (21 Mar 2027). Full marathon is for adults 18 and over; please check with the applicant.',
+    );
+    expect(translate('ko', 'traveler.warn.underageFull', { age: 16 })).toBe(
+      '대회일(2027년 3월 21일) 기준 16세입니다. 풀코스는 18세 이상만 참가할 수 있으니 신청자에게 확인하세요.',
+    );
   });
 });

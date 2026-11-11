@@ -10,7 +10,7 @@ function valid() {
   c.depositPerPax = 10000;
   c.bibQuota.total = 200;
   c.notifyEmails = ['staff@cebudirectclub.com'];
-  c.departures = [{ ...newDeparture(), id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23', seatCapacity: 120, prices: { full: 80000, tenK: 75000, companion: 70000, child: 50000, infant: 8000 }, singleSupplement: 15000 }];
+  c.departures = [{ ...newDeparture(), id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23', seatCapacity: 120, prices: { full: 80000, tenK: 75000, companion: 70000, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 }, singleSupplement: 15000 }];
   return c;
 }
 
@@ -20,14 +20,29 @@ describe('validateTourConfig', () => {
   });
   it('requires valid child and infant prices (missing in older configs)', () => {
     const c = valid();
-    c.departures[0].prices = { full: 80000, tenK: 75000, companion: 70000, child: NaN, infant: -1 };
+    c.departures[0].prices = { full: 80000, tenK: 75000, companion: 70000, childTenK: 0, childTenKNoBed: 0, child: NaN, childNoBed: 0, infant: -1 };
     expect(Object.keys(validateTourConfig(c, {}).errors).sort()).toEqual(['departures.0.prices.child', 'departures.0.prices.infant']);
     const legacy = valid();
     legacy.departures[0].prices = { full: 80000, tenK: 75000, companion: 70000 } as typeof legacy.departures[0]['prices'];
-    expect(Object.keys(validateTourConfig(legacy, {}).errors).sort()).toEqual(['departures.0.prices.child', 'departures.0.prices.infant']);
+    expect(Object.keys(validateTourConfig(legacy, {}).errors).sort()).toEqual([
+      'departures.0.prices.child',
+      'departures.0.prices.childNoBed',
+      'departures.0.prices.childTenK',
+      'departures.0.prices.childTenKNoBed',
+      'departures.0.prices.infant',
+    ]);
   });
-  it('new departures start with all five prices at 0', () => {
-    expect(newDeparture().prices).toEqual({ full: 0, tenK: 0, companion: 0, child: 0, infant: 0 });
+  it('requires all eight prices: a departure saved before the four child types needs the new ones', () => {
+    const fiveKey = valid();
+    fiveKey.departures[0].prices = { full: 55888, tenK: 52888, companion: 46888, child: 40888, infant: 10888 } as typeof fiveKey.departures[0]['prices'];
+    expect(Object.keys(validateTourConfig(fiveKey, {}).errors).sort()).toEqual([
+      'departures.0.prices.childNoBed',
+      'departures.0.prices.childTenK',
+      'departures.0.prices.childTenKNoBed',
+    ]);
+  });
+  it('new departures start with all eight prices at 0', () => {
+    expect(newDeparture().prices).toEqual({ full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
   });
   it('defaults are closed for applications', () => {
     expect(defaultTourConfig().acceptingApplications).toBe(false);
@@ -39,7 +54,7 @@ describe('validateTourConfig', () => {
     c.notifyEmails = ['nope'];
     c.mayaPaymentLinkBase = 'http://insecure.example';
     c.departures.push({ ...c.departures[0], id: 'mnl' });
-    c.departures.push({ ...newDeparture(), id: 'Bad Id', label: '', departDate: '2027-03-23', returnDate: '2027-03-19', prices: { full: -1, tenK: 0, companion: 0, child: 0, infant: 0 } });
+    c.departures.push({ ...newDeparture(), id: 'Bad Id', label: '', departDate: '2027-03-23', returnDate: '2027-03-19', prices: { full: -1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } });
     const { errors } = validateTourConfig(c, {});
     expect(Object.keys(errors).sort()).toEqual(
       [
@@ -89,7 +104,7 @@ describe('canRemoveDeparture', () => {
 });
 
 describe('computeDepartureUsage', () => {
-  const mk = (departureId: string, status: string, full: number) => ({ departure: { id: departureId }, status, counts: { full, tenK: 0, companion: 0, child: 0, infant: 0 } }) as never;
+  const mk = (departureId: string, status: string, full: number) => ({ departure: { id: departureId }, status, counts: { full, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }) as never;
   it('counts cancelled applications as references but not as seats; waitlist takes no seats', () => {
     const u = computeDepartureUsage([mk('mnl', 'new', 2), mk('mnl', 'waitlist', 3), mk('mnl', 'cancelled', 4), mk('ceb', 'cancelled', 1)]);
     expect(u.mnl).toEqual({ seatsUsed: 2, applications: 3 });
