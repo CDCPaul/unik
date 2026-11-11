@@ -7,7 +7,7 @@ const base: ApplicationRecord = {
   appNo: 'APP-0001',
   status: 'contacted',
   departure: { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23' },
-  lead: { firstName: 'Maria', lastName: 'Santos, Jr.', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: true, whatsapp: false },
+  lead: { firstName: 'Maria', lastName: 'Santos, Jr.', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: true, whatsapp: false, contactTimes: [] },
   counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
   travelers: [
     { category: 'full', passportName: '=HYPERLINK("x")', dob: '1990-05-14', tshirtSize: 'M' },
@@ -25,6 +25,12 @@ const base: ApplicationRecord = {
 };
 
 describe('toCsv', () => {
+  it('adds the best time to call as the last column without moving earlier columns', () => {
+    const lines = applicationsCsv([{ ...base, lead: { ...base.lead, contactTimes: ['afternoon', 'evening'] } }]).replace('﻿', '').trim().split('\r\n');
+    expect(lines[0].endsWith(',Staff notes,Best time to call (PH)')).toBe(true);
+    expect(lines[1].endsWith('"12 PM – 5 PM, 5 PM – 8 PM"')).toBe(true);
+    expect(applicationsCsv([base]).trim().endsWith('Any time')).toBe(true);
+  });
   it('escapes and neutralizes formulas', () => {
     const csv = toCsv([['a,b', 'say "x"', 'line1\nline2', '=SUM(A1)', '+1', '-2', '@x', 5, null]]);
     expect(csv).toBe('﻿"a,b","say ""x""","line1\nline2",\'=SUM(A1),\'+1,\'-2,\'@x,5,\r\n');
@@ -35,11 +41,11 @@ describe('applicationsCsv', () => {
   it('has one row per application with Manila time and promo agency', () => {
     const lines = applicationsCsv([base]).replace('﻿', '').trim().split('\r\n');
     expect(lines[0]).toBe(
-      'App no,Status,Applied (Manila),Departure,First name,Last name,Email,Phone,Viber,WhatsApp,Full,10K,Companion,Child 10K,Child 10K NB,Child,Child NB,Infant,Promo code,Agency,Total PHP,Deposit due PHP,Paid PHP,Info,Special requests,Staff notes',
+      'App no,Status,Applied (Manila),Departure,First name,Last name,Email,Phone,Viber,WhatsApp,Full,10K,Companion,Child 10K,Child 10K NB,Child,Child NB,Infant,Promo code,Agency,Total PHP,Deposit due PHP,Paid PHP,Info,Special requests,Staff notes,Best time to call (PH)',
     );
     expect(lines[1]).toBe(
       // 전화번호는 '+' 로 시작하므로 수식 방지 접두사 ' 가 붙는다(엑셀에서 텍스트로 표시)
-      "APP-0001,Contacted,2026-10-20 00:30,Manila (MNL),Maria,\"Santos, Jr.\",maria@example.com,'+63 917 123 4567,Yes,No,1,0,1,0,0,0,0,0,TA-A,A Travel,146000,20000,20000,4/14,Vegetarian,",
+      "APP-0001,Contacted,2026-10-20 00:30,Manila (MNL),Maria,\"Santos, Jr.\",maria@example.com,'+63 917 123 4567,Yes,No,1,0,1,0,0,0,0,0,TA-A,A Travel,146000,20000,20000,4/14,Vegetarian,,Any time",
     );
   });
 });

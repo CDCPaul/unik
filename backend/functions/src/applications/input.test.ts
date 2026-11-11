@@ -118,6 +118,11 @@ describe('parseSubmitInput', () => {
   it('rejects an email without a dotted domain', () => {
     expect(() => parseSubmitInput(validInput({ lead: { ...validInput().lead, email: 'maria@example' } }))).toThrow(SubmitError);
   });
+  it('keeps known contact times in order and defaults to none for older clients', () => {
+    const lead = { ...validInput().lead, contactTimes: ['evening', 'bogus', 'morning'] };
+    expect(parseSubmitInput(validInput({ lead })).lead.contactTimes).toEqual(['morning', 'evening']);
+    expect(parseSubmitInput(validInput()).lead.contactTimes).toEqual([]);
+  });
   it('rejects a malformed promo code', () => {
     expect(() => parseSubmitInput(validInput({ promoCode: 'TA SUNRISE' }))).toThrow(SubmitError);
   });

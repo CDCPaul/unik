@@ -4,12 +4,11 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CATEGORY_GROUPS,
+  CONTACT_TIMES,
+  CONTACT_TIME_LABELS,
   CATEGORY_LABELS,
   FULL_MARATHON_AGE_NOTICE,
-  RUNNER_CATEGORIES,
-  TSHIRT_SIZES,
   formatPHP,
-  hasRoomChoice,
   isValidPrice,
   manilaDate,
   missingPriceCategories,
@@ -86,7 +85,6 @@ export function ApplyForm() {
   const [checkingPromo, setCheckingPromo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [openTraveler, setOpenTraveler] = useState<number | null>(0);
   const searchParams = useSearchParams();
   const [hydrated, setHydrated] = useState(false);
   const initialized = useRef(false);
@@ -197,8 +195,6 @@ export function ApplyForm() {
     setErrors(found);
     if (Object.keys(found).length > 0) {
       const first = Object.keys(found)[0];
-      const travelerMatch = /^travelers\.(\d+)\./.exec(first);
-      if (travelerMatch) setOpenTraveler(Number(travelerMatch[1]));
       requestAnimationFrame(() =>
         (
           document.querySelector<HTMLElement>(`[data-field="${first}"]:not(:disabled)`) ??
@@ -350,7 +346,7 @@ export function ApplyForm() {
             <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">
               Mobile number *
               <span className="flex gap-2">
-                <select aria-label="Country code" className={`${field} w-24`} value={state.lead.phoneDial} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneDial', value: e.target.value })}>
+                <select aria-label="Country code" className="min-h-12 w-[92px] flex-none rounded-xl border-2 border-brand-line bg-white px-2 font-medium text-brand-ink" value={state.lead.phoneDial} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneDial', value: e.target.value })}>
                   {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.code}</option>)}
                 </select>
                 <input data-field="lead.phoneNumber" type="tel" aria-label="Mobile number" className={`${field} min-w-0 flex-1`} value={state.lead.phoneNumber} autoComplete="tel-national" placeholder="917 123 4567" aria-invalid={!!errors['lead.phoneNumber']} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneNumber', value: e.target.value })} />
@@ -366,64 +362,27 @@ export function ApplyForm() {
               </label>
             ))}
           </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-bold text-brand-ink">Best time for us to call you <span className="font-medium">(Philippine time, choose any)</span></p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[15px]">
+              {CONTACT_TIMES.map((t) => (
+                <label key={t} className="flex min-h-11 items-center gap-2 py-1">
+                  <input type="checkbox" className="h-5 w-5 accent-brand-red" checked={state.lead.contactTimes.includes(t)} onChange={() => dispatch({ type: 'toggleContactTime', time: t })} />
+                  {CONTACT_TIME_LABELS[t]}
+                </label>
+              ))}
+            </div>
+            <p className="text-sm">Our team will call you to confirm your booking and collect each traveler&apos;s details.</p>
+          </div>
           {/* honeypot: 화면·스크린리더에서 숨김 */}
           <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
             <label>Website<input tabIndex={-1} autoComplete="off" value={state.website} onChange={(e) => dispatch({ type: 'setHoneypot', value: e.target.value })} /></label>
           </div>
         </fieldset>
 
-        {/* 4. Traveler details (optional) */}
+        {/* 4. Promo */}
         <fieldset className={card}>
-          <legend className="float-left mb-1 flex w-full flex-wrap items-center gap-2.5 p-0">
-            <span className="text-xl font-extrabold text-brand-ink">4. Traveler details</span>
-            <span className="rounded-full bg-brand-soft px-3 py-1 text-[13px] font-bold text-brand-ink">Optional</span>
-          </legend>
-          <p className="text-[15px]">Busy? Skip this section. Our team will collect these details from you later.</p>
-          {state.travelers.map((t, i) => {
-            const open = openTraveler === i;
-            const isRunner = RUNNER_CATEGORIES.includes(t.category);
-            const text = (f: TravelerField, label: string, extra: Record<string, string> = {}) => (
-              <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">
-                {label}
-                <input data-field={`travelers.${i}.${f}`} className={field} value={(t[f] as string | undefined) ?? ''} aria-invalid={!!errors[`travelers.${i}.${f}`]} onChange={(e) => dispatch({ type: 'setTraveler', index: i, field: f, value: e.target.value })} {...extra} />
-                <FieldError id={`err-t${i}-${f}`} msg={errors[`travelers.${i}.${f}`]} />
-              </label>
-            );
-            const select = (f: TravelerField, label: string, options: readonly (readonly [string, string])[]) => (
-              <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">
-                {label}
-                <select className={field} value={(t[f] as string | undefined) ?? ''} onChange={(e) => dispatch({ type: 'setTraveler', index: i, field: f, value: e.target.value })}>
-                  <option value="">Select</option>
-                  {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-              </label>
-            );
-            return (
-              <div key={i} className="rounded-2xl border-2 border-brand-line">
-                <button type="button" aria-expanded={open} onClick={() => setOpenTraveler(open ? null : i)} className="flex w-full items-center justify-between px-5 py-4 text-left">
-                  <span className="font-extrabold text-brand-ink">Traveler {i + 1} · {CATEGORY_LABELS[t.category]}</span>
-                  <span className="font-bold text-brand-red">{open ? 'Hide' : 'Add details +'}</span>
-                </button>
-                {open ? (
-                  <div className="grid gap-3.5 px-5 pb-5 sm:grid-cols-2">
-                    {text('passportName', 'Name as in passport', { autoComplete: 'off' })}
-                    {text('dob', 'Date of birth', { type: 'date' })}
-                    {select('gender', 'Gender', [['female', 'Female'], ['male', 'Male']])}
-                    {text('nationality', 'Nationality')}
-                    {isRunner ? select('tshirtSize', 'T-shirt size', TSHIRT_SIZES.map((s) => [s, s] as const)) : null}
-                    {isRunner ? text('expectedFinish', 'Expected finish time', { placeholder: 'e.g. 4:30' }) : null}
-                    {hasRoomChoice(t.category) ? select('room', 'Room', [['twin', 'Twin share'], ['single', 'Single (supplement applies)']]) : null}
-                    {text('emergencyContact', 'Emergency contact', { placeholder: 'Name and phone' })}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </fieldset>
-
-        {/* 5. Promo */}
-        <fieldset className={card}>
-          <legend className={legend}>5. Promo code</legend>
+          <legend className={legend}>4. Promo code</legend>
           <p className="text-[15px]">Referred by a travel agency? Enter the code they gave you.</p>
           <div className="flex flex-wrap gap-2.5">
             <label className="flex flex-[1_1_240px] flex-col gap-1.5 text-sm font-bold text-brand-ink">
@@ -445,9 +404,9 @@ export function ApplyForm() {
           {promoMessage ? <p role="alert" className="text-sm font-semibold text-brand-red">{promoMessage}</p> : null}
         </fieldset>
 
-        {/* 6. Finish */}
+        {/* 5. Finish */}
         <fieldset className={card}>
-          <legend className={legend}>6. Anything else?</legend>
+          <legend className={legend}>5. Anything else?</legend>
           <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">
             Special requests (optional)
             <textarea data-field="specialRequests" rows={3} maxLength={1000} className={`${field} py-3`} placeholder="Dietary needs, rooming with a friend, questions…" value={state.specialRequests} aria-invalid={!!errors.specialRequests} onChange={(e) => dispatch({ type: 'setSpecialRequests', value: e.target.value })} />

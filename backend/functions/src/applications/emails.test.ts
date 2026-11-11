@@ -63,6 +63,11 @@ describe('application emails', () => {
     );
     expect(staffEmail(family, 'd').subject).toContain('| 8 pax |');
   });
+  it('staff email shows the preferred call time, or Any time when none was chosen', () => {
+    const withTimes = { ...app, lead: { ...app.lead, contactTimes: ['evening', 'morning'] } };
+    expect(staffEmail(withTimes, 'd').html).toContain('Best time to call (PH time): 8 AM – 12 PM, 5 PM – 8 PM');
+    expect(staffEmail(app, 'd').html).toContain('Best time to call (PH time): Any time');
+  });
   it('escapes user-provided text', () => {
     for (const { html } of [customerEmail(app), staffEmail(app, 'doc-123')]) {
       expect(html).not.toContain('<script>');

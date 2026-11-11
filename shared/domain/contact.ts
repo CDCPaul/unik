@@ -32,3 +32,18 @@ export function mayaPaymentLink(base: string | null, amount: number): string | n
     return null;
   }
 }
+
+/** 고객이 고르는 연락 선호 시간대 (필리핀 시간). 업무시간 8–17시 + 저녁 17–20시. */
+export const CONTACT_TIMES = ['morning', 'afternoon', 'evening'] as const;
+export type ContactTime = (typeof CONTACT_TIMES)[number];
+export const CONTACT_TIME_LABELS: Record<ContactTime, string> = {
+  morning: '8 AM – 12 PM',
+  afternoon: '12 PM – 5 PM',
+  evening: '5 PM – 8 PM',
+};
+
+/** 알 수 없는 값·중복을 버리고 CONTACT_TIMES 순서로 정리한다. */
+export function normalizeContactTimes(value: unknown): ContactTime[] {
+  if (!Array.isArray(value)) return [];
+  return CONTACT_TIMES.filter((t) => value.includes(t));
+}

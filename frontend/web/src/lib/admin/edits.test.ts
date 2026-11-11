@@ -27,7 +27,7 @@ const app: ApplicationRecord = {
   appNo: 'APP-0001',
   status: 'contacted',
   departure: { id: 'mnl', label: 'Manila', departDate: '2027-03-19', returnDate: '2027-03-23' },
-  lead: { firstName: 'Maria', lastName: 'Santos', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: true, whatsapp: false },
+  lead: { firstName: 'Maria', lastName: 'Santos', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: true, whatsapp: false, contactTimes: [] },
   counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
   travelers: [{ category: 'full', passportName: 'SANTOS MARIA' }],
   completeness: { filled: 1, total: 8 },

@@ -3,6 +3,7 @@ import {
   CATEGORIES,
   EMAIL_PATTERN,
   PHONE_DIAL_PATTERN,
+  normalizeContactTimes,
   PHONE_NUMBER_PATTERN,
   PROMO_CODE_PATTERN,
   TSHIRT_SIZES,
@@ -75,6 +76,8 @@ export const submitInputSchema = z.object({
     ),
     viber: z.preprocess(nullToUndefined, z.boolean().default(false)),
     whatsapp: z.preprocess(nullToUndefined, z.boolean().default(false)),
+    // 연락 선호 시간대(선택). 알 수 없는 값은 버리고, 예전 클라이언트는 빈 목록.
+    contactTimes: z.preprocess((v) => normalizeContactTimes(v), z.array(z.string())),
   }),
   travelers: z.preprocess(nullToUndefined, z.array(travelerSchema).max(10).default([])),
   promoCode: z.preprocess(

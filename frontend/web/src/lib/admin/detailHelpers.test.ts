@@ -76,9 +76,14 @@ describe('cleanTraveler', () => {
 
 describe('leadChanges', () => {
   it('lists only changed fields with dotted paths', () => {
-    const prev = { firstName: 'A', lastName: 'B', email: 'a@b.co', phoneDial: '+63', phoneNumber: '9171234567', viber: true, whatsapp: false };
-    expect(leadChanges(prev, { ...prev, email: 'c@d.co', whatsapp: true })).toEqual({ 'lead.email': 'c@d.co', 'lead.whatsapp': true });
+    const prev = { firstName: 'A', lastName: 'B', email: 'a@b.co', phoneDial: '+63', phoneNumber: '9171234567', viber: true, whatsapp: false, contactTimes: [] };
+    expect(leadChanges(prev, { ...prev, email: 'c@d.co', whatsapp: true, contactTimes: [] })).toEqual({ 'lead.email': 'c@d.co', 'lead.whatsapp': true });
     expect(leadChanges(prev, prev)).toEqual({});
+  });
+  it('compares contact times by value, not by array identity', () => {
+    const prev = { firstName: 'A', lastName: 'B', email: 'a@b.co', phoneDial: '+63', phoneNumber: '9171234567', viber: true, whatsapp: false, contactTimes: ['morning' as const] };
+    expect(leadChanges(prev, { ...prev, contactTimes: ['morning'] })).toEqual({});
+    expect(leadChanges(prev, { ...prev, contactTimes: ['morning', 'evening'] })).toEqual({ 'lead.contactTimes': ['morning', 'evening'] });
   });
 });
 

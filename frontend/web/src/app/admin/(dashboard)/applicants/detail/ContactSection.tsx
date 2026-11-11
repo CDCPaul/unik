@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { internationalDigits, viberLink, whatsappLink } from '@unik/shared/domain';
+import { CONTACT_TIMES, internationalDigits, normalizeContactTimes, viberLink, whatsappLink } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { leadChanges } from '@/lib/admin/detailHelpers';
 import { normalizeLead, validateLead } from '@/lib/admin/edits';
@@ -50,6 +50,8 @@ export function ContactSection({ app }: { app: ApplicationRecord }) {
           <dd className="break-all"><a className="text-blue-700 underline" href={`mailto:${l.email}`}>{l.email}</a></dd>
           <dt className="text-slate-500">{t('detail.contact.phone')}</dt>
           <dd><a className="text-blue-700 underline" href={`tel:${tel}`}>{l.phoneDial} {l.phoneNumber}</a></dd>
+          <dt className="text-slate-500">{t('detail.contact.bestTime')}</dt>
+          <dd>{l.contactTimes.length ? l.contactTimes.map((c) => t(`contactTime.${c}`)).join(', ') : t('detail.contact.anyTime')}</dd>
         </dl>
         {viber || wa ? (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -72,6 +74,22 @@ export function ContactSection({ app }: { app: ApplicationRecord }) {
         <Field label={t('detail.contact.mobile')} error={err('lead.phoneNumber')}><input className="admin-input" inputMode="tel" value={draft.phoneNumber} onChange={(e) => set('phoneNumber', e.target.value)} /></Field>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={draft.viber} onChange={(e) => set('viber', e.target.checked)} /> Viber</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="h-4 w-4" checked={draft.whatsapp} onChange={(e) => set('whatsapp', e.target.checked)} /> WhatsApp</label>
+        <fieldset className="col-span-2 flex flex-col gap-1">
+          <legend className="text-sm text-slate-600">{t('detail.contact.bestTime')}</legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {CONTACT_TIMES.map((c) => (
+              <label key={c} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={draft.contactTimes.includes(c)}
+                  onChange={(e) => set('contactTimes', normalizeContactTimes(e.target.checked ? [...draft.contactTimes, c] : draft.contactTimes.filter((x) => x !== c)))}
+                />
+                {t(`contactTime.${c}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </div>
       <div className="mt-3 flex gap-2">
         <button type="button" className="admin-btn-primary !py-1.5" disabled={saving} onClick={save}>{saving ? t('common.saving') : t('detail.contact.save')}</button>

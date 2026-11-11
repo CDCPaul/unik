@@ -1,5 +1,10 @@
-import { describeCounts, formatPHP, totalPax, type Counts, type Pricing } from '../shared-domain';
+import { CONTACT_TIME_LABELS, describeCounts, formatPHP, normalizeContactTimes, totalPax, type Counts, type Pricing } from '../shared-domain';
 import { escapeHtml } from '../lib/email';
+
+function bestTime(value: unknown): string {
+  const times = normalizeContactTimes(value);
+  return times.length ? times.map((t) => CONTACT_TIME_LABELS[t]).join(', ') : 'Any time';
+}
 
 export interface ApplicationEmailData {
   appNo: string;
@@ -12,6 +17,7 @@ export interface ApplicationEmailData {
     phoneNumber: string;
     viber: boolean;
     whatsapp: boolean;
+    contactTimes?: string[];
   };
   departure: { id: string; label: string; departDate: string; returnDate: string };
   counts: Counts;
@@ -88,6 +94,7 @@ export function staffEmail(app: ApplicationEmailData, docId: string): { subject:
     `${escapeHtml(app.lead.firstName)} ${escapeHtml(app.lead.lastName)}`,
     escapeHtml(app.lead.email),
     `${escapeHtml(app.lead.phoneDial)} ${escapeHtml(app.lead.phoneNumber)}${app.lead.viber ? ' · Viber' : ''}${app.lead.whatsapp ? ' · WhatsApp' : ''}`,
+    `Best time to call (PH time): ${bestTime(app.lead.contactTimes)}`,
   ].join('<br>');
   return {
     subject: `[UNIK] ${app.appNo}${waitlist} ${app.lead.firstName} ${app.lead.lastName} | ${pax} pax${promo}`,
