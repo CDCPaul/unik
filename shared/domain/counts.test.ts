@@ -53,6 +53,13 @@ describe('validateCounts', () => {
     expect(validateCounts({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 2 })).toBe(msg);
     expect(validateCounts({ full: 1, tenK: 1, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 2 })).toBeNull();
   });
+  it('allows at most one child without a bed per adult (10K and cheering combined)', () => {
+    const msg = 'Each child without a bed must share with an adult (one child without a bed per adult).';
+    expect(validateCounts({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 1, child: 0, childNoBed: 1, infant: 0 })).toBe(msg);
+    expect(validateCounts({ full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 1, child: 0, childNoBed: 1, infant: 0 })).toBeNull();
+    // 침대 있는 아동은 이 제한과 무관
+    expect(validateCounts({ full: 1, tenK: 0, companion: 0, childTenK: 2, childTenKNoBed: 1, child: 2, childNoBed: 0, infant: 0 })).toBeNull();
+  });
   it('counts children and infants towards the 10-traveler maximum', () => {
     expect(validateCounts({ full: 2, tenK: 0, companion: 2, childTenK: 0, childTenKNoBed: 0, child: 6, childNoBed: 0, infant: 1 })).toBe('Maximum 10 travelers per application');
     expect(validateCounts({ full: 2, tenK: 0, companion: 2, childTenK: 0, childTenKNoBed: 0, child: 4, childNoBed: 0, infant: 2 })).toBeNull();
@@ -123,7 +130,7 @@ describe('four child types (2026-11-06 quotation)', () => {
     expect(validateCounts({ ...Z, childTenKNoBed: 1 })).toBe(msg);
     expect(validateCounts({ ...Z, child: 1 })).toBe(msg);
     expect(validateCounts({ ...Z, childNoBed: 1 })).toBe(msg);
-    expect(validateCounts({ ...Z, tenK: 1, childTenK: 1, childTenKNoBed: 1, child: 1, childNoBed: 1 })).toBeNull();
+    expect(validateCounts({ ...Z, tenK: 1, companion: 1, childTenK: 1, childTenKNoBed: 1, child: 1, childNoBed: 1 })).toBeNull();
   });
 
   it('still limits infants to the number of adults, not children', () => {

@@ -207,7 +207,7 @@ describe('submitApplicationCore', () => {
   it('counts child 10K runners (with and without bed) toward the bib quota', async () => {
     await seedTourConfig({ bibQuota: { total: 2 } });
     const z = { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 };
-    const cheering = await submitApplicationCore(testDb(), validInput({ counts: { ...z, companion: 1, child: 2, childNoBed: 2 } }), now);
+    const cheering = await submitApplicationCore(testDb(), validInput({ counts: { ...z, companion: 2, child: 2, childNoBed: 2 } }), now);
     expect(cheering.status).toBe('new');
     const runners = await submitApplicationCore(testDb(), validInput({ counts: { ...z, tenK: 1, childTenK: 1, childTenKNoBed: 1 } }), now);
     expect(runners.status).toBe('waitlist');

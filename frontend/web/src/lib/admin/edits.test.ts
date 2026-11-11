@@ -385,6 +385,7 @@ describe('countsError', () => {
       { full: 0, tenK: 0, companion: 0, childTenK: 1, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
       { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 1, child: 0, childNoBed: 0, infant: 0 },
       { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 1, infant: 0 },
+      { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 1, child: 0, childNoBed: 2, infant: 0 },
       { full: 0, tenK: 1, companion: 0, childTenK: 1, childTenKNoBed: 1, child: 1, childNoBed: 1, infant: 1 },
     ];
     for (const c of cases) {

@@ -41,7 +41,8 @@ export function countsError(counts: Counts): Msg | null {
   if (total > MAX_PAX_PER_APPLICATION) return msg('counts.error.max', { max: MAX_PAX_PER_APPLICATION });
   const adults = adultCount(counts);
   if (total - adults > 0 && adults < 1) return msg('counts.error.needAdult');
-  return msg('counts.error.infantPerAdult');
+  if (counts.infant > adults) return msg('counts.error.infantPerAdult');
+  return msg('counts.error.noBedPerAdult');
 }
 
 type Recalculated = { travelers: Traveler[]; completeness: { filled: number; total: number }; pricing: Pricing; warnings: Msg[] } | { error: Msg };

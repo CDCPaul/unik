@@ -85,6 +85,7 @@ export const ko: Record<MessageKey, string> = {
   'counts.error.max': '신청서 1건당 최대 {max}명까지 가능합니다',
   'counts.error.needAdult': '아동과 유아는 성인 1명 이상과 함께 참가해야 합니다.',
   'counts.error.infantPerAdult': '유아는 성인 1명당 1명까지 함께 참가할 수 있습니다.',
+  'counts.error.noBedPerAdult': '침대 없는 아동은 어른 1명당 1명까지 가능합니다.',
 
   // 결제 수단·유형
   'paymentMethod.maya_link': 'Maya 결제 링크',
