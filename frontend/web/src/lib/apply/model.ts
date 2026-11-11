@@ -49,6 +49,8 @@ export interface ApplyState {
   promo: AppliedPromo | null;
   specialRequests: string;
   agreedToTerms: boolean;
+  /** 풀코스 러너가 있을 때: 공인기록(4:59:59 이내) 보유 확인 */
+  fullQualifierConfirmed: boolean;
   website: string; // honeypot
   idempotencyKey: string;
   /** 제출을 시도한 적이 있으면 true. 임시저장 복원 시 같은 신청의 재시도인지 새 신청인지 가른다. */
@@ -68,6 +70,7 @@ export type ApplyAction =
   | { type: 'promoCleared' }
   | { type: 'setSpecialRequests'; value: string }
   | { type: 'setAgreed'; value: boolean }
+  | { type: 'setFullQualifier'; value: boolean }
   | { type: 'setHoneypot'; value: string }
   | { type: 'markSubmitAttempted' }
   | { type: 'restore'; state: ApplyState };
@@ -82,6 +85,7 @@ export function initialApplyState(idempotencyKey: string, promoCode: string | nu
     promo: null,
     specialRequests: '',
     agreedToTerms: false,
+    fullQualifierConfirmed: false,
     website: '',
     idempotencyKey,
     submitAttempted: false,
@@ -123,6 +127,8 @@ export function applyReducer(state: ApplyState, action: ApplyAction): ApplyState
       return { ...state, specialRequests: action.value };
     case 'setAgreed':
       return { ...state, agreedToTerms: action.value };
+    case 'setFullQualifier':
+      return { ...state, fullQualifierConfirmed: action.value };
     case 'setHoneypot':
       return { ...state, website: action.value };
     case 'markSubmitAttempted':
@@ -133,6 +139,7 @@ export function applyReducer(state: ApplyState, action: ApplyAction): ApplyState
         ...action.state,
         lead: { ...action.state.lead, contactTimes: normalizeContactTimes(action.state.lead.contactTimes) },
         travelers: buildTravelers(action.state.counts),
+        fullQualifierConfirmed: action.state.fullQualifierConfirmed === true,
       };
   }
 }
@@ -155,6 +162,9 @@ export function validateForSubmit(state: ApplyState, today: string): Record<stri
   if (!EMAIL_PATTERN.test(email) || email.length > 120) errors['lead.email'] = 'Please enter a valid email address.';
   if (!PHONE_DIAL_PATTERN.test(state.lead.phoneDial) || !PHONE_NUMBER_PATTERN.test(normalizePhoneNumber(state.lead.phoneNumber))) {
     errors['lead.phoneNumber'] = 'Please enter a valid mobile number.';
+  }
+  if (state.counts.full > 0 && !state.fullQualifierConfirmed) {
+    errors.fullQualifierConfirmed = 'Full marathon entry needs an official finish of 4:59:59 or faster. Please confirm, or choose the 10K.';
   }
   if (!state.agreedToTerms) errors.agreedToTerms = 'Please agree to the terms to continue.';
   if (!state.promo && state.promoInput.trim() && !isValidPromoCodeFormat(normalizePromoCode(state.promoInput))) {
