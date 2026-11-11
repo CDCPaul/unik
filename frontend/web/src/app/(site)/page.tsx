@@ -159,7 +159,7 @@ export default async function HomePage() {
         <SectionHeading
           eyebrow="THE TOUR"
           title="Everything handled. You just run."
-          intro="Choose your package. Prices are per person on twin-share accommodation."
+          intro="Choose your package. Prices are per person. Adults and children with a bed share a twin room."
         />
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5">
           {packages.map((pkg) => (

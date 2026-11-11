@@ -44,6 +44,8 @@ export function requiredFieldsFor(category: Category): readonly TravelerField[] 
       return INFANT_FIELDS;
     case 'companion':
     case 'child':
+    default:
+      // 저장된 데이터에 알 수 없는 유형이 있어도 어드민 상세가 깨지지 않도록 비참가자 기준으로 본다
       return COMPANION_FIELDS;
   }
 }
