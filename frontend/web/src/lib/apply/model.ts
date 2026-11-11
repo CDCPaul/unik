@@ -16,8 +16,9 @@ import {
   normalizePromoCode,
   totalPax,
   validateCounts,
+  normalizeContactTimes,
 } from '@unik/shared/domain';
-import type { Category, Counts, DiscountType, Pricing, TourConfig, Traveler } from '@unik/shared/domain';
+import type { Category, ContactTime, Counts, DiscountType, Pricing, TourConfig, Traveler } from '@unik/shared/domain';
 import type { SubmitPayload } from './api';
 
 export interface AppliedPromo {
@@ -36,6 +37,7 @@ export interface LeadState {
   phoneNumber: string;
   viber: boolean;
   whatsapp: boolean;
+  contactTimes: ContactTime[];
 }
 
 export interface ApplyState {
@@ -58,7 +60,8 @@ export type TravelerField = Exclude<keyof Traveler, 'category'>;
 export type ApplyAction =
   | { type: 'setDeparture'; departureId: string }
   | { type: 'changeCount'; category: Category; delta: 1 | -1 }
-  | { type: 'setLead'; field: keyof LeadState; value: string | boolean }
+  | { type: 'setLead'; field: Exclude<keyof LeadState, 'contactTimes'>; value: string | boolean }
+  | { type: 'toggleContactTime'; time: ContactTime }
   | { type: 'setTraveler'; index: number; field: TravelerField; value: string }
   | { type: 'setPromoInput'; value: string }
   | { type: 'promoApplied'; promo: AppliedPromo }
@@ -73,7 +76,7 @@ export function initialApplyState(idempotencyKey: string, promoCode: string | nu
   return {
     departureId: null,
     counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
-    lead: { firstName: '', lastName: '', email: '', phoneDial: '+63', phoneNumber: '', viber: false, whatsapp: false },
+    lead: { firstName: '', lastName: '', email: '', phoneDial: '+63', phoneNumber: '', viber: false, whatsapp: false, contactTimes: [] },
     travelers: [{ category: 'full' }],
     promoInput: promoCode ?? '',
     promo: null,
@@ -98,6 +101,11 @@ export function applyReducer(state: ApplyState, action: ApplyAction): ApplyState
     }
     case 'setLead':
       return { ...state, lead: { ...state.lead, [action.field]: action.value } };
+    case 'toggleContactTime': {
+      const has = state.lead.contactTimes.includes(action.time);
+      const next = has ? state.lead.contactTimes.filter((t) => t !== action.time) : [...state.lead.contactTimes, action.time];
+      return { ...state, lead: { ...state.lead, contactTimes: normalizeContactTimes(next) } };
+    }
     case 'setTraveler':
       return {
         ...state,
@@ -120,7 +128,12 @@ export function applyReducer(state: ApplyState, action: ApplyAction): ApplyState
     case 'markSubmitAttempted':
       return state.submitAttempted ? state : { ...state, submitAttempted: true };
     case 'restore':
-      return action.state;
+      // 예전 초안에는 contactTimes 가 없을 수 있다
+      return {
+        ...action.state,
+        lead: { ...action.state.lead, contactTimes: normalizeContactTimes(action.state.lead.contactTimes) },
+        travelers: buildTravelers(action.state.counts),
+      };
   }
 }
 
@@ -165,15 +178,6 @@ export function validateForSubmit(state: ApplyState, today: string): Record<stri
   return errors;
 }
 
-function cleanTraveler(t: Traveler): Traveler {
-  const out: Record<string, unknown> = { category: t.category };
-  for (const [k, v] of Object.entries(t)) {
-    if (k === 'category') continue;
-    if (typeof v === 'string' && v.trim() !== '') out[k] = v.trim();
-  }
-  return out as unknown as Traveler;
-}
-
 export function toSubmitPayload(state: ApplyState): SubmitPayload {
   const typedCode = state.promoInput.trim() ? normalizePromoCode(state.promoInput) : undefined;
   const promoCode = state.promo?.code ?? typedCode;
@@ -189,7 +193,8 @@ export function toSubmitPayload(state: ApplyState): SubmitPayload {
       email: state.lead.email.trim(),
       phoneNumber: normalizePhoneNumber(state.lead.phoneNumber),
     },
-    travelers: state.travelers.map(cleanTraveler),
+    // 참가자 상세는 직원이 전화로 받으므로 유형만 보낸다
+    travelers: state.travelers.map((t) => ({ category: t.category })),
     // callable SDK 가 undefined 를 null 로 보내므로 값이 없으면 키 자체를 넣지 않는다.
     ...(promoCode ? { promoCode } : {}),
     ...(specialRequests ? { specialRequests } : {}),

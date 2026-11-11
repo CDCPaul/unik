@@ -8,7 +8,7 @@ function app(over: Partial<ApplicationRecord>): ApplicationRecord {
     appNo: 'APP-0000',
     status: 'new',
     departure: { id: 'mnl', label: 'Manila', departDate: '', returnDate: '' },
-    lead: { firstName: 'Maria', lastName: 'Santos', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: false, whatsapp: false },
+    lead: { firstName: 'Maria', lastName: 'Santos', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: false, whatsapp: false, contactTimes: [] },
     counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
     travelers: [{ category: 'full' }],
     completeness: { filled: 8, total: 8 },
@@ -29,7 +29,7 @@ const apps = [
   app({ id: 'a1', appNo: 'APP-0001', createdAt: new Date('2026-10-19T00:00:00Z') }),
   app({ id: 'a2', appNo: 'APP-0002', status: 'confirmed', counts: { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, pricing: { lines: [], singleSupplements: 0, subtotal: 230000, promo: promo('TA-A', 6000), total: 224000, depositDue: 30000 }, createdAt: new Date('2026-10-20T00:00:00Z') }),
   app({ id: 'a3', appNo: 'APP-0003', status: 'cancelled', pricing: { lines: [], singleSupplements: 0, subtotal: 80000, promo: promo('TA-A'), total: 78000, depositDue: 10000 }, createdAt: new Date('2026-10-21T00:00:00Z') }),
-  app({ id: 'a4', appNo: 'APP-0004', departure: { id: 'ceb', label: 'Cebu', departDate: '', returnDate: '' }, completeness: { filled: 2, total: 8 }, lead: { firstName: 'José', lastName: 'Reyes', email: 'jose@x.com', phoneDial: '+63', phoneNumber: '0918 000 1111', viber: false, whatsapp: true }, createdAt: new Date('2026-10-22T00:00:00Z') }),
+  app({ id: 'a4', appNo: 'APP-0004', departure: { id: 'ceb', label: 'Cebu', departDate: '', returnDate: '' }, completeness: { filled: 2, total: 8 }, lead: { firstName: 'José', lastName: 'Reyes', email: 'jose@x.com', phoneDial: '+63', phoneNumber: '0918 000 1111', viber: false, whatsapp: true, contactTimes: [] }, createdAt: new Date('2026-10-22T00:00:00Z') }),
 ];
 
 describe('filterApplications', () => {

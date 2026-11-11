@@ -96,7 +96,10 @@ export function cleanTraveler(t: Traveler): Traveler {
 export function leadChanges(prev: ApplicationRecord['lead'], next: ApplicationRecord['lead']): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const k of Object.keys(next) as (keyof ApplicationRecord['lead'])[]) {
-    if (prev[k] !== next[k]) out[`lead.${k}`] = next[k];
+    const a = prev[k];
+    const b = next[k];
+    const same = Array.isArray(a) && Array.isArray(b) ? a.join(',') === b.join(',') : a === b;
+    if (!same) out[`lead.${k}`] = b;
   }
   return out;
 }

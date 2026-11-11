@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { internationalDigits, mayaPaymentLink, viberLink, whatsappLink } from './contact';
+import { internationalDigits, mayaPaymentLink, normalizeContactTimes, viberLink, whatsappLink } from './contact';
 
 describe('internationalDigits', () => {
   it('drops the trunk 0 and formatting', () => {
@@ -35,5 +35,15 @@ describe('mayaPaymentLink', () => {
     expect(mayaPaymentLink('  ', 100)).toBeNull();
     expect(mayaPaymentLink('not a url', 100)).toBeNull();
     expect(mayaPaymentLink('https://mymaya.me/x', 0)).toBeNull();
+  });
+});
+
+describe('normalizeContactTimes', () => {
+  it('keeps known values in a fixed order without duplicates', () => {
+    expect(normalizeContactTimes(['evening', 'morning', 'evening', 'nope'])).toEqual(['morning', 'evening']);
+  });
+  it('returns an empty list for anything that is not an array', () => {
+    expect(normalizeContactTimes(undefined)).toEqual([]);
+    expect(normalizeContactTimes('morning')).toEqual([]);
   });
 });

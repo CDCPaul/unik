@@ -63,12 +63,12 @@ export default async function HomePage() {
           </div>
           <div className="relative h-[420px] min-w-0 flex-[1_1_380px] overflow-hidden rounded-3xl sm:h-[520px]">
             <Image
-              src="/images/seoul-marathon-gwanghwamun.jpg"
-              alt="Runners passing the Admiral Yi Sun-sin statue at Gwanghwamun Square during the Seoul Marathon"
+              src="/images/seoul-marathon-runners.jpg"
+              alt="Thousands of Seoul Marathon runners filling a city road at dawn"
               fill
               priority
               sizes="(max-width: 900px) 100vw, 560px"
-              className="object-cover object-[45%_50%]"
+              className="object-cover"
             />
             <PhotoCredit />
           </div>
@@ -144,8 +144,8 @@ export default async function HomePage() {
         </div>
         <div className="relative h-[300px] overflow-hidden rounded-3xl sm:h-[420px]">
           <Image
-            src="/images/seoul-marathon-runners.jpg"
-            alt="Thousands of Seoul Marathon runners filling a city road at dawn"
+            src="/images/seoul-marathon-gwanghwamun.jpg"
+            alt="Runners passing the Admiral Yi Sun-sin statue at Gwanghwamun Square during the Seoul Marathon"
             fill
             sizes="(max-width: 1200px) 100vw, 1200px"
             className="object-cover"

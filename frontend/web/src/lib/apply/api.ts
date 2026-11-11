@@ -22,6 +22,7 @@ export interface SubmitPayload {
     phoneNumber: string;
     viber: boolean;
     whatsapp: boolean;
+    contactTimes: string[];
   };
   travelers: Traveler[];
   promoCode?: string;

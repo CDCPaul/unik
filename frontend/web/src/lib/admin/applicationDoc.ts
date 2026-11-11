@@ -1,6 +1,7 @@
-import { normalizeCounts } from '@unik/shared/domain';
+import { normalizeContactTimes, normalizeCounts } from '@unik/shared/domain';
 import type {
   ApplicationStatus,
+  ContactTime,
   Counts,
   PaymentMethod,
   PaymentType,
@@ -32,7 +33,7 @@ export interface ApplicationRecord {
   appNo: string;
   status: ApplicationStatus;
   departure: { id: string; label: string; departDate: string; returnDate: string };
-  lead: { firstName: string; lastName: string; email: string; phoneDial: string; phoneNumber: string; viber: boolean; whatsapp: boolean };
+  lead: { firstName: string; lastName: string; email: string; phoneDial: string; phoneNumber: string; viber: boolean; whatsapp: boolean; contactTimes: ContactTime[] };
   counts: Counts;
   travelers: Traveler[];
   completeness: { filled: number; total: number };
@@ -77,6 +78,7 @@ export function fromApplicationDoc(id: string, data: Obj): ApplicationRecord {
       phoneNumber: String(lead.phoneNumber ?? ''),
       viber: lead.viber === true,
       whatsapp: lead.whatsapp === true,
+      contactTimes: normalizeContactTimes(lead.contactTimes),
     },
     // 예전 신청서에는 child/infant 키가 없다
     counts: normalizeCounts(data.counts),
