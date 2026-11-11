@@ -1,4 +1,4 @@
-import { ADULT_CATEGORIES, CATEGORIES, RUNNER_CATEGORIES } from './types';
+import { ADULT_CATEGORIES, CATEGORIES, FULL_MARATHON_MIN_AGE, NO_BED_CATEGORIES, RACE_DATE, RUNNER_CATEGORIES } from './types';
 import type { Category, Counts, Traveler } from './types';
 
 export const MAX_PAX_PER_APPLICATION = 10;
@@ -10,7 +10,7 @@ export function totalPax(counts: Counts): number {
   return sum(counts, CATEGORIES);
 }
 
-/** 배번이 필요한 인원 (풀·10K) */
+/** 배번이 필요한 인원 (풀·10K·아동 10K 침대/침대 없음) */
 export function runnerCount(counts: Counts): number {
   return sum(counts, RUNNER_CATEGORIES);
 }
@@ -21,8 +21,9 @@ export function adultCount(counts: Counts): number {
 }
 
 /**
- * 저장된 문서·신뢰할 수 없는 입력의 인원 구성을 다섯 유형 모두 갖춘 Counts 로 만든다.
- * 없거나 잘못된 값(음수·소수·숫자가 아님)은 0 으로 본다. 예전 신청서에는 child/infant 키가 없다.
+ * 저장된 문서·신뢰할 수 없는 입력의 인원 구성을 모든 유형을 갖춘 Counts 로 만든다.
+ * 없거나 잘못된 값(음수·소수·숫자가 아님)은 0 으로 본다. 예전 신청서에는 child/infant 나
+ * 아동 10K·침대 없음 키가 없다. 예전 child 는 지금 정의(아동 응원·침대)와 같은 뜻이다.
  */
 export function normalizeCounts(partial: unknown): Counts {
   const src = partial && typeof partial === 'object' ? (partial as Record<string, unknown>) : {};
@@ -44,19 +45,44 @@ export function validateCounts(counts: Counts): string | null {
   if (total < 1) return 'At least one traveler is required';
   if (total > MAX_PAX_PER_APPLICATION) return `Maximum ${MAX_PAX_PER_APPLICATION} travelers per application`;
   const adults = adultCount(counts);
-  if (counts.child + counts.infant > 0 && adults < 1) return 'Children and infants must travel with at least one adult.';
+  if (totalPax(counts) - adults > 0 && adults < 1) return 'Children and infants must travel with at least one adult.';
   if (counts.infant > adults) return 'Each infant must travel with an adult (one infant per adult).';
   return null;
 }
 
-/** 유아는 보호자 방을 함께 쓰므로 객실 선택(싱글 추가요금)이 없다. */
+/** 침대 없는 아동·유아는 보호자 침대를 함께 쓰므로 객실 선택(싱글 추가요금)이 없다. */
 export function hasRoomChoice(category: Category): boolean {
-  return category !== 'infant';
+  return !NO_BED_CATEGORIES.includes(category);
+}
+
+/**
+ * YYYY-MM-DD 생년월일의 기준일(on) 나이. 날짜 형식이 아니면 null.
+ */
+export function ageOn(dob: string | undefined, on: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob?.trim() ?? '');
+  const r = /^(\d{4})-(\d{2})-(\d{2})$/.exec(on);
+  if (!m || !r) return null;
+  const [by, bm, bd] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (bm < 1 || bm > 12 || bd < 1 || bd > 31) return null;
+  const [ry, rm, rd] = [Number(r[1]), Number(r[2]), Number(r[3])];
+  let age = ry - by;
+  if (rm < bm || (rm === bm && rd < bd)) age -= 1;
+  return age;
+}
+
+/**
+ * 풀코스 참가자가 대회일(2027-03-21)에 18세 미만인가. 생년월일이 없거나 잘못되면 false.
+ * 안내용 경고에만 쓰고, 신청을 막지는 않는다.
+ */
+export function isUnderageFullRunner(traveler: Pick<Traveler, 'category' | 'dob'>): boolean {
+  if (traveler.category !== 'full') return false;
+  const age = ageOn(traveler.dob, RACE_DATE);
+  return age !== null && age < FULL_MARATHON_MIN_AGE;
 }
 
 /**
  * counts 에 맞춰 참가자 배열을 만든다. provided 는 같은 유형끼리 순서대로 매칭된다.
- * 객실 선택이 없는 유형(유아)에서는 room 을 지운다.
+ * 객실 선택이 없는 유형(침대 없는 아동·유아)에서는 room 을 지운다.
  */
 export function buildTravelers(counts: Counts, provided: Traveler[] = []): Traveler[] {
   const travelers: Traveler[] = [];

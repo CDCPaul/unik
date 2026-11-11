@@ -1,19 +1,44 @@
 // 서울마라톤 2027 투어 도메인 타입. 이 디렉터리는 웹과 Cloud Functions 가 공유하므로
 // 외부 의존성 없이 상대 경로 import 만 사용한다.
 
-export const CATEGORIES = ['full', 'tenK', 'companion', 'child', 'infant'] as const;
+export const CATEGORIES = [
+  'full',
+  'tenK',
+  'companion',
+  'childTenK',
+  'childTenKNoBed',
+  'child',
+  'childNoBed',
+  'infant',
+] as const;
 export type Category = (typeof CATEGORIES)[number];
 
-/** 대회 참가(배번)가 있는 유형 */
-export const RUNNER_CATEGORIES: readonly Category[] = ['full', 'tenK'];
-/** 성인 유형. 아동·유아는 성인과 함께 여행해야 한다. */
+/**
+ * 대회 참가(배번)가 있는 유형. 아동 10K 도 배번을 받는다.
+ * 'child' 키는 2026-11-06 견적부터 "아동 응원(침대)" 로 의미가 좁혀졌다 (저장된 데이터와 호환을 위해 키는 유지).
+ */
+export const RUNNER_CATEGORIES: readonly Category[] = ['full', 'tenK', 'childTenK', 'childTenKNoBed'];
+/** 성인(12세 이상) 유형. 아동·유아는 성인과 함께 여행해야 한다. */
 export const ADULT_CATEGORIES: readonly Category[] = ['full', 'tenK', 'companion'];
+/** 아동(2–11세) 유형 */
+export const CHILD_CATEGORIES: readonly Category[] = ['childTenK', 'childTenKNoBed', 'child', 'childNoBed'];
+/** 침대가 없는 유형. 객실 선택·싱글 추가요금이 없다 (보호자 침대를 함께 쓴다). */
+export const NO_BED_CATEGORIES: readonly Category[] = ['childTenKNoBed', 'childNoBed', 'infant'];
+
+/** 풀코스는 대회일 기준 18세 이상만 참가할 수 있다 (안내만 하고 막지는 않는다). */
+export const FULL_MARATHON_MIN_AGE = 18;
+/** 대회일 (YYYY-MM-DD). 풀코스 나이 기준일. */
+export const RACE_DATE = '2027-03-21';
+export const FULL_MARATHON_AGE_NOTICE = 'Full marathon: adults 18 and over only (age on race day, 21 March 2027).';
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  full: 'Full Marathon',
+  full: 'Full Marathon (18+)',
   tenK: '10K',
   companion: 'Companion',
-  child: 'Child (under 12)',
+  childTenK: 'Child 10K (with bed)',
+  childTenKNoBed: 'Child 10K (no bed)',
+  child: 'Child (with bed)',
+  childNoBed: 'Child (no bed)',
   infant: 'Infant (under 2)',
 };
 
@@ -22,7 +47,10 @@ export const CATEGORY_SHORT_LABELS: Record<Category, string> = {
   full: 'Full',
   tenK: '10K',
   companion: 'Companion',
+  childTenK: 'Child 10K',
+  childTenKNoBed: 'Child 10K NB',
   child: 'Child',
+  childNoBed: 'Child NB',
   infant: 'Infant',
 };
 

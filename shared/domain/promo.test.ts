@@ -58,19 +58,25 @@ describe('evaluatePromo', () => {
 describe('promoUsagePax', () => {
   it('counts every status except cancelled for the given code', () => {
     const apps: ApplicationSummary[] = [
-      { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, promoCode: 'TA-A' },
-      { status: 'waitlist', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: 'TA-A' },
-      { status: 'cancelled', departureId: 'mnl', counts: { full: 4, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: 'TA-A' },
-      { status: 'confirmed', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: 'TA-B' },
-      { status: 'new', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 }, promoCode: null },
+      { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, promoCode: 'TA-A' },
+      { status: 'waitlist', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, promoCode: 'TA-A' },
+      { status: 'cancelled', departureId: 'mnl', counts: { full: 4, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, promoCode: 'TA-A' },
+      { status: 'confirmed', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, promoCode: 'TA-B' },
+      { status: 'new', departureId: 'ceb', counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, promoCode: null },
     ];
     expect(promoUsagePax(apps, 'TA-A')).toBe(4);
   });
   it('does not count infants toward the limit (they get no discount)', () => {
     const apps: ApplicationSummary[] = [
-      { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 0, child: 1, infant: 2 }, promoCode: 'TA-A' },
+      { status: 'new', departureId: 'mnl', counts: { full: 2, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 2 }, promoCode: 'TA-A' },
     ];
     expect(promoUsagePax(apps, 'TA-A')).toBe(3);
+  });
+  it('counts every child type toward the limit', () => {
+    const apps: ApplicationSummary[] = [
+      { status: 'new', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 1, childTenK: 1, childTenKNoBed: 1, child: 1, childNoBed: 1, infant: 1 }, promoCode: 'TA-A' },
+    ];
+    expect(promoUsagePax(apps, 'TA-A')).toBe(6);
   });
 });
 

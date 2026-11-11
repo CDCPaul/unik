@@ -11,6 +11,6 @@ describe('format', () => {
     expect(formatPHP(0)).toBe('PHP 0');
   });
   it('describes counts skipping zero categories', () => {
-    expect(describeCounts({ full: 2, tenK: 0, companion: 1, child: 0, infant: 0 })).toBe('2 Full Marathon, 1 Companion');
+    expect(describeCounts({ full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('2 Full Marathon (18+), 1 Companion');
   });
 });
