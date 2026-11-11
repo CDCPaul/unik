@@ -29,7 +29,7 @@ function layout(title: string, body: string): string {
 <h1 style="margin:8px 0 0;font-size:22px">${title}</h1>
 </div>
 <div style="background:#FFFFFF;padding:24px;border-radius:0 0 12px 12px;line-height:1.6">${body}</div>
-<p style="font-size:12px;color:#5A6680;text-align:center">CDC Travel (Cebu Direct Club) · unik.ph</p>
+<p style="font-size:12px;color:#5A6680;text-align:center">UNIK · unik.ph</p>
 </div></body></html>`;
 }
 

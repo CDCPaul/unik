@@ -2,7 +2,7 @@ export const PAST_TOURS = [
   {
     year: '2026',
     title: 'Cherry Blossom Marathon Tour',
-    summary: 'Filipino runners raced through cherry-blossom season in Korea with CDC Travel.',
+    summary: 'Filipino runners raced through cherry-blossom season in Korea with UNIK.',
   },
   {
     year: '2026',
