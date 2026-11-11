@@ -133,7 +133,7 @@ export default async function HomePage() {
             ['RACE DATE', RACE.date, RACE.city],
             ['CATEGORIES', 'Full Marathon · 10K', '42.195 km or 10 km'],
             ['ASSEMBLY POINT', 'Gwanghwamun Square', `Full marathon (planned). 10K: Jamsil Sports Complex (planned). ${RACE.courseNote}`],
-            ['TIME LIMIT', 'To be announced', 'Set by the race organizers.'],
+            ['TIME LIMIT', 'Full 5 hrs · 10K 1 hr 30 min', 'Strictly applied by the organizers.'],
           ].map(([label, value, note]) => (
             <div key={label} className="flex flex-col gap-1.5 rounded-[20px] bg-white p-7">
               <p className="text-[13px] font-bold tracking-[0.1em] text-brand-red">{label}</p>
