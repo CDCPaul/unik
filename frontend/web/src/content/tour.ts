@@ -1,10 +1,35 @@
+import { FULL_MARATHON_AGE_NOTICE } from '@unik/shared/domain';
 import type { Category } from '@unik/shared/domain';
 
-export const PACKAGES: { category: Category; title: string; description: string }[] = [
-  { category: 'full', title: 'Full Marathon Runner', description: 'Race entry for the 42.195 km full marathon.' },
+export const PACKAGES: { category: Category; title: string; description: string; notice?: string }[] = [
+  {
+    category: 'full',
+    title: 'Full Marathon Runner',
+    description: 'Race entry for the 42.195 km full marathon.',
+    notice: FULL_MARATHON_AGE_NOTICE,
+  },
   { category: 'tenK', title: '10K Runner', description: 'Race entry for the 10 km course.' },
   { category: 'companion', title: 'Companion', description: 'Cheering members: family and friends coming along to cheer. No race entry.' },
-  { category: 'child', title: 'Child (under 12)', description: 'For children aged 2–11 travelling with an adult. No race entry.' },
+  {
+    category: 'childTenK',
+    title: 'Child 10K Runner (with bed)',
+    description: 'Race entry for the 10 km course for children aged 2–11. Shares a twin room with bed.',
+  },
+  {
+    category: 'childTenKNoBed',
+    title: 'Child 10K Runner (no bed)',
+    description: "Race entry for the 10 km course for children aged 2–11. Shares a parent's bed (no extra bed).",
+  },
+  {
+    category: 'child',
+    title: 'Child (with bed)',
+    description: 'Cheering children aged 2–11 travelling with an adult. No race entry. Shares a twin room with bed.',
+  },
+  {
+    category: 'childNoBed',
+    title: 'Child (no bed)',
+    description: "Cheering children aged 2–11 travelling with an adult. No race entry. Shares a parent's bed (no extra bed).",
+  },
   { category: 'infant', title: 'Infant (under 2)', description: 'For infants under 2 travelling with an adult. No race entry.' },
 ];
 

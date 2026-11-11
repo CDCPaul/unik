@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyReducer, estimatePricing, initialApplyState, toSubmitPayload, validateForSubmit } from './model';
 import type { ApplyState } from './model';
-import type { TourConfig } from '@unik/shared/domain';
+import type { Category, TourConfig } from '@unik/shared/domain';
 
 const config = {
   acceptingApplications: true,
@@ -11,7 +11,7 @@ const config = {
   mayaPaymentLinkBase: null,
   notifyEmails: [],
   departures: [
-    { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23', flightInfo: '', seatCapacity: 120, isOpen: true, prices: { full: 80000, tenK: 75000, companion: 70000, child: 50000, infant: 8000 }, singleSupplement: 15000 },
+    { id: 'mnl', label: 'Manila (MNL)', departDate: '2027-03-19', returnDate: '2027-03-23', flightInfo: '', seatCapacity: 120, isOpen: true, prices: { full: 80000, tenK: 75000, companion: 70000, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 }, singleSupplement: 15000 },
   ],
 } satisfies TourConfig;
 
@@ -28,7 +28,7 @@ function filled(): ApplyState {
 describe('applyReducer', () => {
   it('starts with one full marathon runner and the stored promo code', () => {
     const s = initialApplyState('k', 'TA-SUNRISE');
-    expect(s.counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 0, infant: 0 });
+    expect(s.counts).toEqual({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
     expect(s.travelers).toEqual([{ category: 'full' }]);
     expect(s.promoInput).toBe('TA-SUNRISE');
   });
@@ -66,7 +66,7 @@ describe('applyReducer', () => {
 });
 
 describe('children and infants', () => {
-  const add = (s: ApplyState, category: 'full' | 'companion' | 'child' | 'infant', delta: 1 | -1 = 1) => applyReducer(s, { type: 'changeCount', category, delta });
+  const add = (s: ApplyState, category: Category, delta: 1 | -1 = 1) => applyReducer(s, { type: 'changeCount', category, delta });
   it('adds child and infant travelers after the adults', () => {
     const s = add(add(filled(), 'infant'), 'child');
     expect(s.travelers.map((t) => t.category)).toEqual(['full', 'child', 'infant']);
@@ -74,11 +74,11 @@ describe('children and infants', () => {
   it('counts children and infants towards the 10-traveler limit', () => {
     let s = filled();
     for (let i = 0; i < 12; i++) s = add(s, 'child');
-    expect(s.counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 9, infant: 0 });
+    expect(s.counts).toEqual({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 9, childNoBed: 0, infant: 0 });
   });
   it('blocks submission with the shared message when no adult travels', () => {
     const s = add(add(filled(), 'child'), 'full', -1);
-    expect(s.counts).toEqual({ full: 0, tenK: 0, companion: 0, child: 1, infant: 0 });
+    expect(s.counts).toEqual({ full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 0 });
     expect(validateForSubmit(s, '2026-10-13')).toEqual({ counts: 'Children and infants must travel with at least one adult.' });
   });
   it('blocks submission when there are more infants than adults', () => {
@@ -99,8 +99,31 @@ describe('children and infants', () => {
     expect(estimatePricing(filled(), legacy)?.total).toBe(80000);
     expect(estimatePricing(add(filled(), 'child'), legacy)).toBeNull();
   });
-  it('sends all five counts to the server', () => {
-    expect(toSubmitPayload(add(filled(), 'infant')).counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 0, infant: 1 });
+  it('sends all eight counts to the server', () => {
+    expect(toSubmitPayload(add(filled(), 'infant')).counts).toEqual({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1 });
+  });
+  it('orders the four child types after the adults and drops the room of no-bed children', () => {
+    let s = filled();
+    for (const c of ['childNoBed', 'child', 'childTenKNoBed', 'childTenK'] as const) s = add(s, c);
+    expect(s.travelers.map((t) => t.category)).toEqual(['full', 'childTenK', 'childTenKNoBed', 'child', 'childNoBed']);
+    s = applyReducer(s, { type: 'setTraveler', index: 1, field: 'room', value: 'single' });
+    s = applyReducer(s, { type: 'setTraveler', index: 2, field: 'room', value: 'single' }); // 침대 없음: 다음 동기화에서 지워진다
+    s = add(s, 'companion');
+    expect(s.travelers.map((t) => [t.category, t.room])).toEqual([
+      ['full', undefined],
+      ['companion', undefined],
+      ['childTenK', 'single'],
+      ['childTenKNoBed', undefined],
+      ['child', undefined],
+      ['childNoBed', undefined],
+    ]);
+    const p = estimatePricing(s, config)!;
+    expect(p.singleSupplements).toBe(15000);
+    expect(p.subtotal).toBe(80000 + 70000 + 55000 + 52000 + 50000 + 48000 + 15000);
+  });
+  it('blocks a child 10K runner travelling without an adult', () => {
+    const s = add(add(filled(), 'childTenK'), 'full', -1);
+    expect(validateForSubmit(s, '2026-10-13')).toEqual({ counts: 'Children and infants must travel with at least one adult.' });
   });
 });
 

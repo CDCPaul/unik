@@ -40,8 +40,8 @@ const config = {
   mayaPaymentLinkBase: null,
   notifyEmails: [],
   departures: [
-    { id: 'mnl', label: 'Manila', departDate: '', returnDate: '', flightInfo: '', seatCapacity: 4, isOpen: true, prices: { full: 80000, tenK: 75000, companion: 70000, child: 50000, infant: 8000 }, singleSupplement: 15000 },
-    { id: 'ceb', label: 'Cebu', departDate: '', returnDate: '', flightInfo: '', seatCapacity: 4, isOpen: false, prices: { full: 70000, tenK: 65000, companion: 60000, child: 50000, infant: 8000 }, singleSupplement: 15000 },
+    { id: 'mnl', label: 'Manila', departDate: '', returnDate: '', flightInfo: '', seatCapacity: 4, isOpen: true, prices: { full: 80000, tenK: 75000, companion: 70000, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 }, singleSupplement: 15000 },
+    { id: 'ceb', label: 'Cebu', departDate: '', returnDate: '', flightInfo: '', seatCapacity: 4, isOpen: false, prices: { full: 70000, tenK: 65000, companion: 60000, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 }, singleSupplement: 15000 },
   ],
 } satisfies TourConfig;
 const availability: Availability = {
@@ -52,17 +52,17 @@ const availability: Availability = {
 
 describe('departureStatus', () => {
   it('is closed when the departure or applications are closed', () => {
-    expect(departureStatus(config, availability, 'ceb', { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('closed');
-    expect(departureStatus({ ...config, acceptingApplications: false }, availability, 'mnl', { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('closed');
-    expect(departureStatus(config, availability, 'xyz', { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('closed');
+    expect(departureStatus(config, availability, 'ceb', { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('closed');
+    expect(departureStatus({ ...config, acceptingApplications: false }, availability, 'mnl', { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('closed');
+    expect(departureStatus(config, availability, 'xyz', { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('closed');
   });
   it('is full when the requested group does not fit', () => {
-    expect(departureStatus(config, availability, 'mnl', { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('full');
-    expect(departureStatus(config, availability, 'mnl', { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('open');
+    expect(departureStatus(config, availability, 'mnl', { full: 2, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('full');
+    expect(departureStatus(config, availability, 'mnl', { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('open');
   });
   it('is open when availability is unknown or lacks the departure', () => {
-    expect(departureStatus(config, null, 'mnl', { full: 9, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('open');
-    expect(departureStatus(config, { ...availability, departures: {} }, 'mnl', { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('open');
+    expect(departureStatus(config, null, 'mnl', { full: 9, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('open');
+    expect(departureStatus(config, { ...availability, departures: {} }, 'mnl', { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('open');
   });
 });
 
@@ -72,8 +72,8 @@ describe('departureStatus with missing prices', () => {
     departures: [{ ...config.departures[0], prices: { full: 80000, tenK: 75000, companion: 70000 } as TourConfig['departures'][0]['prices'] }],
   };
   it('is closed only when the group includes a category without a valid price', () => {
-    expect(departureStatus(legacy, null, 'mnl', { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 })).toBe('open');
-    expect(departureStatus(legacy, null, 'mnl', { full: 1, tenK: 0, companion: 0, child: 1, infant: 0 })).toBe('closed');
+    expect(departureStatus(legacy, null, 'mnl', { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toBe('open');
+    expect(departureStatus(legacy, null, 'mnl', { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 0 })).toBe('closed');
   });
 });
 
