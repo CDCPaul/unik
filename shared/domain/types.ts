@@ -25,6 +25,14 @@ export const CHILD_CATEGORIES: readonly Category[] = ['childTenK', 'childTenKNoB
 /** 침대가 없는 유형. 객실 선택·싱글 추가요금이 없다 (보호자 침대를 함께 쓴다). */
 export const NO_BED_CATEGORIES: readonly Category[] = ['childTenKNoBed', 'childNoBed', 'infant'];
 
+export type CategoryGroupKey = 'adult' | 'child' | 'infant';
+/** 인원 선택·편집 화면을 성인(12+)·아동(2–11)·유아(2세 미만) 로 묶어 보여줄 때 쓴다 (CATEGORIES 순서와 같다) */
+export const CATEGORY_GROUPS: readonly { key: CategoryGroupKey; categories: readonly Category[] }[] = [
+  { key: 'adult', categories: ADULT_CATEGORIES },
+  { key: 'child', categories: CHILD_CATEGORIES },
+  { key: 'infant', categories: ['infant'] },
+];
+
 /** 풀코스는 대회일 기준 18세 이상만 참가할 수 있다 (안내만 하고 막지는 않는다). */
 export const FULL_MARATHON_MIN_AGE = 18;
 /** 대회일 (YYYY-MM-DD). 풀코스 나이 기준일. */

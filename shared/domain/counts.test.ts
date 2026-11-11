@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { adultCount, ageOn, buildTravelers, hasRoomChoice, isUnderageFullRunner, normalizeCounts, runnerCount, totalPax, validateCounts } from './counts';
-import { CATEGORIES } from './types';
+import { CATEGORIES, CATEGORY_GROUPS } from './types';
 import type { Counts } from './types';
 
 const Z: Counts = { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 };
@@ -187,5 +187,11 @@ describe('ageOn / isUnderageFullRunner', () => {
     expect(isUnderageFullRunner({ category: 'full', dob: '' })).toBe(false);
     expect(isUnderageFullRunner({ category: 'tenK', dob: '2012-01-01' })).toBe(false);
     expect(isUnderageFullRunner({ category: 'childTenK', dob: '2018-01-01' })).toBe(false);
+  });
+});
+
+describe('CATEGORY_GROUPS', () => {
+  it('covers every category exactly once in CATEGORIES order', () => {
+    expect(CATEGORY_GROUPS.flatMap((g) => g.categories)).toEqual([...CATEGORIES]);
   });
 });
