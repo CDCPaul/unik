@@ -225,7 +225,8 @@ export function ApplyForm() {
     );
   }
 
-  const departures = data.config?.departures ?? [];
+  // 닫은 출발편(isOpen=false)은 투어 페이지처럼 목록에서 숨긴다
+  const departures = (data.config?.departures ?? []).filter((d) => d.isOpen);
   const selectedDeparture = departures.find((d) => d.id === state.departureId);
   const unpriced = selectedDeparture ? missingPriceCategories(selectedDeparture.prices, state.counts) : [];
 

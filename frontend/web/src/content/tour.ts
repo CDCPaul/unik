@@ -3,28 +3,28 @@ import type { Category } from '@unik/shared/domain';
 export const PACKAGES: { category: Category; title: string; description: string }[] = [
   { category: 'full', title: 'Full Marathon Runner', description: 'Race entry for the 42.195 km full marathon.' },
   { category: 'tenK', title: '10K Runner', description: 'Race entry for the 10 km course.' },
-  { category: 'companion', title: 'Companion', description: 'For family and friends coming to cheer. No race entry.' },
+  { category: 'companion', title: 'Companion', description: 'Cheering members: family and friends coming along to cheer. No race entry.' },
   { category: 'child', title: 'Child (under 12)', description: 'For children aged 2–11 travelling with an adult. No race entry.' },
   { category: 'infant', title: 'Infant (under 2)', description: 'For infants under 2 travelling with an adult. No race entry.' },
 ];
 
 export const INCLUSIONS = [
-  'Round-trip Jeju Air flights from Manila, Cebu, Clark or Bohol',
+  'Round-trip international airfare on Jin Air or Jeju Air (10 kg hand-carry, 15 kg check-in baggage)',
   '3 nights hotel in Seoul with breakfast (twin share)',
-  'Race entry and bib for runners',
-  'Meals and admission fees as listed in the itinerary',
-  'Airport transfers and tour bus',
+  'Seoul Marathon race entry fee and race kit for runners',
+  'Meals as per itinerary',
+  'All admission fees and transportation',
   'English-speaking tour guide',
-  'Group sessions with Artjoy Torregosa',
-  'One bottle of water per person per day on the bus',
+  'One bottle of water per person per day',
+  'Run and tour Korea with Artjoy Torregosa',
 ];
 
 export const EXCLUSIONS = [
-  'Korean visa fees',
-  'Travel insurance',
-  'Guide tips (USD 10 per person per day)',
+  'Philippine travel tax (PHP 1,620)',
+  'Driver and guide tips (USD 5 per day × 4 days = USD 20)',
   'Drinks during meals',
-  'Meals not listed in the itinerary',
+  'Travel insurance',
+  'Visa processing fee',
   'Personal expenses',
 ];
 
@@ -33,26 +33,25 @@ export const ITINERARY = [
     day: 'DAY 1',
     title: 'Fri 19 Mar · Arrive in Seoul.',
     detail:
-      'Land at Incheon International Airport and meet your tour guide. Nami Island, Seokchon Lake and the COEX Starfield Library, then hotel check-in. Meals: breakfast (sandwich), lunch (dak galbi), dinner (gamjatang).',
+      'Arrive at Incheon International Airport and meet your English-speaking tour guide. Seokchon Lake, COEX Mall and the Starfield Library, Eunpyeong Hanok Village and Hongdae shopping street. Meals: breakfast, lunch and dinner.',
   },
   {
     day: 'DAY 2',
-    title: 'Sat 20 Mar · Warm-up run on the Han River.',
+    title: 'Sat 20 Mar · Shake-out run and race kit claiming.',
     detail:
-      'Shakeout run with Artjoy along the Han River, then Eunpyeong Hanok Village, a ginseng shop and Cheonggyecheon Stream. Meals: hotel breakfast, lunch (samgyetang), dinner (pork BBQ).',
+      'Han River shake-out run with Coach Arvin, Gyeongbokgung Palace with hanbok wearing, Cheonggyecheon Stream, a ginseng shop and Dongdaemun Design Plaza, then claim your marathon race kit. Meals: breakfast, lunch and dinner.',
   },
   {
     day: 'DAY 3',
     title: 'Sun 21 Mar · Race day: Seoul Marathon 2027.',
-    detail:
-      'After the race, relax at a Korean sauna, visit a cosmetics outlet and ride the N Seoul Tower cable car. Meals: hotel breakfast, lunch (galbitang), dinner (samgyeopsal).',
+    detail: 'Run the Seoul Marathon, then visit a cosmetics outlet and Myeongdong shopping street. Meals: breakfast, lunch and dinner.',
   },
   {
     day: 'DAY 4',
-    title: 'Mon 22 Mar · City tour and flight home.',
+    title: 'Mon 22 Mar · N Seoul Tower and flight home.',
     detail:
-      'Hotel check-out, then Gyeongbokgung Palace, Myeongdong shopping street, the Seaweed Museum with DIY kimbap and a premium outlet before the transfer to Incheon International Airport for your flight home. Meals: hotel breakfast, lunch (shabu-shabu).',
+      'N Seoul Tower with cable car ride, the Seaweed Museum with kimbap making and a local supermarket, then departure from Incheon International Airport. Meals: breakfast and lunch (dinner not included).',
   },
 ];
 export const ITINERARY_NOTE =
-  'Flights from Manila leave the night of 18 Mar (after 11 pm); flights from Cebu, Clark and Bohol leave early on 19 Mar (around 1 am). All groups fly home on 22 Mar. Times and stops may change with the flight schedule, weather and traffic.';
+  'Flights from Tagbilaran (Bohol) leave the night of 18 Mar; flights from Cebu and Clark leave early on 19 Mar. All groups fly home on 22 Mar. Times and stops may change with the flight schedule, weather and traffic.';
