@@ -7,7 +7,7 @@ import {
   CONTACT_TIMES,
   CONTACT_TIME_LABELS,
   CATEGORY_LABELS,
-  FULL_MARATHON_AGE_NOTICE,
+  FULL_MARATHON_ELIGIBILITY_NOTICE,
   formatPHP,
   isValidPrice,
   manilaDate,
@@ -62,7 +62,7 @@ const COUNTER_HINTS: Partial<Record<Category, string>> = {
 };
 // 눈에 띄게 보여줄 안내 (막지는 않는다)
 const COUNTER_NOTICES: Partial<Record<Category, string>> = {
-  full: FULL_MARATHON_AGE_NOTICE,
+  full: FULL_MARATHON_ELIGIBILITY_NOTICE,
 };
 const GROUP_TITLES: Record<CategoryGroupKey, string> = {
   adult: 'Adults (12+)',
@@ -325,6 +325,27 @@ export function ApplyForm() {
           <div data-field="counts" tabIndex={-1} className="outline-none">
             <FieldError id="err-counts" msg={countsError ?? undefined} />
           </div>
+          {/* 풀코스는 주최측 규정상 공인기록 필수 (투어 배번도 동일) */}
+          {state.counts.full > 0 ? (
+            <div className="flex flex-col gap-1.5 rounded-2xl border-2 border-brand-red/40 bg-brand-soft p-4">
+              <label className="flex items-start gap-3 text-[15px]">
+                <input
+                  data-field="fullQualifierConfirmed"
+                  type="checkbox"
+                  className="mt-0.5 h-5 w-5 flex-none accent-brand-red"
+                  checked={state.fullQualifierConfirmed}
+                  aria-invalid={!!errors.fullQualifierConfirmed}
+                  onChange={(e) => dispatch({ type: 'setFullQualifier', value: e.target.checked })}
+                />
+                <span>
+                  Each full marathon runner in this application has an official full marathon finish of <b>4:59:59 or faster</b> in a race run
+                  between 1 January 2024 and 30 November 2026, and will send us the race certificate. *
+                </span>
+              </label>
+              <p className="text-sm">No qualifying time? Choose the 10K instead. It needs no record.</p>
+              <FieldError id="err-full-qualifier" msg={errors.fullQualifierConfirmed} />
+            </div>
+          ) : null}
         </fieldset>
 
         {/* 3. Contact */}

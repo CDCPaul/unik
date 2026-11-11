@@ -22,8 +22,19 @@ function filled(): ApplyState {
   s = applyReducer(s, { type: 'setLead', field: 'lastName', value: 'Santos' });
   s = applyReducer(s, { type: 'setLead', field: 'email', value: 'maria@example.com' });
   s = applyReducer(s, { type: 'setLead', field: 'phoneNumber', value: '(0917) 123-4567' });
+  s = applyReducer(s, { type: 'setFullQualifier', value: true });
   return applyReducer(s, { type: 'setAgreed', value: true });
 }
+
+describe('full marathon qualifying time', () => {
+  it('requires the qualifier confirmation only while there is a full marathon runner', () => {
+    let s = applyReducer(filled(), { type: 'setFullQualifier', value: false });
+    expect(Object.keys(validateForSubmit(s, '2026-11-11'))).toEqual(['fullQualifierConfirmed']);
+    s = applyReducer(s, { type: 'changeCount', category: 'tenK', delta: 1 });
+    s = applyReducer(s, { type: 'changeCount', category: 'full', delta: -1 });
+    expect(validateForSubmit(s, '2026-11-11')).toEqual({});
+  });
+});
 
 describe('applyReducer', () => {
   it('starts with one full marathon runner and the stored promo code', () => {
@@ -134,7 +145,7 @@ describe('validateForSubmit', () => {
   it('reports every missing required field', () => {
     const errors = validateForSubmit(initialApplyState('k'), '2026-10-13');
     expect(Object.keys(errors).sort()).toEqual(
-      ['agreedToTerms', 'departureId', 'lead.email', 'lead.firstName', 'lead.lastName', 'lead.phoneNumber'].sort(),
+      ['agreedToTerms', 'departureId', 'fullQualifierConfirmed', 'lead.email', 'lead.firstName', 'lead.lastName', 'lead.phoneNumber'].sort(),
     );
   });
   it('uses the shared passport-name rule (80 chars, no links) with a clear message', () => {

@@ -1,4 +1,4 @@
-import { FULL_MARATHON_AGE_NOTICE } from '@unik/shared/domain';
+import { FULL_MARATHON_ELIGIBILITY_NOTICE } from '@unik/shared/domain';
 import type { Category } from '@unik/shared/domain';
 
 export const PACKAGES: { category: Category; title: string; description: string; notice?: string }[] = [
@@ -6,7 +6,7 @@ export const PACKAGES: { category: Category; title: string; description: string;
     category: 'full',
     title: 'Full Marathon Runner',
     description: 'Race entry for the 42.195 km full marathon.',
-    notice: FULL_MARATHON_AGE_NOTICE,
+    notice: FULL_MARATHON_ELIGIBILITY_NOTICE,
   },
   { category: 'tenK', title: '10K Runner', description: 'Race entry for the 10 km course.' },
   { category: 'companion', title: 'Companion', description: 'Cheering members: family and friends coming along to cheer. No race entry.' },
