@@ -84,18 +84,34 @@ describe('draft', () => {
       raw.counts = { full: 2, tenK: 0, companion: 1 };
       raw.travelers = [{ category: 'full' }, { category: 'full' }, { category: 'companion' }];
     });
-    expect(loadDraft(s)!.counts).toEqual({ full: 2, tenK: 0, companion: 1, child: 0, infant: 0 });
+    expect(loadDraft(s)!.counts).toEqual({ full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
   });
   it('round-trips child and infant travelers and drops invalid child/infant counts to 0', () => {
     const ok = savedRaw((raw) => {
-      raw.counts = { full: 1, tenK: 0, companion: 0, child: 1, infant: 1 };
+      raw.counts = { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 };
       raw.travelers = [{ category: 'full' }, { category: 'child' }, { category: 'infant' }];
     });
     expect(loadDraft(ok)!.travelers.map((t) => t.category)).toEqual(['full', 'child', 'infant']);
     const bad = savedRaw((raw) => {
-      raw.counts = { full: 1, tenK: 0, companion: 0, child: 'two', infant: -1 };
+      raw.counts = { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 'two', childNoBed: 0, infant: -1 };
     });
-    expect(loadDraft(bad)!.counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 0, infant: 0 });
+    expect(loadDraft(bad)!.counts).toEqual({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
+  });
+  it('restores a five-key draft saved before the four child types, keeping child as child (with bed)', () => {
+    const s = savedRaw((raw) => {
+      raw.counts = { full: 1, tenK: 0, companion: 0, child: 1, infant: 0 };
+      raw.travelers = [{ category: 'full' }, { category: 'child', room: 'twin' }];
+    });
+    const d = loadDraft(s)!;
+    expect(d.counts).toEqual({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 0 });
+    expect(d.travelers).toEqual([{ category: 'full' }, { category: 'child', room: 'twin' }]);
+  });
+  it('round-trips the new child types', () => {
+    const s = savedRaw((raw) => {
+      raw.counts = { full: 0, tenK: 1, companion: 0, childTenK: 1, childTenKNoBed: 1, child: 0, childNoBed: 1, infant: 0 };
+      raw.travelers = [{ category: 'tenK' }, { category: 'childTenK' }, { category: 'childTenKNoBed' }, { category: 'childNoBed' }];
+    });
+    expect(loadDraft(s)!.travelers.map((t) => t.category)).toEqual(['tenK', 'childTenK', 'childTenKNoBed', 'childNoBed']);
   });
   it('rejects a draft with a traveler whose category is unknown', () => {
     const s = savedRaw((raw) => {

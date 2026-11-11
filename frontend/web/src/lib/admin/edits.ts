@@ -23,7 +23,7 @@ import {
 } from '@unik/shared/domain';
 import type { ApplicationStatus, Counts, Pricing, TourConfig, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord, PaymentRecord } from './applicationDoc';
-import { cleanTraveler, mergeTravelerEdits } from './detailHelpers';
+import { cleanTraveler, mergeTravelerEdits, underageFullWarnings } from './detailHelpers';
 import { CATEGORY_KEYS } from './format';
 import { msg } from './i18n/translate';
 import type { Msg } from './i18n/translate';
@@ -40,7 +40,7 @@ export function countsError(counts: Counts): Msg | null {
   if (total < 1) return msg('counts.error.atLeastOne');
   if (total > MAX_PAX_PER_APPLICATION) return msg('counts.error.max', { max: MAX_PAX_PER_APPLICATION });
   const adults = adultCount(counts);
-  if (counts.child + counts.infant > 0 && adults < 1) return msg('counts.error.needAdult');
+  if (total - adults > 0 && adults < 1) return msg('counts.error.needAdult');
   return msg('counts.error.infantPerAdult');
 }
 
@@ -200,6 +200,7 @@ export function statusChangeWarnings(app: ApplicationRecord, next: ApplicationSt
   if (app.paidTotal < app.pricing.total) {
     warnings.push(msg('edits.warn.unpaid', { paid: formatPHP(app.paidTotal), total: formatPHP(app.pricing.total) }));
   }
+  warnings.push(...underageFullWarnings(app.travelers));
   return warnings;
 }
 

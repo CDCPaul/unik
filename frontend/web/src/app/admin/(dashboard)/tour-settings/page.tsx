@@ -18,14 +18,17 @@ import type { MessageKey, Msg } from '@/lib/admin/i18n/translate';
 
 // 잘못된 입력은 NaN 으로 두어 validateTourConfig 가 오류로 표시하게 한다 (저장 시에만 변환)
 const num = (raw: string): number => (raw.trim() === '' || raw.trim() === '0' ? 0 : parseAmount(raw) ?? NaN);
-// 가격은 다섯 유형 모두 필수: 빈 칸은 0 이 아니라 오류
+// 가격은 여덟 유형 모두 필수: 빈 칸은 0 이 아니라 오류
 const priceNum = (raw: string): number => (raw.trim() === '' ? NaN : num(raw));
 
 const PRICE_FIELD_LABELS: Record<Category, MessageKey> = {
   full: 'tour.departure.price.full',
   tenK: 'tour.departure.price.tenK',
   companion: 'tour.departure.price.companion',
+  childTenK: 'tour.departure.price.childTenK',
+  childTenKNoBed: 'tour.departure.price.childTenKNoBed',
   child: 'tour.departure.price.child',
+  childNoBed: 'tour.departure.price.childNoBed',
   infant: 'tour.departure.price.infant',
 };
 

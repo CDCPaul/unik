@@ -72,7 +72,7 @@ export type ApplyAction =
 export function initialApplyState(idempotencyKey: string, promoCode: string | null = null): ApplyState {
   return {
     departureId: null,
-    counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
+    counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
     lead: { firstName: '', lastName: '', email: '', phoneDial: '+63', phoneNumber: '', viber: false, whatsapp: false },
     travelers: [{ category: 'full' }],
     promoInput: promoCode ?? '',

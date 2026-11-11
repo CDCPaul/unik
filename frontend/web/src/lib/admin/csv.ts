@@ -1,4 +1,4 @@
-import { CATEGORY_LABELS } from '@unik/shared/domain';
+import { CATEGORIES, CATEGORY_LABELS, CATEGORY_SHORT_LABELS } from '@unik/shared/domain';
 import type { ApplicationRecord } from './applicationDoc';
 import { STATUS_LABELS, formatManila } from './format';
 
@@ -20,7 +20,7 @@ export function toCsv(rows: Cell[][]): string {
 const yesNo = (b: boolean) => (b ? 'Yes' : 'No');
 
 export function applicationsCsv(apps: ApplicationRecord[]): string {
-  const header = ['App no', 'Status', 'Applied (Manila)', 'Departure', 'First name', 'Last name', 'Email', 'Phone', 'Viber', 'WhatsApp', 'Full', '10K', 'Companion', 'Child', 'Infant', 'Promo code', 'Agency', 'Total PHP', 'Deposit due PHP', 'Paid PHP', 'Info', 'Special requests', 'Staff notes'];
+  const header = ['App no', 'Status', 'Applied (Manila)', 'Departure', 'First name', 'Last name', 'Email', 'Phone', 'Viber', 'WhatsApp', ...CATEGORIES.map((c) => CATEGORY_SHORT_LABELS[c]), 'Promo code', 'Agency', 'Total PHP', 'Deposit due PHP', 'Paid PHP', 'Info', 'Special requests', 'Staff notes'];
   const rows = apps.map((a) => [
     a.appNo,
     STATUS_LABELS[a.status],
@@ -32,11 +32,8 @@ export function applicationsCsv(apps: ApplicationRecord[]): string {
     `${a.lead.phoneDial} ${a.lead.phoneNumber}`,
     yesNo(a.lead.viber),
     yesNo(a.lead.whatsapp),
-    a.counts.full,
-    a.counts.tenK,
-    a.counts.companion,
-    a.counts.child,
-    a.counts.infant,
+    // 유형별 인원: CATEGORIES 순서 (Full, 10K, Companion, Child 10K, Child 10K NB, Child, Child NB, Infant)
+    ...CATEGORIES.map((c) => a.counts[c]),
     a.pricing.promo?.code ?? '',
     a.pricing.promo?.agencyName ?? '',
     a.pricing.total,

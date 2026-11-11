@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Download, Search } from 'lucide-react';
-import { APPLICATION_STATUSES, CATEGORIES, formatPHP } from '@unik/shared/domain';
+import { ADULT_CATEGORIES, APPLICATION_STATUSES, CATEGORIES, formatPHP, totalPax } from '@unik/shared/domain';
 import type { ApplicationStatus, TourConfig } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { applicationsCsv, downloadCsv, travelersCsv } from '@/lib/admin/csv';
@@ -40,7 +40,8 @@ export function ApplicantsList({
 
   const kpis: [MessageKey, string, string?][] = [
     ['applicants.kpi.applications', String(kpi.applications)],
-    ['applicants.kpi.travelers', String(kpi.travelers), CATEGORIES.map((c) => t('counts.itemShort', { n: kpi.byCategory[c], category: { key: CATEGORY_SHORT_KEYS[c] } })).join(' · ')],
+    // 성인 3유형은 항상, 아동·유아 유형은 1명 이상일 때만 (8유형을 다 쓰면 너무 길다)
+    ['applicants.kpi.travelers', String(kpi.travelers), CATEGORIES.filter((c) => ADULT_CATEGORIES.includes(c) || kpi.byCategory[c] > 0).map((c) => t('counts.itemShort', { n: kpi.byCategory[c], category: { key: CATEGORY_SHORT_KEYS[c] } })).join(' · ')],
     [
       'applicants.kpi.confirmedRunners',
       String(kpi.confirmedRunners),
@@ -117,7 +118,7 @@ export function ApplicantsList({
                   <td className="admin-table-cell"><button type="button" data-app-id={a.id} aria-current={selectedId === a.id ? 'true' : undefined} className="font-bold text-slate-900 underline-offset-2 hover:underline" onClick={(e) => { e.stopPropagation(); onSelect(a.id); }}>{a.appNo}</button></td>
                   <td className="admin-table-cell"><div className="font-semibold">{a.lead.firstName} {a.lead.lastName}</div><div className="text-xs text-slate-500">{formatManila(a.createdAt)}</div></td>
                   <td className="admin-table-cell">{a.departure.id.toUpperCase()}</td>
-                  <td className="admin-table-cell" title={countsMessages(a.counts).map((m) => t(m)).join(', ')}>{CATEGORIES.map((c) => a.counts[c]).join(' / ')}</td>
+                  <td className="admin-table-cell" title={countsMessages(a.counts).map((m) => t(m)).join(', ')}><div className="font-semibold">{totalPax(a.counts)}</div><div className="text-xs text-slate-500">{CATEGORIES.filter((c) => a.counts[c] > 0).map((c) => t('counts.itemShort', { n: a.counts[c], category: { key: CATEGORY_SHORT_KEYS[c] } })).join(' · ')}</div></td>
                   <td className="admin-table-cell">{a.pricing.promo?.code ?? t('common.direct')}</td>
                   <td className="admin-table-cell">{formatPHP(a.pricing.total)}</td>
                   <td className="admin-table-cell">{formatPHP(a.paidTotal)}</td>

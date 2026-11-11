@@ -18,7 +18,7 @@ export default async function TourPage() {
   return (
     <>
       <Section tone="ink">
-        <SectionHeading as="h1" tone="dark" eyebrow="THE TOUR" title="Everything handled. You just run." intro="Prices are per person on twin-share accommodation." />
+        <SectionHeading as="h1" tone="dark" eyebrow="THE TOUR" title="Everything handled. You just run." intro="Prices are per person on twin-share accommodation, except no-bed children and infants, who share a parent's bed." />
       </Section>
       <Section className="flex flex-col gap-12">
         {departures.length === 0 ? (
@@ -31,12 +31,13 @@ export default async function TourPage() {
               </h2>
               {d.flightInfo ? <p className="text-sm">{d.flightInfo}</p> : null}
               <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
-                {/* 가격이 없는 유형(예전 설정의 child/infant 등)은 보여주지 않는다 */}
+                {/* 가격이 없는 유형(예전 설정의 아동 10K·침대 없음 등)은 보여주지 않는다 */}
                 {PACKAGES.filter((p) => isValidPrice(d.prices?.[p.category])).map((p) => (
                   <div key={p.category} className="rounded-3xl border-2 border-brand-line p-6">
                     <p className="font-race text-2xl font-extrabold uppercase text-brand-ink">{p.title}</p>
                     <p className="text-[26px] font-extrabold text-brand-ink">{formatPHP(d.prices[p.category])}</p>
                     <p className="text-sm">{p.description}</p>
+                    {p.notice ? <p className="mt-2 text-sm font-bold text-brand-red">{p.notice}</p> : null}
                   </div>
                 ))}
               </div>

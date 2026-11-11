@@ -28,8 +28,8 @@ describe('translate', () => {
   });
   it('translates nested messages and joins message lists in the same locale', () => {
     const m = msg('edits.noPrice', { categories: [msg('category.child'), msg('category.infant')] });
-    expect(translate('en', m)).toBe('This departure has no price for Child (under 12), Infant (under 2). Set it in Tour settings first.');
-    expect(translate('ko', m)).toBe('이 출발편에는 아동(12세 미만), 유아(24개월 미만) 가격이 없습니다. 먼저 상품 설정에서 입력하세요.');
+    expect(translate('en', m)).toBe('This departure has no price for Child (with bed), Infant (under 2). Set it in Tour settings first.');
+    expect(translate('ko', m)).toBe('이 출발편에는 아동(침대), 유아(24개월 미만) 가격이 없습니다. 먼저 상품 설정에서 입력하세요.');
   });
   it('does not re-interpolate substituted values', () => {
     expect(translate('en', 'promo.created', { code: '{code}' })).toBe('Created {code}.');
@@ -37,7 +37,7 @@ describe('translate', () => {
   it('makeT accepts a key with params or a Msg', () => {
     const t = makeT('ko');
     expect(t('status.deposit_paid')).toBe('예약금 입금');
-    expect(t(msg('counts.item', { n: 2, category: msg('category.full') }))).toBe('풀코스 2명');
+    expect(t(msg('counts.item', { n: 2, category: msg('category.full') }))).toBe('풀코스(18세 이상) 2명');
   });
   it('MessageError carries the Msg and an English message', () => {
     const e = new MessageError(msg('edits.configNotLoaded'));

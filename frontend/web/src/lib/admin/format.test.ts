@@ -20,8 +20,8 @@ describe('format', () => {
     }
   });
   it('describes counts like describeCounts in English and in Korean', () => {
-    const counts = { full: 2, tenK: 0, companion: 1, child: 0, infant: 1 };
+    const counts = { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1 };
     expect(countsMessages(counts).map((m) => translate('en', m)).join(', ')).toBe(describeCounts(counts));
-    expect(countsMessages(counts).map((m) => translate('ko', m)).join(', ')).toBe('풀코스 2명, 동반자 1명, 유아(24개월 미만) 1명');
+    expect(countsMessages(counts).map((m) => translate('ko', m)).join(', ')).toBe('풀코스(18세 이상) 2명, 동반자 1명, 유아(24개월 미만) 1명');
   });
 });

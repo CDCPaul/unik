@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  CATEGORIES,
+  CATEGORY_GROUPS,
   CATEGORY_LABELS,
+  FULL_MARATHON_AGE_NOTICE,
   RUNNER_CATEGORIES,
   TSHIRT_SIZES,
   formatPHP,
@@ -16,7 +17,7 @@ import {
   promoEligiblePax,
   validateCounts,
 } from '@unik/shared/domain';
-import type { Availability, Category, TourConfig } from '@unik/shared/domain';
+import type { Availability, Category, CategoryGroupKey, TourConfig } from '@unik/shared/domain';
 import { DIAL_CODES } from '@/lib/data/dialCodes';
 import { checkPromo, submitWithRetry } from '@/lib/apply/api';
 import { clearDraft, loadDraft, saveDraft } from '@/lib/apply/draft';
@@ -45,12 +46,29 @@ const COUNTER_TITLES: Record<Category, string> = {
   full: 'Full Marathon runner',
   tenK: '10K runner',
   companion: 'Companion (non-runner)',
-  child: CATEGORY_LABELS.child,
+  childTenK: 'Child 10K runner (with bed)',
+  childTenKNoBed: 'Child 10K runner (no bed)',
+  child: 'Child non-runner (with bed)',
+  childNoBed: 'Child non-runner (no bed)',
   infant: CATEGORY_LABELS.infant,
 };
+const WITH_BED = 'Shares a twin room with bed.';
+const NO_BED = "Shares a parent's bed (no extra bed).";
 const COUNTER_HINTS: Partial<Record<Category, string>> = {
-  child: 'Ages 2–11 on the travel dates',
-  infant: 'Under 2 years old on the travel dates',
+  childTenK: `Race entry for the 10 km course. ${WITH_BED}`,
+  childTenKNoBed: `Race entry for the 10 km course. ${NO_BED}`,
+  child: `No race entry. ${WITH_BED}`,
+  childNoBed: `No race entry. ${NO_BED}`,
+  infant: 'Under 2 years old on the travel dates. No race entry, no bed.',
+};
+// 눈에 띄게 보여줄 안내 (막지는 않는다)
+const COUNTER_NOTICES: Partial<Record<Category, string>> = {
+  full: FULL_MARATHON_AGE_NOTICE,
+};
+const GROUP_TITLES: Record<CategoryGroupKey, string> = {
+  adult: 'Adults (12+)',
+  child: 'Children (2–11)',
+  infant: 'Infant (under 2)',
 };
 
 function FieldError({ id, msg }: { id: string; msg?: string }) {
@@ -274,30 +292,39 @@ export function ApplyForm() {
         {/* 2. Travelers */}
         <fieldset className={card}>
           <legend className={legend}>2. Who&apos;s going?</legend>
-          {CATEGORIES.map((c: Category) => {
-            const dep = departures.find((d) => d.id === state.departureId);
-            const unit = dep?.prices?.[c];
-            const price = !dep
-              ? 'Choose a departure to see prices'
-              : isValidPrice(unit)
-                ? `${formatPHP(unit)} per person`
-                : 'Not available for this departure';
-            const hint = COUNTER_HINTS[c];
-            return (
-              <div key={c} className="flex flex-wrap items-center gap-3 border-b border-brand-line py-3.5 last:border-0">
-                <div className="flex-[1_1_240px]">
-                  <p className="font-extrabold text-brand-ink">{COUNTER_TITLES[c]}</p>
-                  {hint ? <p className="text-sm">{hint}</p> : null}
-                  <p className="text-sm">{price}</p>
-                </div>
-                <div className="flex items-center gap-3.5">
-                  <button type="button" aria-label={`Remove one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: -1 })} className="h-11 w-11 rounded-full border-2 border-brand-line bg-white text-2xl font-bold text-brand-ink">−</button>
-                  <span className="min-w-6 text-center text-xl font-extrabold text-brand-ink" aria-live="polite">{state.counts[c]}</span>
-                  <button type="button" aria-label={`Add one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: 1 })} className="h-11 w-11 rounded-full bg-brand-red text-2xl font-bold text-white">+</button>
-                </div>
-              </div>
-            );
-          })}
+          {CATEGORY_GROUPS.map((group) => (
+            <div key={group.key} role="group" aria-labelledby={`counter-group-${group.key}`} className="flex flex-col">
+              <h3 id={`counter-group-${group.key}`} className="rounded-xl bg-brand-soft px-3.5 py-2 text-sm font-extrabold uppercase tracking-wide text-brand-ink">
+                {GROUP_TITLES[group.key]}
+              </h3>
+              {group.categories.map((c: Category) => {
+                const dep = departures.find((d) => d.id === state.departureId);
+                const unit = dep?.prices?.[c];
+                const price = !dep
+                  ? 'Choose a departure to see prices'
+                  : isValidPrice(unit)
+                    ? `${formatPHP(unit)} per person`
+                    : 'Not available for this departure';
+                const hint = COUNTER_HINTS[c];
+                const notice = COUNTER_NOTICES[c];
+                return (
+                  <div key={c} className="flex flex-wrap items-center gap-3 border-b border-brand-line py-3.5 last:border-0">
+                    <div className="flex-[1_1_240px]">
+                      <p className="font-extrabold text-brand-ink">{COUNTER_TITLES[c]}</p>
+                      {hint ? <p className="text-sm">{hint}</p> : null}
+                      {notice ? <p className="text-sm font-bold text-brand-red">{notice}</p> : null}
+                      <p className="text-sm">{price}</p>
+                    </div>
+                    <div className="flex items-center gap-3.5">
+                      <button type="button" aria-label={`Remove one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: -1 })} className="h-11 w-11 rounded-full border-2 border-brand-line bg-white text-2xl font-bold text-brand-ink">−</button>
+                      <span className="min-w-6 text-center text-xl font-extrabold text-brand-ink" aria-live="polite">{state.counts[c]}</span>
+                      <button type="button" aria-label={`Add one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: 1 })} className="h-11 w-11 rounded-full bg-brand-red text-2xl font-bold text-white">+</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
           <p className="text-sm">Up to 10 travelers per application, including children and infants. Children and infants must travel with an adult.</p>
           <div data-field="counts" tabIndex={-1} className="outline-none">
             <FieldError id="err-counts" msg={countsError ?? undefined} />

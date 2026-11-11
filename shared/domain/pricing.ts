@@ -14,13 +14,13 @@ export function isValidPrice(n: unknown): n is number {
 
 /**
  * counts 에 포함된(1명 이상) 유형 중 출발편 가격이 없거나 잘못된 유형.
- * 예전 설정에는 child/infant 가격이 없을 수 있다.
+ * 예전 설정에는 child/infant 나 아동 10K·침대 없음 가격이 없을 수 있다.
  */
 export function missingPriceCategories(prices: Partial<Record<Category, unknown>> | undefined, counts: Counts): Category[] {
   return CATEGORIES.filter((c) => counts[c] > 0 && !isValidPrice(prices?.[c]));
 }
 
-/** 프로모 할인 대상 인원 (유아 제외) */
+/** 프로모 할인 대상 인원 (유아 제외, 아동 유형은 모두 포함) */
 export function promoEligiblePax(counts: Counts): number {
   return CATEGORIES.filter(isPromoEligible).reduce((s, c) => s + counts[c], 0);
 }
@@ -64,7 +64,7 @@ export interface PricingInput {
   depositPerPax: number;
 }
 
-/** 싱글룸 인원 (객실 선택이 없는 유아는 세지 않는다) */
+/** 싱글룸 인원 (객실 선택이 없는 침대 없는 아동·유아는 세지 않는다) */
 export function singleRoomCount(travelers: (Pick<Traveler, 'room'> & { category?: Category })[]): number {
   return travelers.filter((t) => t.room === 'single' && (!t.category || hasRoomChoice(t.category))).length;
 }

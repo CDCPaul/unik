@@ -81,11 +81,11 @@ describe('submitApplicationCore', () => {
 
   it('does not count infants toward a promo code limit', async () => {
     await seedPromo('TA-FAM', { maxPax: 3 });
-    const family = { full: 2, tenK: 0, companion: 1, child: 0, infant: 2 };
+    const family = { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 2 };
     const first = await submitApplicationCore(testDb(), validInput({ promoCode: 'TA-FAM', counts: family }), now);
     expect(first.status).toBe('new');
     await expectSubmitError(
-      submitApplicationCore(testDb(), validInput({ promoCode: 'TA-FAM', counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 } }), now),
+      submitApplicationCore(testDb(), validInput({ promoCode: 'TA-FAM', counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), now),
       'promo_invalid',
       'limit_reached',
     );
@@ -102,9 +102,9 @@ describe('submitApplicationCore', () => {
     const [mnl, ceb] = baseConfig.departures;
     const broken = (over: Record<string, unknown>) => ({ ...mnl, ...over }) as typeof mnl;
     const bad = [
-      broken({ prices: { tenK: 75000, companion: 70000, child: 50000, infant: 8000 } }), // full 누락
+      broken({ prices: { tenK: 75000, companion: 70000, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 } }), // full 누락
       broken({ prices: { ...mnl.prices, full: -1 } }),
-      broken({ prices: { ...mnl.prices, companion: 70000.5, child: 50000, infant: 8000 } }),
+      broken({ prices: { ...mnl.prices, companion: 70000.5, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 } }),
       broken({ singleSupplement: null }),
     ];
     for (const departure of bad) {
@@ -124,13 +124,13 @@ describe('submitApplicationCore', () => {
     const adults = await submitApplicationCore(testDb(), validInput(), now);
     expect(adults.pricing.total).toBe(230000);
     await expectSubmitError(
-      submitApplicationCore(testDb(), validInput({ counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 0 } }), now),
+      submitApplicationCore(testDb(), validInput({ counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 0 } }), now),
       'departure_closed',
     );
     await seedTourConfig({ departures: [{ ...mnl, prices: { ...mnl.prices, tenK: -1 } }, ceb] });
     expect((await submitApplicationCore(testDb(), validInput(), now)).status).toBe('new');
     await expectSubmitError(
-      submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 1, companion: 0, child: 0, infant: 0 } }), now),
+      submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 1, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), now),
       'departure_closed',
     );
   });
@@ -141,7 +141,7 @@ describe('submitApplicationCore', () => {
       testDb(),
       validInput({
         promoCode: 'TA-SUNRISE',
-        counts: { full: 1, tenK: 0, companion: 1, child: 1, infant: 1 },
+        counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 },
         travelers: [{ category: 'child', room: 'single' }, { category: 'infant', room: 'single' }],
       }),
       now,
@@ -152,30 +152,87 @@ describe('submitApplicationCore', () => {
     expect(r.pricing.total).toBe(217000);
     expect(r.pricing.depositDue).toBe(38000);
     const doc = (await testDb().collection(COL.applications).where('appNo', '==', r.appNo).get()).docs[0].data();
-    expect(doc.counts).toEqual({ full: 1, tenK: 0, companion: 1, child: 1, infant: 1 });
+    expect(doc.counts).toEqual({ full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 });
     expect(doc.travelers.map((t: { category: string }) => t.category)).toEqual(['full', 'companion', 'child', 'infant']);
     expect(doc.travelers[3].room).toBeUndefined();
     expect(doc.completeness).toEqual({ filled: 1, total: 8 + 6 + 6 + 5 });
+  });
+
+  it('rejects new child types on a departure saved before they existed, but still accepts child (with bed)', async () => {
+    const [mnl, ceb] = baseConfig.departures;
+    // 2026-11-06 견적 이전 설정: 아동 10K·침대 없음 가격 없음
+    const fiveKey = { ...mnl, prices: { full: 80000, tenK: 75000, companion: 70000, child: 50000, infant: 8000 } } as unknown as typeof mnl;
+    await seedTourConfig({ departures: [fiveKey, ceb] });
+    const z = { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 };
+    expect((await submitApplicationCore(testDb(), validInput({ counts: { ...z, child: 1 } }), now)).pricing.total).toBe(130000);
+    for (const c of ['childTenK', 'childTenKNoBed', 'childNoBed']) {
+      await expectSubmitError(submitApplicationCore(testDb(), validInput({ counts: { ...z, [c]: 1 } }), now), 'departure_closed');
+    }
+  });
+
+  it('stores a family with every child type: bibs for child 10K, no room for no-bed travelers, infant excluded from promo', async () => {
+    await seedPromo('TA-SUNRISE');
+    const r = await submitApplicationCore(
+      testDb(),
+      validInput({
+        promoCode: 'TA-SUNRISE',
+        counts: { full: 1, tenK: 0, companion: 1, childTenK: 1, childTenKNoBed: 1, child: 0, childNoBed: 1, infant: 1 },
+        travelers: [
+          { category: 'childTenK', room: 'single' },
+          { category: 'childTenKNoBed', room: 'single' },
+          { category: 'childNoBed', room: 'single' },
+          { category: 'infant', room: 'single' },
+        ],
+      }),
+      now,
+    );
+    // 80,000 + 70,000 + 55,000 + 52,000 + 48,000 + 8,000 + 싱글 1 (아동 10K 침대) 15,000 - 2,000 × 5 (유아 제외)
+    expect(r.pricing.singleSupplements).toBe(15000);
+    expect(r.pricing.promo?.discountTotal).toBe(10000);
+    expect(r.pricing.total).toBe(318000);
+    // 10,000 × 5 + 유아는 단가 8,000 까지만
+    expect(r.pricing.depositDue).toBe(58000);
+    const doc = (await testDb().collection(COL.applications).where('appNo', '==', r.appNo).get()).docs[0].data();
+    expect(doc.travelers.map((t: { category: string; room?: string }) => [t.category, t.room])).toEqual([
+      ['full', undefined],
+      ['companion', undefined],
+      ['childTenK', 'single'],
+      ['childTenKNoBed', undefined],
+      ['childNoBed', undefined],
+      ['infant', undefined],
+    ]);
+    expect(doc.completeness).toEqual({ filled: 1, total: 8 + 6 + 8 + 7 + 5 + 5 });
+  });
+
+  it('counts child 10K runners (with and without bed) toward the bib quota', async () => {
+    await seedTourConfig({ bibQuota: { total: 2 } });
+    const z = { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 };
+    const cheering = await submitApplicationCore(testDb(), validInput({ counts: { ...z, companion: 1, child: 2, childNoBed: 2 } }), now);
+    expect(cheering.status).toBe('new');
+    const runners = await submitApplicationCore(testDb(), validInput({ counts: { ...z, tenK: 1, childTenK: 1, childTenKNoBed: 1 } }), now);
+    expect(runners.status).toBe('waitlist');
+    const fits = await submitApplicationCore(testDb(), validInput({ counts: { ...z, companion: 1, childTenK: 1, childTenKNoBed: 1 } }), now);
+    expect(fits.status).toBe('new');
   });
 
   it('accepts a submission from an older cached form without child/infant counts', async () => {
     const r = await submitApplicationCore(testDb(), validInput({ counts: { full: 2, tenK: 0, companion: 1 } }), now);
     expect(r.pricing.total).toBe(230000);
     const doc = (await testDb().collection(COL.applications).where('appNo', '==', r.appNo).get()).docs[0].data();
-    expect(doc.counts).toEqual({ full: 2, tenK: 0, companion: 1, child: 0, infant: 0 });
+    expect(doc.counts).toEqual({ full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
   });
 
   it('puts the application on the waitlist when bibs run out', async () => {
     await seedTourConfig({ bibQuota: { total: 3 } });
     expect((await submitApplicationCore(testDb(), validInput(), now)).status).toBe('new'); // 2 bibs
     expect((await submitApplicationCore(testDb(), validInput(), now)).status).toBe('waitlist'); // needs 2, 1 left
-    const companionsOnly = validInput({ counts: { full: 0, tenK: 0, companion: 2, child: 0, infant: 0 } });
+    const companionsOnly = validInput({ counts: { full: 0, tenK: 0, companion: 2, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } });
     expect((await submitApplicationCore(testDb(), companionsOnly, now)).status).toBe('new');
   });
 
   it('two concurrent submissions for the last bib: exactly one gets it', async () => {
     await seedTourConfig({ bibQuota: { total: 1 } });
-    const solo = () => validInput({ counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 } });
+    const solo = () => validInput({ counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } });
     const results = await Promise.all([
       submitApplicationCore(testDb(), solo(), now),
       submitApplicationCore(testDb(), solo(), now),
@@ -192,15 +249,15 @@ describe('submitApplicationCore', () => {
 
   it('rate-limits many applications from the same email within an hour', async () => {
     for (let i = 0; i < 5; i++) {
-      await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 } }), now);
+      await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), now);
     }
-    const err = await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 } }), now).then(
+    const err = await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), now).then(
       () => null,
       (e) => e,
     );
     expect(err).toBeInstanceOf(SubmitError);
     expect(err.code).toBe('rate_limited');
-    const other = validInput({ counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 } });
+    const other = validInput({ counts: { full: 0, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } });
     other.lead = { ...other.lead, email: 'someone.else@example.com' };
     expect((await submitApplicationCore(testDb(), other, now)).status).toBe('new');
   });
@@ -208,19 +265,19 @@ describe('submitApplicationCore', () => {
   it('does not count cancelled applications toward the email limit', async () => {
     const keys: string[] = [];
     for (let i = 0; i < 5; i++) {
-      const input = validInput({ counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 } });
+      const input = validInput({ counts: { full: 0, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } });
       keys.push(input.idempotencyKey);
       await submitApplicationCore(testDb(), input, now);
     }
     await testDb().collection('applications').doc(keys[0]).update({ status: 'cancelled' });
-    expect((await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 } }), now)).status).toBe('new');
+    expect((await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), now)).status).toBe('new');
   });
 
   it('ignores submissions older than an hour for rate limiting', async () => {
     const earlier = new Date(now.getTime() - 2 * 60 * 60 * 1000);
     for (let i = 0; i < 5; i++) {
-      await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 } }), earlier);
+      await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), earlier);
     }
-    expect((await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, child: 0, infant: 0 } }), now)).status).toBe('new');
+    expect((await submitApplicationCore(testDb(), validInput({ counts: { full: 0, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), now)).status).toBe('new');
   });
 });

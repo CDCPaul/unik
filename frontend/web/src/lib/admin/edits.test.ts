@@ -19,7 +19,7 @@ const config: TourConfig = {
   bibQuota: { total: 200 },
   mayaPaymentLinkBase: null,
   notifyEmails: [],
-  departures: [{ id: 'mnl', label: 'Manila', departDate: '2027-03-19', returnDate: '2027-03-23', flightInfo: '', seatCapacity: 120, isOpen: false, prices: { full: 80000, tenK: 75000, companion: 70000, child: 50000, infant: 8000 }, singleSupplement: 15000 }],
+  departures: [{ id: 'mnl', label: 'Manila', departDate: '2027-03-19', returnDate: '2027-03-23', flightInfo: '', seatCapacity: 120, isOpen: false, prices: { full: 80000, tenK: 75000, companion: 70000, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 }, singleSupplement: 15000 }],
 };
 
 const app: ApplicationRecord = {
@@ -28,7 +28,7 @@ const app: ApplicationRecord = {
   status: 'contacted',
   departure: { id: 'mnl', label: 'Manila', departDate: '2027-03-19', returnDate: '2027-03-23' },
   lead: { firstName: 'Maria', lastName: 'Santos', email: 'maria@example.com', phoneDial: '+63', phoneNumber: '917 123 4567', viber: true, whatsapp: false },
-  counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
+  counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
   travelers: [{ category: 'full', passportName: 'SANTOS MARIA' }],
   completeness: { filled: 1, total: 8 },
   pricing: { lines: [], singleSupplements: 0, subtotal: 80000, promo: { code: 'TA-OLD', agencyName: 'Old', type: 'fixed', value: 2000, discountTotal: 2000 }, total: 78000, depositDue: 10000 },
@@ -45,7 +45,7 @@ const pay = (over: Partial<PaymentRecord> = {}): PaymentRecord => ({ id: 'p1', t
 
 describe('recalculate', () => {
   it('keeps the original promo terms when counts change, even if the departure is now closed', () => {
-    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, config);
+    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, config);
     if ('error' in r) throw new Error(en(r.error));
     expect(r.travelers).toEqual([{ category: 'full', passportName: 'SANTOS MARIA' }, { category: 'companion' }]);
     expect(r.pricing.promo).toMatchObject({ code: 'TA-OLD', discountTotal: 4000 });
@@ -59,17 +59,17 @@ describe('recalculate', () => {
     expect(r.pricing.singleSupplements).toBe(15000);
   });
   it('rejects invalid counts and a departure missing from settings', () => {
-    expect(errorText(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 } }, config))).toBe('At least one traveler is required');
-    expect(errorText(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 } }, { ...config, departures: [] }))).toContain('tour settings');
-    expect(errorText(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 } }, null))).toBe('Tour settings are not loaded yet.');
+    expect(errorText(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, config))).toBe('At least one traveler is required');
+    expect(errorText(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, { ...config, departures: [] }))).toContain('tour settings');
+    expect(errorText(recalculate(app, { counts: { full: 2, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, null))).toBe('Tour settings are not loaded yet.');
   });
   it('keeps the original per-traveler deposit when the current config deposit changes', () => {
-    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, { ...config, depositPerPax: 15000 });
+    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, { ...config, depositPerPax: 15000 });
     if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing.depositDue).toBe(20000);
   });
   it('warns when a paid-up application now totals more than was paid', () => {
-    const grown = { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } };
+    const grown = { counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } };
     const paid: ApplicationRecord = { ...app, status: 'fully_paid', paidTotal: 78000 };
     const r = recalculate(paid, grown, config);
     if ('error' in r) throw new Error(en(r.error));
@@ -80,13 +80,13 @@ describe('recalculate', () => {
     expect(c.warnings).toHaveLength(1);
   });
   it('warns when added travelers push the deposit due above what was paid', () => {
-    const grown = { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } };
+    const grown = { counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } };
     const paid: ApplicationRecord = { ...app, status: 'deposit_paid', paidTotal: 10000 };
     const r = recalculate(paid, grown, config);
     if ('error' in r) throw new Error(en(r.error));
     expect(r.warnings.map(en)).toEqual(['Deposit now due is PHP 20,000; PHP 10,000 has been paid.']);
     expect(translate('ko', r.warnings[0])).toBe('현재 예약금은 PHP 20,000이며, 입금액은 PHP 10,000입니다.');
-    const noChange = recalculate(paid, { counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 } }, config);
+    const noChange = recalculate(paid, { counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, config);
     if ('error' in noChange) throw new Error(en(noChange.error));
     expect(noChange.warnings).toEqual([]);
     const early = recalculate({ ...app, paidTotal: 0 }, grown, config);
@@ -94,7 +94,7 @@ describe('recalculate', () => {
     expect(early.warnings).toEqual([]);
   });
   it('gives no warning for an unpaid application', () => {
-    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, config);
+    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, config);
     if ('error' in r) throw new Error(en(r.error));
     expect(r.warnings).toEqual([]);
   });
@@ -102,7 +102,7 @@ describe('recalculate', () => {
 
 describe('recalculate with children and infants', () => {
   it('prices new categories with the original promo (no infant discount) and original per-traveler deposit', () => {
-    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 1 } }, config);
+    const r = recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 } }, config);
     if ('error' in r) throw new Error(en(r.error));
     expect(r.travelers.map((t) => t.category)).toEqual(['full', 'child', 'infant']);
     expect(r.pricing.lines.map((l) => [l.category, l.amount])).toEqual([['full', 80000], ['child', 50000], ['infant', 8000]]);
@@ -114,7 +114,7 @@ describe('recalculate with children and infants', () => {
   it('recovers the original per-traveler deposit from a snapshot with a capped infant deposit', () => {
     const family: ApplicationRecord = {
       ...app,
-      counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 1 },
+      counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1 },
       travelers: [{ category: 'full' }, { category: 'infant' }],
       pricing: {
         lines: [{ category: 'full', qty: 1, unitPrice: 70000, amount: 70000 }, { category: 'infant', qty: 1, unitPrice: 6000, amount: 6000 }],
@@ -125,25 +125,25 @@ describe('recalculate with children and infants', () => {
         depositDue: 16000,
       },
     };
-    const r = recalculate(family, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 1 } }, { ...config, depositPerPax: 99999 });
+    const r = recalculate(family, { counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1 } }, { ...config, depositPerPax: 99999 });
     if ('error' in r) throw new Error(en(r.error));
     expect(r.pricing.depositDue).toBe(10000 + 10000 + 8000);
   });
   it('applies the shared adult rules', () => {
-    expect(errorText(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, child: 1, infant: 0 } }, config))).toBe('Children and infants must travel with at least one adult.');
-    expect(errorText(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 2 } }, config))).toBe('Each infant must travel with an adult (one infant per adult).');
+    expect(errorText(recalculate(app, { counts: { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 0 } }, config))).toBe('Children and infants must travel with at least one adult.');
+    expect(errorText(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 2 } }, config))).toBe('Each infant must travel with an adult (one infant per adult).');
   });
   it('refuses to price a category the departure has no price for', () => {
     const legacy: TourConfig = { ...config, departures: [{ ...config.departures[0], prices: { full: 80000, tenK: 75000, companion: 70000 } as TourConfig['departures'][0]['prices'] }] };
-    expect(recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, child: 0, infant: 0 } }, legacy)).not.toHaveProperty('error');
-    expect(errorText(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 0 } }, legacy))).toBe(
-      'This departure has no price for Child (under 12). Set it in Tour settings first.',
+    expect(recalculate(app, { counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, legacy)).not.toHaveProperty('error');
+    expect(errorText(recalculate(app, { counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 0 } }, legacy))).toBe(
+      'This departure has no price for Child (with bed). Set it in Tour settings first.',
     );
   });
   it('applies counts with new categories transactionally', () => {
-    const plan = planCountsApply(app, app.counts, { full: 1, tenK: 0, companion: 0, child: 0, infant: 1 }, config);
+    const plan = planCountsApply(app, app.counts, { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1 }, config);
     if (!('fields' in plan)) throw new Error('expected fields');
-    expect(plan.fields).toMatchObject({ counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 1 }, pricing: { total: 86000, depositDue: 18000 } });
+    expect(plan.fields).toMatchObject({ counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1 }, pricing: { total: 86000, depositDue: 18000 } });
     expect(planCountsApply(app, { ...app.counts, infant: 1 }, { ...app.counts, child: 1 }, config)).toEqual({ conflict: true });
   });
 });
@@ -151,7 +151,7 @@ describe('recalculate with children and infants', () => {
 describe('repriceForTravelers with children and infants', () => {
   const family: ApplicationRecord = {
     ...app,
-    counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 1 },
+    counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 },
     travelers: [{ category: 'full', room: 'twin' }, { category: 'child', room: 'twin' }, { category: 'infant' }],
     pricing: {
       lines: [
@@ -184,7 +184,7 @@ describe('repriceForTravelers with children and infants', () => {
 describe('repriceForTravelers', () => {
   const snap: ApplicationRecord = {
     ...app,
-    counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 },
+    counts: { full: 2, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
     travelers: [{ category: 'full', passportName: 'A', room: 'twin' }, { category: 'full', room: 'twin' }],
     pricing: {
       lines: [{ category: 'full', qty: 2, unitPrice: 70000, amount: 140000 }],
@@ -195,7 +195,7 @@ describe('repriceForTravelers', () => {
       depositDue: 20000,
     },
   };
-  const changed: TourConfig = { ...config, depositPerPax: 99999, departures: [{ ...config.departures[0], prices: { full: 90000, tenK: 85000, companion: 80000, child: 50000, infant: 8000 } }] };
+  const changed: TourConfig = { ...config, depositPerPax: 99999, departures: [{ ...config.departures[0], prices: { full: 90000, tenK: 85000, companion: 80000, childTenK: 55000, childTenKNoBed: 52000, child: 50000, childNoBed: 48000, infant: 8000 } }] };
   it('keeps snapshot pricing for a name-only edit even when config prices changed', () => {
     const r = repriceForTravelers(snap, [{ category: 'full', passportName: 'A EDITED', room: 'twin' }, { category: 'full', room: 'twin' }], changed);
     if ('error' in r) throw new Error(en(r.error));
@@ -239,29 +239,29 @@ describe('repriceForTravelers', () => {
 describe('transactional plans', () => {
   const two: ApplicationRecord = {
     ...app,
-    counts: { full: 2, tenK: 0, companion: 0, child: 0, infant: 0 },
+    counts: { full: 2, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
     travelers: [{ category: 'full', passportName: 'A' }, { category: 'full', passportName: 'B' }],
     pricing: { lines: [{ category: 'full', qty: 2, unitPrice: 80000, amount: 160000 }], singleSupplements: 0, subtotal: 160000, promo: null, total: 160000, depositDue: 20000 },
   };
   const baseT = two.travelers;
   it('merges traveler edits onto the live doc without repricing and keeps other staff edits', () => {
     const live: ApplicationRecord = { ...two, travelers: [{ category: 'full', passportName: 'A', nationality: 'Filipino' }, { category: 'full', passportName: 'B' }] };
-    const plan = planTravelersSave(live, two.counts, baseT, [{ category: 'full', passportName: 'A' }, { category: 'full', passportName: 'B2' }], { ...config, departures: [{ ...config.departures[0], prices: { full: 1, tenK: 1, companion: 1, child: 0, infant: 0 } }] });
+    const plan = planTravelersSave(live, two.counts, baseT, [{ category: 'full', passportName: 'A' }, { category: 'full', passportName: 'B2' }], { ...config, departures: [{ ...config.departures[0], prices: { full: 1, tenK: 1, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }] });
     if (!('fields' in plan)) throw new Error('expected fields');
     expect(plan.fields.travelers).toEqual([{ category: 'full', passportName: 'A', nationality: 'Filipino' }, { category: 'full', passportName: 'B2' }]);
     expect(plan.fields.pricing).toEqual(two.pricing);
   });
   it('conflicts when counts changed live or the same field changed', () => {
-    expect(planTravelersSave({ ...two, counts: { full: 3, tenK: 0, companion: 0, child: 0, infant: 0 } }, two.counts, baseT, baseT, config)).toEqual({ conflict: true });
+    expect(planTravelersSave({ ...two, counts: { full: 3, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, two.counts, baseT, baseT, config)).toEqual({ conflict: true });
     const live: ApplicationRecord = { ...two, travelers: [{ category: 'full', passportName: 'A LIVE' }, two.travelers[1]] };
     expect(planTravelersSave(live, two.counts, baseT, [{ category: 'full', passportName: 'A DRAFT' }, two.travelers[1]], config)).toEqual({ conflict: true });
   });
   it('applies counts only when the live counts still equal the base counts', () => {
-    const plan = planCountsApply(two, two.counts, { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, config);
+    const plan = planCountsApply(two, two.counts, { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, config);
     if (!('fields' in plan)) throw new Error('expected fields');
-    expect(plan.fields).toMatchObject({ counts: { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, pricing: { total: 230000 } });
-    expect(planCountsApply({ ...two, counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 } }, two.counts, { full: 2, tenK: 0, companion: 1, child: 0, infant: 0 }, config)).toEqual({ conflict: true });
-    expect(planCountsApply(two, two.counts, { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 }, config)).toMatchObject({ error: { key: 'counts.error.atLeastOne' } });
+    expect(plan.fields).toMatchObject({ counts: { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, pricing: { total: 230000 } });
+    expect(planCountsApply({ ...two, counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }, two.counts, { full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, config)).toEqual({ conflict: true });
+    expect(planCountsApply(two, two.counts, { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 }, config)).toMatchObject({ error: { key: 'counts.error.atLeastOne' } });
   });
 });
 
@@ -339,6 +339,14 @@ describe('statusChangeWarnings', () => {
     expect(statusChangeWarnings({ ...app, completeness: { filled: 8, total: 8 }, paidTotal: 78000 }, 'confirmed')).toEqual([]);
     expect(statusChangeWarnings(app, 'contacted')).toEqual([]);
   });
+  it('also warns (without blocking) about a full-marathon traveler under 18 on race day', () => {
+    const young = { ...app, completeness: { filled: 8, total: 8 }, paidTotal: 78000, travelers: [{ category: 'full' as const, dob: '2010-05-01' }] };
+    expect(statusChangeWarnings(young, 'confirmed').map(en)).toEqual([
+      'Traveler 1 (Full Marathon) is 16 on race day; full marathon is for adults 18 and over.',
+    ]);
+    expect(translate('ko', statusChangeWarnings(young, 'confirmed')[0])).toBe('참가자 1(풀코스)은 대회일 기준 16세입니다. 풀코스는 18세 이상만 참가할 수 있습니다.');
+    expect(statusChangeWarnings(young, 'contacted')).toEqual([]);
+  });
 });
 
 describe('lead and traveler edits', () => {
@@ -368,12 +376,16 @@ describe('lead and traveler edits', () => {
 describe('countsError', () => {
   it('reports an error exactly when the shared validateCounts does, with the same English text', () => {
     const cases: Counts[] = [
-      { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
-      { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 },
-      { full: 11, tenK: 0, companion: 0, child: 0, infant: 0 },
-      { full: 0, tenK: 0, companion: 0, child: 1, infant: 0 },
-      { full: 1, tenK: 0, companion: 0, child: 0, infant: 2 },
-      { full: 1, tenK: 0, companion: 1, child: 1, infant: 2 },
+      { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
+      { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
+      { full: 11, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
+      { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 0 },
+      { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 2 },
+      { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 2 },
+      { full: 0, tenK: 0, companion: 0, childTenK: 1, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
+      { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 1, child: 0, childNoBed: 0, infant: 0 },
+      { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 1, infant: 0 },
+      { full: 0, tenK: 1, companion: 0, childTenK: 1, childTenKNoBed: 1, child: 1, childNoBed: 1, infant: 1 },
     ];
     for (const c of cases) {
       const m = countsError(c);
@@ -381,6 +393,6 @@ describe('countsError', () => {
     }
   });
   it('flags a non-integer count', () => {
-    expect(countsError({ full: 1.5, tenK: 0, companion: 0, child: 0, infant: 0 })).toMatchObject({ key: 'counts.error.invalid' });
+    expect(countsError({ full: 1.5, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 })).toMatchObject({ key: 'counts.error.invalid' });
   });
 });

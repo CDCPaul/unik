@@ -46,40 +46,62 @@ describe('parseSubmitInput', () => {
   });
   it('defaults missing child/infant counts to 0 (older cached web form)', () => {
     const r = parseSubmitInput(validInput({ counts: { full: 2, tenK: 0, companion: 1 } }));
-    expect(r.counts).toEqual({ full: 2, tenK: 0, companion: 1, child: 0, infant: 0 });
-    expect(parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, child: null, infant: null } })).counts).toEqual({
+    expect(r.counts).toEqual({ full: 2, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 });
+    expect(parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, childTenK: null, childTenKNoBed: null, child: null, childNoBed: null, infant: null } })).counts).toEqual({
       full: 1,
       tenK: 0,
       companion: 0,
+      childTenK: 0,
+      childTenKNoBed: 0,
       child: 0,
+      childNoBed: 0,
       infant: 0,
     });
+  });
+  it('accepts the old five-key counts of a cached web form (child = cheering child with bed)', () => {
+    const r = parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 1, child: 1, infant: 1 } }));
+    expect(r.counts).toEqual({ full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 });
+  });
+  it('accepts the new child types', () => {
+    const r = parseSubmitInput(
+      validInput({
+        counts: { full: 0, tenK: 1, companion: 1, childTenK: 1, childTenKNoBed: 1, child: 0, childNoBed: 1, infant: 0 },
+        travelers: [{ category: 'childTenK', tshirtSize: 'XS', room: 'twin' }, { category: 'childTenKNoBed' }, { category: 'childNoBed' }],
+      }),
+    );
+    expect(r.counts).toEqual({ full: 0, tenK: 1, companion: 1, childTenK: 1, childTenKNoBed: 1, child: 0, childNoBed: 1, infant: 0 });
+    expect(r.travelers.map((t) => t.category)).toEqual(['childTenK', 'childTenKNoBed', 'childNoBed']);
+  });
+  it('rejects new child types without an adult', () => {
+    expect(() => parseSubmitInput(validInput({ counts: { full: 0, tenK: 0, companion: 0, childTenK: 1, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }))).toThrow(
+      'Children and infants must travel with at least one adult.',
+    );
   });
   it('accepts child and infant travelers and counts', () => {
     const r = parseSubmitInput(
       validInput({
-        counts: { full: 1, tenK: 0, companion: 0, child: 1, infant: 1 },
+        counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 },
         travelers: [{ category: 'child', passportName: 'SANTOS JUAN' }, { category: 'infant', dob: '2026-01-15' }],
       }),
     );
-    expect(r.counts).toEqual({ full: 1, tenK: 0, companion: 0, child: 1, infant: 1 });
+    expect(r.counts).toEqual({ full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 });
     expect(r.travelers.map((t) => t.category)).toEqual(['child', 'infant']);
   });
   it('rejects invalid child/infant counts and unknown categories', () => {
-    expect(() => parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, child: -1, infant: 0 } }))).toThrow(SubmitError);
-    expect(() => parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 1.5 } }))).toThrow(SubmitError);
+    expect(() => parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: -1, childNoBed: 0, infant: 0 } }))).toThrow(SubmitError);
+    expect(() => parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1.5 } }))).toThrow(SubmitError);
     expect(() => parseSubmitInput(validInput({ travelers: [{ category: 'toddler' }] }))).toThrow(SubmitError);
   });
   it('enforces the shared adult rules for children and infants', () => {
-    expect(() => parseSubmitInput(validInput({ counts: { full: 0, tenK: 0, companion: 0, child: 2, infant: 0 } }))).toThrow(
+    expect(() => parseSubmitInput(validInput({ counts: { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 2, childNoBed: 0, infant: 0 } }))).toThrow(
       'Children and infants must travel with at least one adult.',
     );
-    expect(() => parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 2 } }))).toThrow(
+    expect(() => parseSubmitInput(validInput({ counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 2 } }))).toThrow(
       'Each infant must travel with an adult (one infant per adult).',
     );
   });
   it('rejects zero travelers and missing terms agreement', () => {
-    expect(() => parseSubmitInput(validInput({ counts: { full: 0, tenK: 0, companion: 0, child: 0, infant: 0 } }))).toThrow(
+    expect(() => parseSubmitInput(validInput({ counts: { full: 0, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }))).toThrow(
       'At least one traveler is required',
     );
     expect(() => parseSubmitInput(validInput({ agreedToTerms: false }))).toThrow(SubmitError);
@@ -106,7 +128,7 @@ describe('parseSubmitInput', () => {
   describe('input hardening', () => {
     const lead = (over: Record<string, unknown>) => ({ lead: { ...validInput().lead, ...over } });
     const traveler = (over: Record<string, unknown>) => ({
-      counts: { full: 1, tenK: 0, companion: 0, child: 0, infant: 0 },
+      counts: { full: 1, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 },
       travelers: [{ category: 'full', ...over }],
     });
 

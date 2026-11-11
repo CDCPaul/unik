@@ -2,6 +2,7 @@
 
 import { RUNNER_CATEGORIES, TSHIRT_SIZES, hasRoomChoice, missingFields } from '@unik/shared/domain';
 import type { Traveler } from '@unik/shared/domain';
+import { underageFullAge } from '@/lib/admin/detailHelpers';
 import { CATEGORY_KEYS } from '@/lib/admin/format';
 import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
 import type { MessageKey, Msg } from '@/lib/admin/i18n/translate';
@@ -37,6 +38,7 @@ function TravelerCard({
   const missing = missingFields(traveler);
   const runner = RUNNER_CATEGORIES.includes(traveler.category);
   const roomChoice = hasRoomChoice(traveler.category);
+  const underageAge = underageFullAge(traveler);
   const err = (f: string) => {
     const m = errors[`travelers.${index}.${f}`];
     return m ? t(m) : undefined;
@@ -58,10 +60,12 @@ function TravelerCard({
         <span className="font-semibold">{t('traveler.title', { n: index + 1 })}</span>
         <span className="text-slate-500">{CATEGORY_KEYS[traveler.category] ? t(CATEGORY_KEYS[traveler.category]) : traveler.category}</span>
         <span className="truncate text-slate-700">{traveler.passportName ?? ''}</span>
+        {underageAge !== null ? <span className="admin-badge bg-red-100 text-red-800">{t('traveler.underageBadge')}</span> : null}
         {missing.length > 0 ? <span className="admin-badge ml-auto bg-amber-100 text-amber-800">{t('traveler.missingCount', { n: missing.length })}</span> : <span className="admin-badge ml-auto bg-green-100 text-green-800">{t('traveler.complete')}</span>}
       </summary>
       <div className="border-t border-slate-100 px-3 py-3">
         {missing.length > 0 ? <p className="mb-2 text-xs text-amber-700">{t('traveler.missingList', { fields: missing.map(fieldLabel).join(', ') })}</p> : null}
+        {underageAge !== null ? <p role="note" className="mb-2 text-xs text-red-700">{t('traveler.warn.underageFull', { age: underageAge })}</p> : null}
         {editing ? (
           <div className="grid grid-cols-2 gap-3">
             {text('passportName')}

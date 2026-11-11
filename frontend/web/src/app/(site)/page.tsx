@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { CATEGORIES, formatPHP } from '@unik/shared/domain';
+import { CATEGORIES, formatPHP, hasRoomChoice } from '@unik/shared/domain';
 import { ButtonLink } from '@/components/site/ButtonLink';
 import { PhotoCredit } from '@/components/site/PhotoCredit';
 import { Section, SectionHeading } from '@/components/site/Section';
@@ -35,6 +35,9 @@ export default async function HomePage() {
     const p = config ? lowestPrice(config, c) : null;
     return p === null ? 'Prices coming soon' : `From ${formatPHP(p)}`;
   };
+  // 어느 출발편에도 가격이 없는 유형은 숨긴다. 가격이 하나도 없으면(설정 전) 모두 "Prices coming soon" 으로 보인다.
+  const priced = PACKAGES.filter((pkg) => config && lowestPrice(config, pkg.category) !== null);
+  const packages = priced.length > 0 ? priced : PACKAGES;
 
   return (
     <>
@@ -156,15 +159,16 @@ export default async function HomePage() {
         <SectionHeading
           eyebrow="THE TOUR"
           title="Everything handled. You just run."
-          intro="Choose your package. Prices are per person on twin-share accommodation."
+          intro="Choose your package. Prices are per person. Adults and children with a bed share a twin room."
         />
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5">
-          {PACKAGES.map((pkg) => (
+          {packages.map((pkg) => (
             <div key={pkg.category} className="flex flex-col gap-3 rounded-3xl border-2 border-brand-line p-8">
               <p className="font-race text-3xl font-extrabold uppercase text-brand-ink">{pkg.title}</p>
               <p className="text-[15px]">{pkg.description}</p>
+              {pkg.notice ? <p className="text-sm font-bold text-brand-red">{pkg.notice}</p> : null}
               <p className="text-[28px] font-extrabold text-brand-ink">{fromPrice(pkg.category)}</p>
-              <p className="text-sm">per person · twin share</p>
+              <p className="text-sm">{hasRoomChoice(pkg.category) ? 'per person · twin share' : "per person · shares a parent's bed"}</p>
             </div>
           ))}
         </div>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Minus, Pencil, Plus } from 'lucide-react';
-import { CATEGORIES, buildTravelers, manilaDate } from '@unik/shared/domain';
+import { CATEGORIES, CATEGORY_GROUPS, buildTravelers, manilaDate } from '@unik/shared/domain';
 import type { Category, Counts, Traveler } from '@unik/shared/domain';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { cleanTraveler, droppedTravelers, droppedWarning } from '@/lib/admin/detailHelpers';
@@ -57,13 +57,19 @@ function CountsEditor({ app, config, draft, setDraft, locked }: { app: Applicati
 
   return (
     <div className="mb-4">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        {CATEGORIES.map((c) => (
-          <div key={c} className="flex items-center gap-2 text-sm">
-            <span className="w-32 text-slate-700">{t(CATEGORY_KEYS[c])}</span>
-            <button type="button" aria-label={t('detail.counts.decrease', { category: { key: CATEGORY_KEYS[c] } })} className="admin-btn-secondary !p-1.5" disabled={counts[c] <= 0 || saving || locked} onClick={() => bump(c, -1)}><Minus className="h-3.5 w-3.5" /></button>
-            <span className="w-5 text-center font-bold" aria-live="polite">{counts[c]}</span>
-            <button type="button" aria-label={t('detail.counts.increase', { category: { key: CATEGORY_KEYS[c] } })} className="admin-btn-secondary !p-1.5" disabled={saving || locked} onClick={() => bump(c, 1)}><Plus className="h-3.5 w-3.5" /></button>
+      <div className="flex flex-col gap-2">
+        {/* 성인(12+)·아동(2–11)·유아 로 나눠 보여준다 */}
+        {CATEGORY_GROUPS.map((group) => (
+          <div key={group.key} role="group" aria-label={t(`categoryGroup.${group.key}`)} className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="w-full text-xs font-semibold uppercase tracking-wide text-slate-500">{t(`categoryGroup.${group.key}`)}</span>
+            {group.categories.map((c) => (
+              <div key={c} className="flex items-center gap-2 text-sm">
+                <span className="w-40 text-slate-700">{t(CATEGORY_KEYS[c])}</span>
+                <button type="button" aria-label={t('detail.counts.decrease', { category: { key: CATEGORY_KEYS[c] } })} className="admin-btn-secondary !p-1.5" disabled={counts[c] <= 0 || saving || locked} onClick={() => bump(c, -1)}><Minus className="h-3.5 w-3.5" /></button>
+                <span className="w-5 text-center font-bold" aria-live="polite">{counts[c]}</span>
+                <button type="button" aria-label={t('detail.counts.increase', { category: { key: CATEGORY_KEYS[c] } })} className="admin-btn-secondary !p-1.5" disabled={saving || locked} onClick={() => bump(c, 1)}><Plus className="h-3.5 w-3.5" /></button>
+              </div>
+            ))}
           </div>
         ))}
       </div>

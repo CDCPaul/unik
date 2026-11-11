@@ -14,7 +14,7 @@ describe('recomputeAvailability', () => {
 
   it('writes bib and seat usage, excluding cancelled applications', async () => {
     await submitApplicationCore(testDb(), validInput(), now); // mnl: 2 full + 1 companion
-    await submitApplicationCore(testDb(), validInput({ departureId: 'ceb', counts: { full: 0, tenK: 1, companion: 0, child: 0, infant: 0 } }), now);
+    await submitApplicationCore(testDb(), validInput({ departureId: 'ceb', counts: { full: 0, tenK: 1, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 0 } }), now);
     const cancelled = validInput();
     await submitApplicationCore(testDb(), cancelled, now);
     await testDb().collection(COL.applications).doc(cancelled.idempotencyKey).update({ status: 'cancelled' });
@@ -30,7 +30,7 @@ describe('recomputeAvailability', () => {
   });
 
   it('counts children and infants as seats (not bibs) and reads older applications without child/infant keys', async () => {
-    await submitApplicationCore(testDb(), validInput({ counts: { full: 1, tenK: 0, companion: 1, child: 1, infant: 1 } }), now);
+    await submitApplicationCore(testDb(), validInput({ counts: { full: 1, tenK: 0, companion: 1, childTenK: 0, childTenKNoBed: 0, child: 1, childNoBed: 0, infant: 1 } }), now);
     // 아동·유아 도입 이전에 저장된 신청서 (counts 에 child/infant 키 없음)
     await testDb().collection(COL.applications).doc('legacy').set({ status: 'new', departure: { id: 'mnl' }, counts: { full: 1, tenK: 1, companion: 0 } });
     const av = await recomputeAvailability(testDb());
