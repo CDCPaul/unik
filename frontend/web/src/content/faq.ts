@@ -5,7 +5,7 @@ export const FAQ = [
   },
   {
     q: 'Can anyone run the full marathon?',
-    a: "No. The race organizers require every full marathon runner, including tour participants, to be 18 or over on race day and to have an official full marathon finish of 4:59:59 or faster in a race run between 1 January 2024 and 30 November 2026. We will ask for the race certificate. If you have no qualifying time, choose the 10K: it needs no record and has a 1 hour 30 minute time limit.",
+    a: "No. The race organizers require every full marathon runner, including tour participants, to be 18 or over on race day and to have an official full marathon finish of 4:59:59 or faster in a race run between 1 January 2024 and 10 December 2026. Please send us the race certificate by 10 December 2026. If you have no qualifying time, choose the 10K: it needs no record and has a 1 hour 30 minute time limit.",
   },
   {
     q: 'Do I pay when I apply?',

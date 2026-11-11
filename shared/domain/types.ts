@@ -38,9 +38,9 @@ export const FULL_MARATHON_MIN_AGE = 18;
 /** 대회일 (YYYY-MM-DD). 풀코스 나이 기준일. */
 export const RACE_DATE = '2027-03-21';
 export const FULL_MARATHON_AGE_NOTICE = 'Full marathon: adults 18 and over only (age on race day, 21 March 2027).';
-/** 주최측 규정: 풀코스는 공인기록 필수. KTO 배정 배번도 면제되지 않는다 (2027 유의사항, 해외 기록 인정 기간 2024-01-01 ~ 2026-11-30). */
+/** 주최측 규정: 풀코스는 공인기록 필수. KTO 배정 배번도 면제되지 않는다 (2027 유의사항, 투어 고객 기록 기간·제출 마감은 KTO 연장으로 2026-12-10, 실제 KTO 마감 12-11). */
 export const FULL_MARATHON_QUALIFIER_NOTICE =
-  "Full marathon runners must also have an official full marathon finish of 4:59:59 or faster in a race run between 1 January 2024 and 30 November 2026. This is the race organizers' rule for every runner, including tour participants. No qualifying time? Choose the 10K, which needs no record.";
+  "Full marathon runners must also have an official full marathon finish of 4:59:59 or faster in a race run between 1 January 2024 and 10 December 2026, and must send us the race certificate by 10 December 2026. This is the race organizers' rule for every runner, including tour participants. No qualifying time? Choose the 10K, which needs no record.";
 export const FULL_MARATHON_ELIGIBILITY_NOTICE = `${FULL_MARATHON_AGE_NOTICE} ${FULL_MARATHON_QUALIFIER_NOTICE}`;
 
 export const CATEGORY_LABELS: Record<Category, string> = {
