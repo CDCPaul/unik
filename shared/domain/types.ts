@@ -42,6 +42,8 @@ export const FULL_MARATHON_AGE_NOTICE = 'Full marathon: adults 18 and over only 
 export const FULL_MARATHON_QUALIFIER_NOTICE =
   "Full marathon runners must also have an official full marathon finish of 4:59:59 or faster in a race run between 1 January 2024 and 10 December 2026, and must send us the race certificate by 10 December 2026. This is the race organizers' rule for every runner, including tour participants. No qualifying time? Choose the 10K, which needs no record.";
 export const FULL_MARATHON_ELIGIBILITY_NOTICE = `${FULL_MARATHON_AGE_NOTICE} ${FULL_MARATHON_QUALIFIER_NOTICE}`;
+/** 인원 선택 줄처럼 좁은 곳에 쓰는 한 줄 안내. 전체 규정은 FULL_MARATHON_ELIGIBILITY_NOTICE / 신청서 확인 상자에 있다. */
+export const FULL_MARATHON_SHORT_NOTICE = '18+ only, with an official full marathon finish of 4:59:59 or faster.';
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   full: 'Full Marathon (18+)',
