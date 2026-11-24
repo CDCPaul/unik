@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRef } from 'react';
-import { NAV_LINKS } from '@/content/site';
+import { MOBILE_EXTRA_LINKS, NAV_LINKS } from '@/content/site';
 
 export function MobileMenu() {
   const ref = useRef<HTMLDetailsElement>(null);
@@ -16,7 +16,7 @@ export function MobileMenu() {
         aria-label="Main mobile"
         className="absolute right-0 z-20 mt-2 flex w-60 flex-col gap-1 rounded-2xl bg-white p-3 text-brand-ink shadow-xl"
       >
-        {NAV_LINKS.map((l) => (
+        {[...NAV_LINKS, ...MOBILE_EXTRA_LINKS].map((l) => (
           <Link key={l.href} href={l.href} onClick={close} className="rounded-lg px-3 py-3 font-semibold no-underline hover:bg-brand-soft">
             {l.label}
           </Link>

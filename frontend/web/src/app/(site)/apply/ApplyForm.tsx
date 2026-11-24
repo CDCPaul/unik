@@ -7,18 +7,21 @@ import {
   CONTACT_TIMES,
   CONTACT_TIME_LABELS,
   CATEGORY_LABELS,
-  FULL_MARATHON_ELIGIBILITY_NOTICE,
+  FULL_MARATHON_AGE_NOTICE,
+  FULL_MARATHON_SHORT_NOTICE,
   formatPHP,
   isValidPrice,
   manilaDate,
   missingPriceCategories,
   normalizePromoCode,
   promoEligiblePax,
+  totalPax,
   validateCounts,
 } from '@unik/shared/domain';
 import type { Availability, Category, CategoryGroupKey, TourConfig } from '@unik/shared/domain';
 import { DIAL_CODES } from '@/lib/data/dialCodes';
 import { checkPromo, submitWithRetry } from '@/lib/apply/api';
+import { showMinorCounters } from '@/lib/apply/counters';
 import { clearDraft, loadDraft, saveDraft } from '@/lib/apply/draft';
 import { PROMO_REASON_MESSAGES, describeSubmitError } from '@/lib/apply/errors';
 import { resolveInitialState } from '@/lib/apply/init';
@@ -28,8 +31,9 @@ import { clearPromoCode, loadPromoCode, savePromoCode } from '@/lib/promo/storag
 import { browserStore } from '@/lib/store';
 import { departureStatus, subscribeTourData } from '@/lib/tour/publicData';
 
-const field = 'min-h-12 w-full rounded-xl border-2 border-brand-line bg-white px-3.5 font-medium text-brand-ink';
-const card = 'm-0 flex flex-col gap-4 rounded-[20px] border-0 bg-white p-6 sm:p-7';
+// text-base(16px): iOS Safari 는 16px 미만 입력칸에 초점이 가면 화면을 확대한다
+const field = 'min-h-12 w-full rounded-xl border-2 border-brand-line bg-white px-3.5 text-base font-medium text-brand-ink';
+const card = 'm-0 flex flex-col gap-4 rounded-[20px] border-0 bg-white p-5 sm:p-7';
 const legend = 'float-left mb-1 w-full p-0 text-xl font-extrabold text-brand-ink';
 
 function newKey(): string {
@@ -51,19 +55,29 @@ const COUNTER_TITLES: Record<Category, string> = {
   childNoBed: 'Child non-runner (no bed)',
   infant: CATEGORY_LABELS.infant,
 };
-const WITH_BED = 'Shares a twin room with bed.';
-const NO_BED = "Shares a parent's bed (no extra bed).";
+// 모바일에서 한두 줄에 들어가도록 짧게
+const WITH_BED = 'own bed in a twin room';
+const NO_BED = "shares a parent's bed";
 const COUNTER_HINTS: Partial<Record<Category, string>> = {
-  childTenK: `Race entry for the 10 km course. ${WITH_BED}`,
-  childTenKNoBed: `Race entry for the 10 km course. ${NO_BED}`,
-  child: `No race entry. ${WITH_BED}`,
-  childNoBed: `No race entry. ${NO_BED}`,
-  infant: 'Under 2 years old on the travel dates. No race entry, no bed.',
+  childTenK: `10K race entry · ${WITH_BED}`,
+  childTenKNoBed: `10K race entry · ${NO_BED}`,
+  child: `No race entry · ${WITH_BED}`,
+  childNoBed: `No race entry · ${NO_BED}`,
+  infant: 'Under 2 on the travel dates · no race entry or bed',
 };
-// 눈에 띄게 보여줄 안내 (막지는 않는다)
+// 눈에 띄게 보여줄 한 줄 안내 (막지는 않는다). 풀코스 전체 규정은 아래 확인 상자에 있다.
 const COUNTER_NOTICES: Partial<Record<Category, string>> = {
-  full: FULL_MARATHON_ELIGIBILITY_NOTICE,
+  full: FULL_MARATHON_SHORT_NOTICE,
 };
+// 출발편 상태 표시: 가능(초록), 대기(노랑), 마감(회색)
+const STATUS_STYLES = {
+  open: 'bg-[#E8F5EC] text-[#145C33]',
+  full: 'bg-[#FFF4D6] text-[#7A5200]',
+  closed: 'bg-brand-soft text-brand-body',
+} as const;
+const STATUS_TEXT = { open: 'Available', full: 'Full · join the waitlist', closed: 'Closed' } as const;
+// 글자는 그대로 두고 누르는 영역만 넓힌다 (줄 높이는 바뀌지 않음)
+const tapLink = 'relative -my-2.5 inline-block py-2.5 font-bold text-brand-red';
 const GROUP_TITLES: Record<CategoryGroupKey, string> = {
   adult: 'Adults (12+)',
   child: 'Children (2–11)',
@@ -85,6 +99,9 @@ export function ApplyForm() {
   const [checkingPromo, setCheckingPromo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [minorsOpened, setMinorsOpened] = useState(false);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const [hydrated, setHydrated] = useState(false);
   const initialized = useRef(false);
@@ -147,6 +164,39 @@ export function ApplyForm() {
   const promoPax = Math.max(1, promoEligiblePax(state.counts));
   const countsError = validateCounts(state.counts);
   const accepting = data.config?.acceptingApplications ?? false;
+  const pax = totalPax(state.counts);
+  const minorsOpen = showMinorCounters(state.counts, minorsOpened);
+  const minorsForcedOpen = showMinorCounters(state.counts, false);
+  // 모바일 하단 고정 합계 바: 출발편을 고르고 금액을 계산할 수 있을 때만
+  const barVisible = !!pricing && pax > 0;
+
+  // 바가 보이는 동안 페이지 끝(제출 버튼·푸터)을 가리지 않도록 body 아래 여백을 바 높이만큼 준다.
+  // lg 이상에서는 바가 display:none 이라 높이 0 → 여백도 0.
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!barVisible || !bar) return;
+    const body = document.body;
+    const fit = () => {
+      body.style.paddingBottom = bar.offsetHeight > 0 ? `${bar.offsetHeight}px` : '';
+    };
+    fit();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(fit) : null;
+    ro?.observe(bar);
+    window.addEventListener('resize', fit);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener('resize', fit);
+      body.style.paddingBottom = '';
+    };
+  }, [barVisible]);
+
+  function goToSubmit() {
+    const btn = submitRef.current;
+    if (!btn) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    btn.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    btn.focus({ preventScroll: true });
+  }
 
   async function applyPromo() {
     const code = state.promoInput.trim();
@@ -244,8 +294,43 @@ export function ApplyForm() {
   const selectedDeparture = departures.find((d) => d.id === state.departureId);
   const unpriced = selectedDeparture ? missingPriceCategories(selectedDeparture.prices, state.counts) : [];
 
+  function renderCounter(c: Category) {
+    const unit = selectedDeparture?.prices?.[c];
+    const price = !selectedDeparture ? null : isValidPrice(unit) ? `${formatPHP(unit)} / person` : 'Not available';
+    const hint = COUNTER_HINTS[c];
+    // 풀코스 확인 상자(전체 규정)는 풀코스 인원이 있을 때만 아래에 보인다
+    const notice = c === 'full' && state.counts.full > 0 ? `${COUNTER_NOTICES[c]} See below.` : COUNTER_NOTICES[c];
+    return (
+      // 왼쪽 이름·가격, 오른쪽 −/수/+ 를 한 줄에. 짧은 안내는 그 아래 전체 폭으로.
+      <div key={c} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 border-b border-brand-line py-3 leading-snug last:border-0">
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className="font-extrabold text-brand-ink">{COUNTER_TITLES[c]}</span>
+          {price ? <span className="text-sm">{price}</span> : null}
+        </p>
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <button type="button" aria-label={`Remove one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: -1 })} className="h-11 w-11 rounded-full border-2 border-brand-line bg-white text-2xl font-bold text-brand-ink">−</button>
+          <span className="min-w-7 text-center text-xl font-extrabold text-brand-ink" aria-live="polite">{state.counts[c]}</span>
+          <button type="button" aria-label={`Add one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: 1 })} className="h-11 w-11 rounded-full bg-brand-red text-2xl font-bold text-white">+</button>
+        </div>
+        {hint ? <p className="col-span-2 mt-1 text-sm">{hint}</p> : null}
+        {notice ? <p className="col-span-2 mt-1 text-sm font-bold text-brand-red">{notice}</p> : null}
+      </div>
+    );
+  }
+
+  function renderGroup(group: (typeof CATEGORY_GROUPS)[number]) {
+    return (
+      <div key={group.key} role="group" aria-labelledby={`counter-group-${group.key}`} className="flex flex-col">
+        <h3 id={`counter-group-${group.key}`} className="rounded-xl bg-brand-soft px-3.5 py-2 text-sm font-extrabold uppercase tracking-wide text-brand-ink">
+          {GROUP_TITLES[group.key]}
+        </h3>
+        {group.categories.map(renderCounter)}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-wrap items-start gap-8">
+    <div className="flex flex-wrap items-start gap-8 lg:flex-nowrap">
       <form onSubmit={onSubmit} noValidate className="flex min-w-0 flex-[999_1_640px] flex-col gap-5">
         {/* 1. Departure */}
         <fieldset className={card}>
@@ -261,7 +346,7 @@ export function ApplyForm() {
             return (
               <label
                 key={d.id}
-                className={`flex flex-wrap items-center gap-3 rounded-2xl border-2 px-5 py-4 ${selected ? 'border-brand-red' : 'border-brand-line'} ${status === 'closed' ? 'opacity-50' : 'cursor-pointer'}`}
+                className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 sm:px-5 sm:py-4 ${selected ? 'border-brand-red' : 'border-brand-line'} ${status === 'closed' ? 'opacity-50' : 'cursor-pointer'}`}
               >
                 <input
                   type="radio"
@@ -272,12 +357,10 @@ export function ApplyForm() {
                   disabled={status === 'closed'}
                   onChange={() => dispatch({ type: 'setDeparture', departureId: d.id })}
                 />
-                <span className="flex-[1_1_200px]">
-                  <span className="block font-extrabold text-brand-ink">{d.label}</span>
-                  <span className="text-sm">{d.departDate} to {d.returnDate}</span>
-                </span>
-                <span className="text-sm font-bold text-brand-red">
-                  {status === 'closed' ? 'Closed' : status === 'full' ? 'Full · join the waitlist' : 'Available'}
+                {/* 이름(직원 입력)에 이미 날짜가 들어 있어 날짜 줄은 따로 보이지 않는다 */}
+                <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                  <span className="font-extrabold text-brand-ink">{d.label}</span>
+                  <span className={`rounded-full px-3 py-0.5 text-sm font-bold ${STATUS_STYLES[status]}`}>{STATUS_TEXT[status]}</span>
                 </span>
               </label>
             );
@@ -288,39 +371,23 @@ export function ApplyForm() {
         {/* 2. Travelers */}
         <fieldset className={card}>
           <legend className={legend}>2. Who&apos;s going?</legend>
-          {CATEGORY_GROUPS.map((group) => (
-            <div key={group.key} role="group" aria-labelledby={`counter-group-${group.key}`} className="flex flex-col">
-              <h3 id={`counter-group-${group.key}`} className="rounded-xl bg-brand-soft px-3.5 py-2 text-sm font-extrabold uppercase tracking-wide text-brand-ink">
-                {GROUP_TITLES[group.key]}
-              </h3>
-              {group.categories.map((c: Category) => {
-                const dep = departures.find((d) => d.id === state.departureId);
-                const unit = dep?.prices?.[c];
-                const price = !dep
-                  ? 'Choose a departure to see prices'
-                  : isValidPrice(unit)
-                    ? `${formatPHP(unit)} per person`
-                    : 'Not available for this departure';
-                const hint = COUNTER_HINTS[c];
-                const notice = COUNTER_NOTICES[c];
-                return (
-                  <div key={c} className="flex flex-wrap items-center gap-3 border-b border-brand-line py-3.5 last:border-0">
-                    <div className="flex-[1_1_240px]">
-                      <p className="font-extrabold text-brand-ink">{COUNTER_TITLES[c]}</p>
-                      {hint ? <p className="text-sm">{hint}</p> : null}
-                      {notice ? <p className="text-sm font-bold text-brand-red">{notice}</p> : null}
-                      <p className="text-sm">{price}</p>
-                    </div>
-                    <div className="flex items-center gap-3.5">
-                      <button type="button" aria-label={`Remove one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: -1 })} className="h-11 w-11 rounded-full border-2 border-brand-line bg-white text-2xl font-bold text-brand-ink">−</button>
-                      <span className="min-w-6 text-center text-xl font-extrabold text-brand-ink" aria-live="polite">{state.counts[c]}</span>
-                      <button type="button" aria-label={`Add one ${CATEGORY_LABELS[c]}`} onClick={() => dispatch({ type: 'changeCount', category: c, delta: 1 })} className="h-11 w-11 rounded-full bg-brand-red text-2xl font-bold text-white">+</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+          {!selectedDeparture ? <p className="text-sm">Choose a departure above to see prices.</p> : null}
+          {CATEGORY_GROUPS.filter((g) => g.key === 'adult').map(renderGroup)}
+          {/* 아동·유아는 버튼 뒤에 접어 둔다. 한 명이라도 있으면(임시저장 복원 포함) 항상 펼친다. */}
+          {!minorsForcedOpen ? (
+            <button
+              type="button"
+              aria-expanded={minorsOpen}
+              aria-controls="minor-counters"
+              onClick={() => setMinorsOpened((v) => !v)}
+              className="min-h-11 rounded-xl border-2 border-dashed border-brand-line px-4 py-2 text-left font-bold text-brand-ink hover:bg-brand-soft"
+            >
+              {minorsOpen ? '− Hide children and infants' : '+ Add children or infants'}
+            </button>
+          ) : null}
+          <div id="minor-counters" hidden={!minorsOpen} className="flex flex-col gap-4">
+            {CATEGORY_GROUPS.filter((g) => g.key !== 'adult').map(renderGroup)}
+          </div>
           <p className="text-sm">Up to 10 travelers per application, including children and infants. Children and infants must travel with an adult.</p>
           <div data-field="counts" tabIndex={-1} className="outline-none">
             <FieldError id="err-counts" msg={countsError ?? undefined} />
@@ -342,6 +409,9 @@ export function ApplyForm() {
                   between 1 January 2024 and 10 December 2026, and will send us the race certificate by 10 December 2026. *
                 </span>
               </label>
+              <p className="text-sm">
+                {FULL_MARATHON_AGE_NOTICE} This is the race organizers&apos; rule for every runner, including tour participants.
+              </p>
               <p className="text-sm">No qualifying time? Choose the 10K instead. It needs no record.</p>
               <FieldError id="err-full-qualifier" msg={errors.fullQualifierConfirmed} />
             </div>
@@ -367,7 +437,7 @@ export function ApplyForm() {
             <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">
               Mobile number *
               <span className="flex gap-2">
-                <select aria-label="Country code" className="min-h-12 w-[92px] flex-none rounded-xl border-2 border-brand-line bg-white px-2 font-medium text-brand-ink" value={state.lead.phoneDial} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneDial', value: e.target.value })}>
+                <select aria-label="Country code" className="min-h-12 w-[92px] flex-none rounded-xl border-2 border-brand-line bg-white px-2 text-base font-medium text-brand-ink" value={state.lead.phoneDial} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneDial', value: e.target.value })}>
                   {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.code}</option>)}
                 </select>
                 <input data-field="lead.phoneNumber" type="tel" aria-label="Mobile number" className={`${field} min-w-0 flex-1`} value={state.lead.phoneNumber} autoComplete="tel-national" placeholder="917 123 4567" aria-invalid={!!errors['lead.phoneNumber']} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneNumber', value: e.target.value })} />
@@ -375,7 +445,7 @@ export function ApplyForm() {
               <FieldError id="err-phone" msg={errors['lead.phoneNumber']} />
             </label>
           </div>
-          <div className="flex flex-wrap gap-5 text-[15px]">
+          <div className="flex flex-wrap gap-x-5 text-[15px]">
             {(['viber', 'whatsapp'] as const).map((f) => (
               <label key={f} className="flex min-h-11 items-center gap-2 py-1">
                 <input type="checkbox" className="h-5 w-5 accent-brand-red" checked={state.lead[f]} onChange={(e) => dispatch({ type: 'setLead', field: f, value: e.target.checked })} />
@@ -385,9 +455,10 @@ export function ApplyForm() {
           </div>
           <div className="flex flex-col gap-2">
             <p className="text-sm font-bold text-brand-ink">Best time for us to call you <span className="font-medium">(Philippine time, choose any)</span></p>
-            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[15px]">
+            {/* 모바일: 한 줄에 하나(줄 전체가 누르는 영역), sm 이상: 한 줄에 셋 */}
+            <div className="flex flex-col text-[15px] sm:flex-row sm:flex-wrap sm:gap-x-5 sm:gap-y-1">
               {CONTACT_TIMES.map((t) => (
-                <label key={t} className="flex min-h-11 items-center gap-2 py-1">
+                <label key={t} className="flex min-h-11 w-full cursor-pointer items-center gap-2 py-1 sm:w-auto">
                   <input type="checkbox" className="h-5 w-5 accent-brand-red" checked={state.lead.contactTimes.includes(t)} onChange={() => dispatch({ type: 'toggleContactTime', time: t })} />
                   {CONTACT_TIME_LABELS[t]}
                 </label>
@@ -411,7 +482,7 @@ export function ApplyForm() {
               <input data-field="promoInput" className={`${field} font-bold tracking-[0.06em]`} value={state.promoInput} autoCapitalize="characters" aria-invalid={!!errors.promoInput} onChange={(e) => dispatch({ type: 'setPromoInput', value: e.target.value })} onKeyDown={onPromoKeyDown} />
               <FieldError id="err-promo" msg={errors.promoInput} />
             </label>
-            <button type="button" onClick={() => void applyPromo()} disabled={checkingPromo || !state.promoInput.trim()} className="min-h-12 self-end rounded-xl bg-brand-ink px-6 font-extrabold text-white disabled:opacity-50">
+            <button type="button" onClick={() => void applyPromo()} disabled={checkingPromo || !state.promoInput.trim()} className="min-h-12 self-end rounded-xl bg-brand-red px-6 font-extrabold text-white hover:brightness-110 disabled:bg-brand-line disabled:text-brand-body disabled:hover:brightness-100">
               {checkingPromo ? 'Checking…' : 'Apply'}
             </button>
           </div>
@@ -436,19 +507,27 @@ export function ApplyForm() {
           <label className="flex min-h-11 items-start gap-2.5 py-1 text-[15px]">
             <input data-field="agreedToTerms" type="checkbox" className="mt-0.5 h-5 w-5 accent-brand-red" checked={state.agreedToTerms} onChange={(e) => dispatch({ type: 'setAgreed', value: e.target.checked })} />
             <span>
-              I agree to the <a href="/terms" target="_blank" className="font-bold text-brand-red">Terms</a>,{' '}
-              <a href="/privacy" target="_blank" className="font-bold text-brand-red">Privacy Policy</a> and{' '}
-              <a href="/refund-policy" target="_blank" className="font-bold text-brand-red">Refund Policy</a>. *
+              I agree to the <a href="/terms" target="_blank" className={tapLink}>Terms</a>,{' '}
+              <a href="/privacy" target="_blank" className={tapLink}>Privacy Policy</a> and{' '}
+              <a href="/refund-policy" target="_blank" className={tapLink}>Refund Policy</a>. *
             </span>
           </label>
           <FieldError id="err-terms" msg={errors.agreedToTerms} />
           {submitError ? <p role="alert" className="rounded-xl bg-[#FDECEC] px-4 py-3 font-semibold text-brand-red">{submitError}</p> : null}
+          {/* lg 미만에서는 오른쪽 요약 칸이 없으므로 제출 버튼 위에 합계를 짧게 보여준다 */}
           {pricing ? (
-            <p className="text-center text-[15px] font-bold text-brand-ink lg:hidden">
-              Estimated total {formatPHP(pricing.total)} · deposit {formatPHP(pricing.depositDue)}
-            </p>
+            <div className="text-center text-[15px] lg:hidden">
+              <p className="font-bold text-brand-ink">
+                Estimated total {formatPHP(pricing.total)} · deposit {formatPHP(pricing.depositDue)}
+              </p>
+              {pricing.promo && pricing.promo.discountTotal > 0 ? (
+                <p className="text-sm text-[#145C33]">Includes promo {pricing.promo.code}: −{formatPHP(pricing.promo.discountTotal)}</p>
+              ) : null}
+            </div>
+          ) : unpriced.length > 0 ? (
+            <p className="text-center text-sm lg:hidden">{unpriced.map((c) => CATEGORY_LABELS[c]).join(', ')}: not available for this departure.</p>
           ) : null}
-          <button type="submit" disabled={submitting} className="min-h-[60px] rounded-full bg-brand-red text-lg font-extrabold text-white disabled:opacity-60">
+          <button ref={submitRef} type="submit" disabled={submitting} className="min-h-[60px] rounded-full bg-brand-red text-lg font-extrabold text-white disabled:opacity-60">
             {submitting ? 'Submitting…' : 'Submit application'}
           </button>
           <p className="text-center text-sm">No payment is taken now.</p>
@@ -456,7 +535,8 @@ export function ApplyForm() {
       </form>
 
       {/* Summary */}
-      <aside aria-label="Booking summary" className="flex min-w-0 flex-[1_1_340px] flex-col gap-3.5 rounded-[20px] border-t-[6px] border-brand-red bg-white p-7 lg:sticky lg:top-6">
+      {/* 요약 칸은 데스크톱(lg+)에서만. 모바일·태블릿은 아래 고정 바와 제출 버튼 위 합계로 대신한다. */}
+      <aside aria-label="Booking summary" className="hidden min-w-0 flex-[1_1_340px] flex-col gap-3.5 rounded-[20px] border-t-[6px] border-brand-red bg-white p-7 lg:sticky lg:top-6 lg:flex">
         <p className="text-xl font-extrabold text-brand-ink">Your booking</p>
         <div className="flex justify-between gap-3 text-[15px]">
           <span>Departure</span>
@@ -495,6 +575,30 @@ export function ApplyForm() {
           </p>
         )}
       </aside>
+
+      {/* 모바일 하단 고정 합계 바 (lg 미만) */}
+      {barVisible && pricing ? (
+        <div
+          ref={barRef}
+          role="region"
+          aria-label="Estimated total"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-line bg-white px-4 pt-2.5 shadow-[0_-8px_24px_rgba(11,31,77,0.12)] lg:hidden"
+          style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
+        >
+          <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3">
+            <div className="min-w-0 leading-tight">
+              <p className="text-[13px] font-semibold">
+                Est. total · {pax} {pax === 1 ? 'traveler' : 'travelers'}
+              </p>
+              <p className="text-xl font-extrabold text-brand-ink">{formatPHP(pricing.total)}</p>
+              <p className="text-[13px]">Deposit {formatPHP(pricing.depositDue)}</p>
+            </div>
+            <button type="button" onClick={goToSubmit} className="min-h-12 flex-none rounded-full bg-brand-red px-5 font-extrabold text-white">
+              Review &amp; submit
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
