@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { formatPHP, manilaDate, normalizePromoCode } from '@unik/shared/domain';
 import type { PromoCode } from '@unik/shared/domain';
 import { getCurrentUser } from '@/lib/auth';
@@ -27,7 +27,10 @@ export default function PromoCodesPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<MessageKey | null>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  /** 팝업을 닫은 뒤 표 위에 보여줄 결과 메시지 (저장·생성·삭제 실패) */
+  const [notice, setNotice] = useState<Msg | null>(null);
+  const codeRef = useRef<HTMLInputElement | null>(null);
   const agencyRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -39,6 +42,19 @@ export default function PromoCodesPage() {
       if (copyTimer.current) clearTimeout(copyTimer.current);
     };
   }, []);
+
+  // Esc 로 팝업 닫기 (저장 중에는 닫지 않는다)
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !saving) {
+        setDialogOpen(false);
+        setEditing(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [dialogOpen, saving]);
 
   const stats = useMemo(() => promoStats(apps ?? []), [apps]);
   const manilaToday = manilaDate(new Date());
@@ -65,11 +81,21 @@ export default function PromoCodesPage() {
     });
   };
 
+  function closeDialog() {
+    setDialogOpen(false);
+    setEditing(null);
+    setErrors({});
+    setMessage(null);
+  }
+
   function startNew() {
     setEditing(null);
     setForm(emptyPromoForm());
     setErrors({});
     setMessage(null);
+    setNotice(null);
+    setDialogOpen(true);
+    requestAnimationFrame(() => codeRef.current?.focus());
   }
 
   function startEdit(p: PromoCode) {
@@ -77,11 +103,9 @@ export default function PromoCodesPage() {
     setForm(promoToForm(p));
     setErrors({});
     setMessage(null);
-    // 목록 아래쪽에서 눌러도 수정 칸이 바로 보이도록 (좁은 화면에서는 폼이 표 아래에 있다)
-    requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      agencyRef.current?.focus({ preventScroll: true });
-    });
+    setNotice(null);
+    setDialogOpen(true);
+    requestAnimationFrame(() => agencyRef.current?.focus());
   }
 
   async function save() {
@@ -94,12 +118,12 @@ export default function PromoCodesPage() {
       if (editing === null) {
         const code = normalizePromoCode(form.code);
         await createPromoCode(code, toPromoDoc(form), getCurrentUser()?.email ?? 'unknown');
-        setMessage({ key: 'promo.created', params: { code } });
-        setEditing(code);
-        setForm((f) => ({ ...f, code }));
+        closeDialog();
+        setNotice({ key: 'promo.created', params: { code } });
       } else {
         await updatePromoCode(editing, toPromoDoc(form));
-        setMessage({ key: 'promo.saved' });
+        closeDialog();
+        setNotice({ key: 'promo.saved' });
       }
     } catch (e) {
       if (e instanceof Error && e.message === 'exists') setErrors({ code: { key: 'promo.error.codeExists' } });
@@ -127,10 +151,10 @@ export default function PromoCodesPage() {
     if (!window.confirm(t('promo.deleteConfirm', { code }))) return;
     try {
       await deletePromoCode(code);
-      if (editing === code) startNew();
+      if (editing === code) closeDialog();
     } catch (e) {
       console.error(e);
-      setMessage({ key: 'promo.deleteFailed', params: { code } });
+      setNotice({ key: 'promo.deleteFailed', params: { code } });
     }
   }
 
@@ -140,7 +164,7 @@ export default function PromoCodesPage() {
     ['promo.kpi.travelersViaAgencies', String(Object.values(stats).reduce((s, x) => s + x.pax, 0))],
     ['promo.kpi.discountsGiven', formatPHP(viaAgency.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + (a.pricing.promo?.discountTotal ?? 0), 0))],
   ];
-  const columns: (MessageKey | '')[] = ['promo.col.code', '', 'promo.col.agency', 'promo.col.discount', 'promo.col.validUntil', 'promo.col.apps', 'promo.col.pax', 'promo.col.confirmedPax', 'promo.col.netSales', 'promo.col.status'];
+  const columns: (MessageKey | '')[] = ['promo.col.code', 'promo.col.agency', 'promo.col.discount', 'promo.col.validUntil', 'promo.col.apps', 'promo.col.pax', 'promo.col.confirmedPax', 'promo.col.netSales', 'promo.col.status', ''];
   const q = query.trim().toLowerCase();
   const visibleCodes = !codes ? [] : q ? codes.filter((c) => c.code.toLowerCase().includes(q) || c.agencyName.toLowerCase().includes(q)) : codes;
   const errorText = (k: string) => (errors[k] ? <span className="text-xs font-semibold text-red-600">{t(errors[k])}</span> : null);
@@ -159,8 +183,9 @@ export default function PromoCodesPage() {
           </div>
         ))}
       </div>
-      <div className="flex flex-wrap items-start gap-6">
-        <div className="admin-card min-w-0 flex-[999_1_640px] overflow-x-auto">
+      {notice ? <p role="status" className="admin-card px-4 py-3 text-sm font-semibold text-slate-700">{t(notice)}</p> : null}
+      <div>
+        <div className="admin-card min-w-0 overflow-x-auto">
           <div className="border-b border-slate-100 p-3">
             <input
               type="search"
@@ -188,18 +213,14 @@ export default function PromoCodesPage() {
                 return (
                   <tr key={c.code} className={`border-t border-slate-100 ${editing === c.code ? 'bg-amber-50' : ''}`} aria-current={editing === c.code ? 'true' : undefined}>
                     <td className="admin-table-cell font-bold">{c.code}</td>
-                    <td className="admin-table-cell">
-                      <div className="flex gap-2">
-                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => void copy(c.code)} aria-label={t('promo.copyLinkLabel', { code: c.code })}>
-                          {copied === c.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied === c.code ? t('common.copied') : t('promo.copyLink')}
-                        </button>
-                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => startEdit(c)} aria-label={t('promo.editCode', { code: c.code })}><Pencil className="h-4 w-4" /> {t('common.edit')}</button>
-                        {!everUsed.has(c.code) ? (
-                          <button type="button" className="admin-btn-danger !px-3 !py-1.5 text-xs" onClick={() => void remove(c.code)} aria-label={t('promo.deleteCode', { code: c.code })}><Trash2 className="h-4 w-4" /> {t('common.delete')}</button>
-                        ) : null}
-                      </div>
+                    <td className="admin-table-cell max-w-[180px]">
+                      <div className="truncate font-semibold" title={c.agencyName}>{c.agencyName}</div>
+                      {c.contactName || c.contactInfo ? (
+                        <div className="truncate text-xs text-slate-500" title={[c.contactName, c.contactInfo].filter(Boolean).join(' · ')}>
+                          {[c.contactName, c.contactInfo].filter(Boolean).join(' · ')}
+                        </div>
+                      ) : null}
                     </td>
-                    <td className="admin-table-cell"><div className="font-semibold">{c.agencyName}</div><div className="text-xs text-slate-500">{[c.contactName, c.contactInfo].filter(Boolean).join(' · ')}</div></td>
                     <td className="admin-table-cell">{t(discountLabel(c.discountType, c.discountValue))}</td>
                     <td className="admin-table-cell">{c.validUntil || t('promo.noExpiry')}</td>
                     <td className="admin-table-cell">{s?.applications ?? 0}</td>
@@ -215,6 +236,17 @@ export default function PromoCodesPage() {
                       <span className={`admin-badge ${c.active ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'}`}>{c.active ? t('promo.active') : t('promo.paused')}</span>
                       {isPromoExpired(c.validUntil, manilaToday) ? <span className="admin-badge ml-1 bg-amber-100 text-amber-800">{t('promo.expired')}</span> : null}
                     </td>
+                    <td className="admin-table-cell">
+                      <div className="flex gap-2">
+                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => void copy(c.code)} aria-label={t('promo.copyLinkLabel', { code: c.code })}>
+                          {copied === c.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied === c.code ? t('common.copied') : t('promo.copyLink')}
+                        </button>
+                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => startEdit(c)} aria-label={t('promo.editCode', { code: c.code })}><Pencil className="h-4 w-4" /> {t('common.edit')}</button>
+                        {!everUsed.has(c.code) ? (
+                          <button type="button" className="admin-btn-danger !px-3 !py-1.5 text-xs" onClick={() => void remove(c.code)} aria-label={t('promo.deleteCode', { code: c.code })}><Trash2 className="h-4 w-4" /> {t('common.delete')}</button>
+                        ) : null}
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -222,17 +254,31 @@ export default function PromoCodesPage() {
           </table>
         </div>
 
+      </div>
+
+      {dialogOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !saving) closeDialog();
+          }}
+        >
         <form
-          ref={formRef}
-          className="admin-card flex min-w-0 flex-[1_1_320px] flex-col gap-3 p-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="promo-dialog-title"
+          className="admin-card flex max-h-[90vh] w-full max-w-lg flex-col gap-3 overflow-y-auto p-5 shadow-2xl"
           onSubmit={(e) => {
             e.preventDefault();
             void save();
           }}
         >
-          <h2 className="text-lg font-bold text-slate-900">{editing ? t('promo.editCode', { code: editing }) : t('promo.form.newTitle')}</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 id="promo-dialog-title" className="text-lg font-bold text-slate-900">{editing ? t('promo.editCode', { code: editing }) : t('promo.form.newTitle')}</h2>
+            <button type="button" className="rounded-lg p-1 text-slate-500 hover:bg-slate-100" aria-label={t('common.cancel')} disabled={saving} onClick={closeDialog}><X className="h-5 w-5" /></button>
+          </div>
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">{t('promo.form.code')}
-            <input className="admin-input font-bold uppercase" value={form.code} readOnly={editing !== null} onChange={(e) => set('code', e.target.value)} />
+            <input ref={codeRef} className="admin-input font-bold uppercase" value={form.code} readOnly={editing !== null} onChange={(e) => set('code', e.target.value)} />
             {errorText('code')}
           </label>
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">{t('promo.form.agencyName')}
@@ -272,10 +318,11 @@ export default function PromoCodesPage() {
           {message ? <p role="status" className="text-sm font-semibold text-slate-700">{t(message)}</p> : null}
           <div className="flex flex-wrap gap-2">
             <button type="submit" disabled={saving} className="admin-btn-primary">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{editing ? t('promo.form.saveChanges') : t('promo.form.create')}</button>
-            {editing ? <button type="button" disabled={saving} className="admin-btn-secondary" onClick={startNew}>{t('common.cancel')}</button> : null}
+            <button type="button" disabled={saving} className="admin-btn-secondary" onClick={closeDialog}>{t('common.cancel')}</button>
           </div>
         </form>
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
