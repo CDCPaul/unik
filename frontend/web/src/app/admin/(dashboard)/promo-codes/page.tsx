@@ -26,6 +26,8 @@ export default function PromoCodesPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<MessageKey | null>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const agencyRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const off1 = subscribePromoCodes(setCodes, () => setLoadError('promo.loadFailed'));
@@ -74,6 +76,11 @@ export default function PromoCodesPage() {
     setForm(promoToForm(p));
     setErrors({});
     setMessage(null);
+    // 목록 아래쪽에서 눌러도 수정 칸이 바로 보이도록 (좁은 화면에서는 폼이 표 아래에 있다)
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      agencyRef.current?.focus({ preventScroll: true });
+    });
   }
 
   async function save() {
@@ -166,7 +173,7 @@ export default function PromoCodesPage() {
               {codes.map((c) => {
                 const s = stats[c.code];
                 return (
-                  <tr key={c.code} className="border-t border-slate-100">
+                  <tr key={c.code} className={`border-t border-slate-100 ${editing === c.code ? 'bg-amber-50' : ''}`} aria-current={editing === c.code ? 'true' : undefined}>
                     <td className="admin-table-cell font-bold">{c.code}</td>
                     <td className="admin-table-cell"><div className="font-semibold">{c.agencyName}</div><div className="text-xs text-slate-500">{[c.contactName, c.contactInfo].filter(Boolean).join(' · ')}</div></td>
                     <td className="admin-table-cell">{t(discountLabel(c.discountType, c.discountValue))}</td>
@@ -203,7 +210,8 @@ export default function PromoCodesPage() {
         </div>
 
         <form
-          className="admin-card flex min-w-0 flex-[1_1_320px] flex-col gap-3 p-5"
+          ref={formRef}
+          className="admin-card flex min-w-0 flex-[1_1_320px] flex-col gap-3 p-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
           onSubmit={(e) => {
             e.preventDefault();
             void save();
@@ -215,7 +223,7 @@ export default function PromoCodesPage() {
             {errorText('code')}
           </label>
           <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">{t('promo.form.agencyName')}
-            <input className="admin-input" value={form.agencyName} onChange={(e) => set('agencyName', e.target.value)} />
+            <input ref={agencyRef} className="admin-input" value={form.agencyName} onChange={(e) => set('agencyName', e.target.value)} />
             {errorText('agencyName')}
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -249,7 +257,10 @@ export default function PromoCodesPage() {
           ) : null}
           {editing && everUsed.has(editing) ? <p className="text-xs text-slate-500">{t('promo.form.usedCannotDelete')}</p> : null}
           {message ? <p role="status" className="text-sm font-semibold text-slate-700">{t(message)}</p> : null}
-          <button type="submit" disabled={saving} className="admin-btn-primary">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{editing ? t('promo.form.saveChanges') : t('promo.form.create')}</button>
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" disabled={saving} className="admin-btn-primary">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{editing ? t('promo.form.saveChanges') : t('promo.form.create')}</button>
+            {editing ? <button type="button" disabled={saving} className="admin-btn-secondary" onClick={startNew}>{t('common.cancel')}</button> : null}
+          </div>
         </form>
       </div>
     </div>
