@@ -20,6 +20,7 @@ export default function PromoCodesPage() {
   const [apps, setApps] = useState<ApplicationRecord[] | null>(null);
   const [form, setForm] = useState<PromoForm>(emptyPromoForm());
   const [editing, setEditing] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
   const [errors, setErrors] = useState<Record<string, Msg>>({});
   const [message, setMessage] = useState<Msg | null>(null);
   const [saving, setSaving] = useState(false);
@@ -139,7 +140,9 @@ export default function PromoCodesPage() {
     ['promo.kpi.travelersViaAgencies', String(Object.values(stats).reduce((s, x) => s + x.pax, 0))],
     ['promo.kpi.discountsGiven', formatPHP(viaAgency.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + (a.pricing.promo?.discountTotal ?? 0), 0))],
   ];
-  const columns: (MessageKey | '')[] = ['promo.col.code', 'promo.col.agency', 'promo.col.discount', 'promo.col.validUntil', 'promo.col.apps', 'promo.col.pax', 'promo.col.confirmedPax', 'promo.col.netSales', 'promo.col.status', ''];
+  const columns: (MessageKey | '')[] = ['promo.col.code', '', 'promo.col.agency', 'promo.col.discount', 'promo.col.validUntil', 'promo.col.apps', 'promo.col.pax', 'promo.col.confirmedPax', 'promo.col.netSales', 'promo.col.status'];
+  const q = query.trim().toLowerCase();
+  const visibleCodes = !codes ? [] : q ? codes.filter((c) => c.code.toLowerCase().includes(q) || c.agencyName.toLowerCase().includes(q)) : codes;
   const errorText = (k: string) => (errors[k] ? <span className="text-xs font-semibold text-red-600">{t(errors[k])}</span> : null);
 
   return (
@@ -158,6 +161,16 @@ export default function PromoCodesPage() {
       </div>
       <div className="flex flex-wrap items-start gap-6">
         <div className="admin-card min-w-0 flex-[999_1_640px] overflow-x-auto">
+          <div className="border-b border-slate-100 p-3">
+            <input
+              type="search"
+              className="admin-input w-full max-w-sm"
+              placeholder={t('promo.search')}
+              aria-label={t('promo.search')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
           <table className="w-full min-w-[860px]">
             <thead>
               <tr>
@@ -170,11 +183,22 @@ export default function PromoCodesPage() {
               {codes.length === 0 ? (
                 <tr><td colSpan={10} className="admin-table-cell text-slate-500">{t('promo.empty')}</td></tr>
               ) : null}
-              {codes.map((c) => {
+              {visibleCodes.map((c) => {
                 const s = stats[c.code];
                 return (
                   <tr key={c.code} className={`border-t border-slate-100 ${editing === c.code ? 'bg-amber-50' : ''}`} aria-current={editing === c.code ? 'true' : undefined}>
                     <td className="admin-table-cell font-bold">{c.code}</td>
+                    <td className="admin-table-cell">
+                      <div className="flex gap-2">
+                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => void copy(c.code)} aria-label={t('promo.copyLinkLabel', { code: c.code })}>
+                          {copied === c.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied === c.code ? t('common.copied') : t('promo.copyLink')}
+                        </button>
+                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => startEdit(c)} aria-label={t('promo.editCode', { code: c.code })}><Pencil className="h-4 w-4" /> {t('common.edit')}</button>
+                        {!everUsed.has(c.code) ? (
+                          <button type="button" className="admin-btn-danger !px-3 !py-1.5 text-xs" onClick={() => void remove(c.code)} aria-label={t('promo.deleteCode', { code: c.code })}><Trash2 className="h-4 w-4" /> {t('common.delete')}</button>
+                        ) : null}
+                      </div>
+                    </td>
                     <td className="admin-table-cell"><div className="font-semibold">{c.agencyName}</div><div className="text-xs text-slate-500">{[c.contactName, c.contactInfo].filter(Boolean).join(' · ')}</div></td>
                     <td className="admin-table-cell">{t(discountLabel(c.discountType, c.discountValue))}</td>
                     <td className="admin-table-cell">{c.validUntil || t('promo.noExpiry')}</td>
@@ -190,17 +214,6 @@ export default function PromoCodesPage() {
                     <td className="admin-table-cell">
                       <span className={`admin-badge ${c.active ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'}`}>{c.active ? t('promo.active') : t('promo.paused')}</span>
                       {isPromoExpired(c.validUntil, manilaToday) ? <span className="admin-badge ml-1 bg-amber-100 text-amber-800">{t('promo.expired')}</span> : null}
-                    </td>
-                    <td className="admin-table-cell">
-                      <div className="flex gap-2">
-                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => void copy(c.code)} aria-label={t('promo.copyLinkLabel', { code: c.code })}>
-                          {copied === c.code ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied === c.code ? t('common.copied') : t('promo.copyLink')}
-                        </button>
-                        <button type="button" className="admin-btn-secondary !px-3 !py-1.5 text-xs" onClick={() => startEdit(c)} aria-label={t('promo.editCode', { code: c.code })}><Pencil className="h-4 w-4" /> {t('common.edit')}</button>
-                        {!everUsed.has(c.code) ? (
-                          <button type="button" className="admin-btn-danger !px-3 !py-1.5 text-xs" onClick={() => void remove(c.code)} aria-label={t('promo.deleteCode', { code: c.code })}><Trash2 className="h-4 w-4" /> {t('common.delete')}</button>
-                        ) : null}
-                      </div>
                     </td>
                   </tr>
                 );
