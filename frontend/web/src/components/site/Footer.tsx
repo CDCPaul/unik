@@ -11,13 +11,14 @@ export function Footer() {
           </p>
           <p>{SITE.address}</p>
           <p>
-            {SITE.phone} · <a href={`mailto:${SITE.email}`} className="text-white/85">{SITE.email}</a>
+            {SITE.phone} · <a href={`mailto:${SITE.email}`} className="-my-3 inline-block py-3 text-white/85">{SITE.email}</a>
           </p>
           <p>© {new Date().getFullYear()} UNIK. All rights reserved.</p>
         </div>
-        <nav aria-label="Footer" className="flex flex-wrap items-start gap-5">
+        {/* 글자 크기는 그대로, 누르는 영역만 44px 가까이 */}
+        <nav aria-label="Footer" className="-my-3 flex flex-wrap items-start gap-x-5">
           {FOOTER_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="text-white/85">
+            <Link key={l.href} href={l.href} className="inline-block py-3 text-white/85">
               {l.label}
             </Link>
           ))}
