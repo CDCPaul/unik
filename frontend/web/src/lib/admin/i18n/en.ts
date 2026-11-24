@@ -280,6 +280,7 @@ export const en = {
   'promo.copyLink': 'Copy link',
   'promo.copyLinkLabel': 'Copy referral link for {code}',
   'promo.editCode': 'Edit {code}',
+  'promo.search': 'Search code or travel agency',
   'promo.deleteCode': 'Delete {code}',
   'promo.form.newTitle': 'New promo code',
   'promo.form.code': 'Code',

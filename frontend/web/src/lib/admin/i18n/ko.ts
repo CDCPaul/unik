@@ -282,6 +282,7 @@ export const ko: Record<MessageKey, string> = {
   'promo.copyLink': '링크 복사',
   'promo.copyLinkLabel': '{code} 추천 링크 복사',
   'promo.editCode': '{code} 수정',
+  'promo.search': '코드나 여행사 이름으로 검색',
   'promo.deleteCode': '{code} 삭제',
   'promo.form.newTitle': '새 프로모 코드',
   'promo.form.code': '코드',
