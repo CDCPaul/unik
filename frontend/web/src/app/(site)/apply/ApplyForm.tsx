@@ -28,7 +28,8 @@ import { clearPromoCode, loadPromoCode, savePromoCode } from '@/lib/promo/storag
 import { browserStore } from '@/lib/store';
 import { departureStatus, subscribeTourData } from '@/lib/tour/publicData';
 
-const field = 'min-h-12 w-full rounded-xl border-2 border-brand-line bg-white px-3.5 font-medium text-brand-ink';
+// text-base(16px): iOS Safari 는 16px 미만 입력칸에 초점이 가면 화면을 확대한다
+const field = 'min-h-12 w-full rounded-xl border-2 border-brand-line bg-white px-3.5 text-base font-medium text-brand-ink';
 const card = 'm-0 flex flex-col gap-4 rounded-[20px] border-0 bg-white p-6 sm:p-7';
 const legend = 'float-left mb-1 w-full p-0 text-xl font-extrabold text-brand-ink';
 
@@ -367,7 +368,7 @@ export function ApplyForm() {
             <label className="flex flex-col gap-1.5 text-sm font-bold text-brand-ink">
               Mobile number *
               <span className="flex gap-2">
-                <select aria-label="Country code" className="min-h-12 w-[92px] flex-none rounded-xl border-2 border-brand-line bg-white px-2 font-medium text-brand-ink" value={state.lead.phoneDial} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneDial', value: e.target.value })}>
+                <select aria-label="Country code" className="min-h-12 w-[92px] flex-none rounded-xl border-2 border-brand-line bg-white px-2 text-base font-medium text-brand-ink" value={state.lead.phoneDial} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneDial', value: e.target.value })}>
                   {DIAL_CODES.map((d) => <option key={d.code} value={d.code}>{d.code}</option>)}
                 </select>
                 <input data-field="lead.phoneNumber" type="tel" aria-label="Mobile number" className={`${field} min-w-0 flex-1`} value={state.lead.phoneNumber} autoComplete="tel-national" placeholder="917 123 4567" aria-invalid={!!errors['lead.phoneNumber']} onChange={(e) => dispatch({ type: 'setLead', field: 'phoneNumber', value: e.target.value })} />

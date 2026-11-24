@@ -5,7 +5,8 @@ import { EMAIL_PATTERN, hasControlCharsExceptWhitespace, isValidName } from '@un
 import { SITE } from '@/content/site';
 import { createContactMessage } from '@/lib/services/contacts';
 
-const input = 'min-h-12 w-full rounded-xl border-2 border-brand-line px-3.5 font-medium text-brand-ink';
+// text-base(16px): iOS Safari 는 16px 미만 입력칸에 초점이 가면 화면을 확대한다
+const input = 'min-h-12 w-full rounded-xl border-2 border-brand-line px-3.5 text-base font-medium text-brand-ink';
 
 export function ContactForm() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
