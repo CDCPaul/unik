@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { CATEGORIES, formatPHP, hasRoomChoice } from '@unik/shared/domain';
+import { ADULT_CATEGORIES, CATEGORIES, formatPHP, hasRoomChoice } from '@unik/shared/domain';
 import { ButtonLink } from '@/components/site/ButtonLink';
 import { PhotoCredit } from '@/components/site/PhotoCredit';
 import { Section, SectionHeading } from '@/components/site/Section';
@@ -37,7 +37,8 @@ export default async function HomePage() {
   };
   // 어느 출발편에도 가격이 없는 유형은 숨긴다. 가격이 하나도 없으면(설정 전) 모두 "Prices coming soon" 으로 보인다.
   const priced = PACKAGES.filter((pkg) => config && lowestPrice(config, pkg.category) !== null);
-  const packages = priced.length > 0 ? priced : PACKAGES;
+  // 홈에서는 성인 패키지(풀·10K·동반자)만 보여주고 아동·유아 가격은 투어 페이지(#rates)로 보낸다
+  const packages = (priced.length > 0 ? priced : PACKAGES).filter((pkg) => ADULT_CATEGORIES.includes(pkg.category));
 
   return (
     <>
@@ -163,7 +164,7 @@ export default async function HomePage() {
         />
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5">
           {packages.map((pkg) => (
-            <div key={pkg.category} className="flex flex-col gap-3 rounded-3xl border-2 border-brand-line p-8">
+            <div key={pkg.category} className="flex flex-col gap-3 rounded-3xl border-2 border-brand-line p-6 sm:p-8">
               <p className="font-race text-3xl font-extrabold uppercase text-brand-ink">{pkg.title}</p>
               <p className="text-[15px]">{pkg.description}</p>
               {pkg.notice ? <p className="text-sm font-bold text-brand-red">{pkg.notice}</p> : null}
@@ -172,6 +173,9 @@ export default async function HomePage() {
             </div>
           ))}
         </div>
+        <Link href="/tour#rates" className="-mt-6 inline-block self-start py-2 font-bold text-brand-red">
+          See all rates, including children and infants&nbsp;→
+        </Link>
         <div className="rounded-3xl bg-brand-soft p-8">
           <p className="mb-4 text-xl font-extrabold text-brand-ink">What&apos;s included</p>
           <ul className="grid gap-3 sm:grid-cols-2">
