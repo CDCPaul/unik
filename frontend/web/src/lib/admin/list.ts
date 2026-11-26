@@ -77,6 +77,9 @@ export interface PromoStat {
   confirmedPax: number;
   netSales: number;
   discountTotal: number;
+  /** 비자 처리비 무료 대상 인원 (신청 당시 코드 기준, 유아 포함) */
+  freeVisaPax: number;
+  freeVisaConfirmedPax: number;
 }
 
 export function promoStats(apps: ApplicationRecord[]): Record<string, PromoStat> {
@@ -84,14 +87,17 @@ export function promoStats(apps: ApplicationRecord[]): Record<string, PromoStat>
   for (const a of apps) {
     const code = a.pricing.promo?.code;
     if (!code || a.status === 'cancelled') continue;
-    const s = (out[code] ??= { applications: 0, pax: 0, quotaPax: 0, confirmedPax: 0, netSales: 0, discountTotal: 0 });
+    const s = (out[code] ??= { applications: 0, pax: 0, quotaPax: 0, confirmedPax: 0, netSales: 0, discountTotal: 0, freeVisaPax: 0, freeVisaConfirmedPax: 0 });
     s.applications += 1;
     s.pax += totalPax(a.counts);
     s.quotaPax += promoEligiblePax(a.counts);
+    const freeVisa = a.pricing.promo?.freeVisa === true;
+    if (freeVisa) s.freeVisaPax += totalPax(a.counts);
     if (CONFIRMED_STATUSES.includes(a.status)) {
       s.confirmedPax += totalPax(a.counts);
       s.netSales += a.pricing.total;
       s.discountTotal += a.pricing.promo?.discountTotal ?? 0;
+      if (freeVisa) s.freeVisaConfirmedPax += totalPax(a.counts);
     }
   }
   return out;

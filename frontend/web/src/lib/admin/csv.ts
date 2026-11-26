@@ -20,7 +20,7 @@ export function toCsv(rows: Cell[][]): string {
 const yesNo = (b: boolean) => (b ? 'Yes' : 'No');
 
 export function applicationsCsv(apps: ApplicationRecord[]): string {
-  const header = ['App no', 'Status', 'Applied (Manila)', 'Departure', 'First name', 'Last name', 'Email', 'Phone', 'Viber', 'WhatsApp', ...CATEGORIES.map((c) => CATEGORY_SHORT_LABELS[c]), 'Promo code', 'Agency', 'Total PHP', 'Deposit due PHP', 'Paid PHP', 'Info', 'Special requests', 'Staff notes', 'Best time to call (PH)'];
+  const header = ['App no', 'Status', 'Applied (Manila)', 'Departure', 'First name', 'Last name', 'Email', 'Phone', 'Viber', 'WhatsApp', ...CATEGORIES.map((c) => CATEGORY_SHORT_LABELS[c]), 'Promo code', 'Agency', 'Total PHP', 'Deposit due PHP', 'Paid PHP', 'Info', 'Special requests', 'Staff notes', 'Best time to call (PH)', 'Free visa'];
   const rows = apps.map((a) => [
     a.appNo,
     STATUS_LABELS[a.status],
@@ -44,6 +44,7 @@ export function applicationsCsv(apps: ApplicationRecord[]): string {
     a.staffNotes ?? '',
     // 맨 뒤에 붙여 기존 열 위치를 바꾸지 않는다
     a.lead.contactTimes.length ? a.lead.contactTimes.map((c) => CONTACT_TIME_LABELS[c]).join(', ') : 'Any time',
+    a.pricing.promo?.freeVisa ? 'Yes' : '',
   ]);
   return toCsv([header, ...rows]);
 }

@@ -41,6 +41,15 @@ export function promoUsagePax(apps: ApplicationSummary[], code: string): number 
     .reduce((sum, a) => sum + promoEligiblePax(a.counts), 0);
 }
 
+export const FREE_VISA_LABEL = 'Free visa processing';
+
+/** 고객에게 보여줄 코드 혜택 설명. 할인과 비자 무료를 함께 쓸 수 있다. */
+export function describePromoBenefit(type: DiscountType, value: number, freeVisa: boolean | undefined): string {
+  const hasDiscount = !(type === 'fixed' && value === 0);
+  if (freeVisa) return hasDiscount ? `${FREE_VISA_LABEL} + ${describeDiscount(type, value)}` : FREE_VISA_LABEL;
+  return describeDiscount(type, value);
+}
+
 export function describeDiscount(type: DiscountType, value: number): string {
   if (type === 'fixed' && value === 0) return 'Referral code (no discount)';
   return type === 'fixed' ? `${formatPHP(value)} off per person` : `${value}% off`;

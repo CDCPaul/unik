@@ -15,10 +15,11 @@ export interface PromoForm {
   maxPax: string;
   active: boolean;
   notes: string;
+  freeVisa: boolean;
 }
 
 export function emptyPromoForm(): PromoForm {
-  return { code: '', agencyName: '', contactName: '', contactInfo: '', discountType: 'fixed', discountValue: '', validUntil: '', maxPax: '', active: true, notes: '' };
+  return { code: '', agencyName: '', contactName: '', contactInfo: '', discountType: 'fixed', discountValue: '', validUntil: '', maxPax: '', active: true, notes: '', freeVisa: false };
 }
 
 export function promoToForm(p: PromoCode): PromoForm {
@@ -33,6 +34,7 @@ export function promoToForm(p: PromoCode): PromoForm {
     maxPax: p.maxPax === null ? '' : String(p.maxPax),
     active: p.active,
     notes: p.notes ?? '',
+    freeVisa: p.freeVisa === true,
   };
 }
 
@@ -71,6 +73,13 @@ export function discountLabel(type: DiscountType, value: number): Msg {
   return type === 'fixed' ? msg('promo.discount.fixed', { amount: formatPHP(value) }) : msg('promo.discount.percent', { value });
 }
 
+/** 코드 혜택 목록 (표에 한 줄씩). 비자 무료가 있으면 먼저, 할인 없는 0원은 비자 무료일 때 생략한다. */
+export function benefitLabels(p: Pick<PromoCode, 'discountType' | 'discountValue' | 'freeVisa'>): Msg[] {
+  const noDiscount = p.discountType === 'fixed' && p.discountValue === 0;
+  if (!p.freeVisa) return [discountLabel(p.discountType, p.discountValue)];
+  return noDiscount ? [msg('promo.benefit.freeVisa')] : [msg('promo.benefit.freeVisa'), discountLabel(p.discountType, p.discountValue)];
+}
+
 export function toPromoDoc(f: PromoForm): Omit<PromoCode, 'code'> {
   return {
     agencyName: f.agencyName.trim(),
@@ -82,6 +91,7 @@ export function toPromoDoc(f: PromoForm): Omit<PromoCode, 'code'> {
     maxPax: f.maxPax.trim() ? parseAmount(f.maxPax) : null,
     active: f.active,
     notes: f.notes.trim(),
+    freeVisa: f.freeVisa,
   };
 }
 

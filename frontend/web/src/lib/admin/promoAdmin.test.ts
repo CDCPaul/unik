@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { describeDiscount } from '@unik/shared/domain';
-import { discountLabel, emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from './promoAdmin';
+import { benefitLabels, discountLabel, emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from './promoAdmin';
 import { translate } from './i18n/translate';
 
 const form = () => ({ ...emptyPromoForm(), code: 'ta-sunrise', agencyName: 'Sunrise Travel', discountValue: '2,000' });
@@ -40,6 +40,7 @@ describe('toPromoDoc / promoToForm / referralLink', () => {
       maxPax: null,
       active: true,
       notes: '',
+      freeVisa: false,
     });
   });
   it('round-trips an existing code', () => {
@@ -69,6 +70,22 @@ describe('discountLabel', () => {
     expect(translate('ko', discountLabel('fixed', 0))).toBe('추천 코드(할인 없음)');
     expect(translate('ko', discountLabel('fixed', 2000))).toBe('1인당 PHP 2,000 할인');
     expect(translate('ko', discountLabel('percent', 5))).toBe('5% 할인');
+  });
+});
+
+describe('benefitLabels / free visa', () => {
+  it('lists free visa first and hides a zero discount', () => {
+    const ko = (p: Parameters<typeof benefitLabels>[0]) => benefitLabels(p).map((m) => translate('ko', m));
+    expect(ko({ discountType: 'fixed', discountValue: 0, freeVisa: true })).toEqual(['비자 처리비 무료']);
+    expect(ko({ discountType: 'fixed', discountValue: 1000, freeVisa: true })).toEqual(['비자 처리비 무료', '1인당 PHP 1,000 할인']);
+    expect(ko({ discountType: 'fixed', discountValue: 0 })).toEqual(['추천 코드(할인 없음)']);
+  });
+  it('round-trips the free visa flag through the form', () => {
+    expect(emptyPromoForm().freeVisa).toBe(false);
+    const doc = toPromoDoc({ ...form(), freeVisa: true });
+    expect(doc.freeVisa).toBe(true);
+    expect(promoToForm({ ...doc, code: 'TA-SUNRISE' }).freeVisa).toBe(true);
+    expect(promoToForm({ ...doc, code: 'TA-SUNRISE', freeVisa: undefined }).freeVisa).toBe(false);
   });
 });
 

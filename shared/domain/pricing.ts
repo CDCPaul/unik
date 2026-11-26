@@ -60,7 +60,7 @@ export interface PricingInput {
   departure: Pick<Departure, 'prices' | 'singleSupplement'>;
   counts: Counts;
   travelers: (Pick<Traveler, 'room'> & { category?: Category })[];
-  promo: Pick<PromoCode, 'code' | 'agencyName' | 'discountType' | 'discountValue'> | null;
+  promo: Pick<PromoCode, 'code' | 'agencyName' | 'discountType' | 'discountValue' | 'freeVisa'> | null;
   depositPerPax: number;
 }
 
@@ -98,6 +98,8 @@ export function computePricing(input: PricingInput): Pricing {
       type: input.promo.discountType,
       value: input.promo.discountValue,
       discountTotal: computePromoDiscount(lines, input.counts, { type: input.promo.discountType, value: input.promo.discountValue }),
+      // Firestore 에 undefined 를 쓰지 않도록 혜택이 있을 때만 키를 둔다
+      ...(input.promo.freeVisa ? { freeVisa: true } : {}),
     };
   }
 

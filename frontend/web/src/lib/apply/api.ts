@@ -40,7 +40,7 @@ export interface SubmitResponse {
 
 export type PromoCheckResponse =
   | { valid: false; reason: PromoInvalidReason }
-  | { valid: true; code: string; agencyName: string; discountType: DiscountType; discountValue: number; description: string };
+  | { valid: true; code: string; agencyName: string; discountType: DiscountType; discountValue: number; freeVisa?: boolean; description: string };
 
 async function callSubmit(payload: SubmitPayload): Promise<SubmitResponse> {
   const { functions } = await import('@/lib/functions');

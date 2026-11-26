@@ -19,6 +19,11 @@ function input(over: Partial<PricingInput> = {}): PricingInput {
 }
 
 describe('computePricing', () => {
+  it('copies the free visa benefit into the promo snapshot only when set', () => {
+    const base = { code: 'CREW', agencyName: 'Crew', discountType: 'fixed' as const, discountValue: 0 };
+    expect(computePricing(input({ promo: { ...base, freeVisa: true } })).promo).toEqual({ code: 'CREW', agencyName: 'Crew', type: 'fixed', value: 0, discountTotal: 0, freeVisa: true });
+    expect(computePricing(input({ promo: base })).promo).not.toHaveProperty('freeVisa');
+  });
   it('prices each category without promo and omits zero lines', () => {
     const p = computePricing(input());
     expect(p.lines).toEqual([

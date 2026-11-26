@@ -7,7 +7,7 @@ import type { PromoCode } from '@unik/shared/domain';
 import { getCurrentUser } from '@/lib/auth';
 import type { ApplicationRecord } from '@/lib/admin/applicationDoc';
 import { CONFIRMED_STATUSES, promoStats } from '@/lib/admin/list';
-import { discountLabel, emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from '@/lib/admin/promoAdmin';
+import { benefitLabels, emptyPromoForm, isPromoExpired, promoToForm, referralLink, toPromoDoc, validatePromoForm } from '@/lib/admin/promoAdmin';
 import { useAdminT } from '@/lib/admin/i18n/AdminLocaleProvider';
 import type { MessageKey, Msg } from '@/lib/admin/i18n/translate';
 import type { PromoForm } from '@/lib/admin/promoAdmin';
@@ -68,7 +68,7 @@ export default function PromoCodesPage() {
   const viaAgency = active.filter((a) => a.pricing.promo);
   const original = editing ? codes.find((c) => c.code === editing) : undefined;
   const discountChanged =
-    !!original && (original.discountType !== form.discountType || String(original.discountValue) !== form.discountValue.trim());
+    !!original && (original.discountType !== form.discountType || String(original.discountValue) !== form.discountValue.trim() || (original.freeVisa === true) !== form.freeVisa);
 
   const set = <K extends keyof PromoForm>(k: K, v: PromoForm[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
@@ -162,6 +162,7 @@ export default function PromoCodesPage() {
     ['promo.kpi.activeCodes', String(codes.filter((c) => c.active).length)],
     ['promo.kpi.applicationsViaAgencies', t('promo.kpi.nOfTotal', { n: viaAgency.length, total: active.length })],
     ['promo.kpi.travelersViaAgencies', String(Object.values(stats).reduce((s, x) => s + x.pax, 0))],
+    ['promo.kpi.freeVisaPax', t('promo.kpi.freeVisaValue', { pax: Object.values(stats).reduce((s, x) => s + x.freeVisaPax, 0), confirmed: Object.values(stats).reduce((s, x) => s + x.freeVisaConfirmedPax, 0) })],
     ['promo.kpi.discountsGiven', formatPHP(viaAgency.filter((a) => CONFIRMED_STATUSES.includes(a.status)).reduce((s, a) => s + (a.pricing.promo?.discountTotal ?? 0), 0))],
   ];
   const columns: (MessageKey | '')[] = ['promo.col.code', 'promo.col.agency', 'promo.col.discount', 'promo.col.validUntil', 'promo.col.apps', 'promo.col.pax', 'promo.col.confirmedPax', 'promo.col.netSales', 'promo.col.status', ''];
@@ -221,7 +222,7 @@ export default function PromoCodesPage() {
                         </div>
                       ) : null}
                     </td>
-                    <td className="admin-table-cell">{t(discountLabel(c.discountType, c.discountValue))}</td>
+                    <td className="admin-table-cell">{benefitLabels(c).map((m, i) => <div key={i} className={i === 0 && c.freeVisa ? 'font-semibold text-emerald-700' : ''}>{t(m)}</div>)}</td>
                     <td className="admin-table-cell">{c.validUntil || t('promo.noExpiry')}</td>
                     <td className="admin-table-cell">{s?.applications ?? 0}</td>
                     <td className="admin-table-cell">
@@ -299,6 +300,7 @@ export default function PromoCodesPage() {
             {errorText('discountValue')}
             {discountChanged ? <span className="text-xs text-slate-500">{t('promo.form.newApplicationsOnly')}</span> : null}
           </fieldset>
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800"><input type="checkbox" className="h-5 w-5" checked={form.freeVisa} onChange={(e) => set('freeVisa', e.target.checked)} /> {t('promo.form.freeVisa')}</label>
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">{t('promo.form.validUntil')}
               <input type="date" className="admin-input" value={form.validUntil} onChange={(e) => set('validUntil', e.target.value)} />

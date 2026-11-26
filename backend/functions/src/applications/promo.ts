@@ -1,7 +1,7 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import {
-  describeDiscount,
+  describePromoBenefit,
   evaluatePromo,
   isValidPromoCodeFormat,
   normalizePromoCode,
@@ -26,6 +26,7 @@ export type PromoCheckResult =
       agencyName: string;
       discountType: DiscountType;
       discountValue: number;
+      freeVisa: boolean;
       description: string;
     };
 
@@ -53,6 +54,7 @@ export async function checkPromoCodeCore(db: Firestore, raw: unknown, now = new 
     agencyName: promo.agencyName,
     discountType: promo.discountType,
     discountValue: promo.discountValue,
-    description: describeDiscount(promo.discountType, promo.discountValue),
+    freeVisa: promo.freeVisa === true,
+    description: describePromoBenefit(promo.discountType, promo.discountValue, promo.freeVisa),
   };
 }
