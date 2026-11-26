@@ -33,7 +33,10 @@ export function ApplicantDetail({ app, config, onClose }: { app: ApplicationReco
             <span>{t('detail.applied', { date: formatManila(app.createdAt) })}</span>
           </div>
           <p className="mt-1 text-sm text-slate-600">{app.departure.label || app.departure.id} · {app.departure.departDate}{app.departure.returnDate ? ` – ${app.departure.returnDate}` : ''}</p>
-          <p className="text-sm text-slate-600">{promo ? `${promo.code} · ${promo.agencyName}${promo.discountTotal > 0 ? ` · −${formatPHP(promo.discountTotal)}` : ''}` : t('common.direct')}</p>
+          <p className="text-sm text-slate-600">
+            {promo ? `${promo.code} · ${promo.agencyName}${promo.discountTotal > 0 ? ` · −${formatPHP(promo.discountTotal)}` : ''}` : t('common.direct')}
+            {promo?.freeVisa ? <span className="admin-badge ml-2 bg-emerald-100 text-emerald-800">{t('promo.benefit.freeVisa')}</span> : null}
+          </p>
         </div>
         <button type="button" aria-label={t('common.close')} className="admin-btn-secondary !p-2" onClick={onClose}><X className="h-4 w-4" /></button>
       </div>

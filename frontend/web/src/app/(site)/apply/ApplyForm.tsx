@@ -209,7 +209,7 @@ export function ApplyForm() {
       if (r.valid) {
         dispatch({
           type: 'promoApplied',
-          promo: { code: r.code, agencyName: r.agencyName, discountType: r.discountType, discountValue: r.discountValue, description: r.description },
+          promo: { code: r.code, agencyName: r.agencyName, discountType: r.discountType, discountValue: r.discountValue, freeVisa: r.freeVisa === true, description: r.description },
         });
       } else {
         dispatch({ type: 'promoCleared' });
@@ -475,7 +475,7 @@ export function ApplyForm() {
         {/* 4. Promo */}
         <fieldset className={card}>
           <legend className={legend}>4. Promo code</legend>
-          <p className="text-[15px]">Referred by a travel agency? Enter the code they gave you.</p>
+          <p className="text-[15px]">Got a code from a travel agency or running club? Enter it here.</p>
           <div className="flex flex-wrap gap-2.5">
             <label className="flex flex-[1_1_240px] flex-col gap-1.5 text-sm font-bold text-brand-ink">
               Promo code
@@ -488,9 +488,10 @@ export function ApplyForm() {
           </div>
           {state.promo ? (
             <p className="rounded-xl bg-[#E8F5EC] px-4 py-3 text-[15px] font-semibold text-[#145C33]">
-              {state.promo.discountType === 'fixed' && state.promo.discountValue === 0
+              {state.promo.freeVisa || (state.promo.discountType === 'fixed' && state.promo.discountValue === 0)
                 ? <>Referred by {state.promo.agencyName}</>
                 : <>Code applied: {state.promo.agencyName} · {state.promo.description}</>}
+              {state.promo.freeVisa ? <span className="mt-1 block">✓ {state.promo.description}</span> : null}
             </p>
           ) : null}
           {promoMessage ? <p role="alert" className="text-sm font-semibold text-brand-red">{promoMessage}</p> : null}

@@ -26,6 +26,7 @@ export interface AppliedPromo {
   agencyName: string;
   discountType: DiscountType;
   discountValue: number;
+  freeVisa?: boolean;
   description: string;
 }
 
@@ -228,6 +229,7 @@ export function estimatePricing(state: ApplyState, config: TourConfig): Pricing 
           agencyName: state.promo.agencyName,
           discountType: state.promo.discountType,
           discountValue: state.promo.discountValue,
+          freeVisa: state.promo.freeVisa,
         }
       : null,
     depositPerPax: config.depositPerPax,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   describeDiscount,
+  describePromoBenefit,
   evaluatePromo,
   isValidPromoCodeFormat,
   manilaDate,
@@ -77,6 +78,15 @@ describe('promoUsagePax', () => {
       { status: 'new', departureId: 'mnl', counts: { full: 1, tenK: 0, companion: 1, childTenK: 1, childTenKNoBed: 1, child: 1, childNoBed: 1, infant: 1 }, promoCode: 'TA-A' },
     ];
     expect(promoUsagePax(apps, 'TA-A')).toBe(6);
+  });
+});
+
+describe('describePromoBenefit', () => {
+  it('shows free visa processing alone or with a discount', () => {
+    expect(describePromoBenefit('fixed', 0, true)).toBe('Free visa processing');
+    expect(describePromoBenefit('fixed', 1000, true)).toBe('Free visa processing + PHP 1,000 off per person');
+    expect(describePromoBenefit('fixed', 1000, false)).toBe('PHP 1,000 off per person');
+    expect(describePromoBenefit('fixed', 0, undefined)).toBe('Referral code (no discount)');
   });
 });
 

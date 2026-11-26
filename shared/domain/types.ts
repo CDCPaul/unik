@@ -123,6 +123,8 @@ export interface PromoCode {
   maxPax: number | null;
   active: boolean;
   notes?: string;
+  /** 혜택: 비자 처리비 무료 (할인과 별개로 켤 수 있다). 없는 문서는 false 로 본다. */
+  freeVisa?: boolean;
 }
 
 export interface PromoSnapshot {
@@ -131,6 +133,8 @@ export interface PromoSnapshot {
   type: DiscountType;
   value: number;
   discountTotal: number;
+  /** 신청 당시 코드에 비자 처리비 무료 혜택이 있었는지 (true 일 때만 저장) */
+  freeVisa?: boolean;
 }
 
 export interface PricingLine {

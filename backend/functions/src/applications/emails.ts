@@ -1,4 +1,4 @@
-import { CONTACT_TIME_LABELS, describeCounts, formatPHP, normalizeContactTimes, totalPax, type Counts, type Pricing } from '../shared-domain';
+import { CONTACT_TIME_LABELS, FREE_VISA_LABEL, describeCounts, formatPHP, normalizeContactTimes, totalPax, type Counts, type Pricing } from '../shared-domain';
 import { escapeHtml } from '../lib/email';
 
 function bestTime(value: unknown): string {
@@ -42,13 +42,12 @@ function layout(title: string, body: string): string {
 function summaryTable(app: ApplicationEmailData): string {
   const row = (label: string, value: string) =>
     `<tr><td style="padding:6px 0;color:#5A6680;width:160px">${label}</td><td style="padding:6px 0;font-weight:bold">${value}</td></tr>`;
-  const promo = app.pricing.promo
+  const p = app.pricing.promo;
+  const promo = p
     ? row(
         'Promo',
-        app.pricing.promo.discountTotal > 0
-          ? `${escapeHtml(app.pricing.promo.code)} (−${formatPHP(app.pricing.promo.discountTotal)})`
-          : `${escapeHtml(app.pricing.promo.code)} (${escapeHtml(app.pricing.promo.agencyName)})`,
-      )
+        `${escapeHtml(p.code)} (${p.discountTotal > 0 ? `−${formatPHP(p.discountTotal)}` : escapeHtml(p.agencyName)})`,
+      ) + (p.freeVisa ? row('Benefit', FREE_VISA_LABEL) : '')
     : '';
   return `<table style="width:100%;border-collapse:collapse">
 ${row('Application no.', escapeHtml(app.appNo))}
@@ -89,7 +88,7 @@ ${summaryTable(app)}
 export function staffEmail(app: ApplicationEmailData, docId: string): { subject: string; html: string } {
   const pax = totalPax(app.counts);
   const waitlist = app.status === 'waitlist' ? ' (WAITLIST)' : '';
-  const promo = app.pricing.promo ? ` | ${app.pricing.promo.code}` : '';
+  const promo = app.pricing.promo ? ` | ${app.pricing.promo.code}${app.pricing.promo.freeVisa ? ' (free visa)' : ''}` : '';
   const contact = [
     `${escapeHtml(app.lead.firstName)} ${escapeHtml(app.lead.lastName)}`,
     escapeHtml(app.lead.email),

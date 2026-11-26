@@ -107,7 +107,19 @@ describe('child / infant KPIs', () => {
 describe('promoStats', () => {
   it('aggregates per code excluding cancelled; sales and discounts count confirmed only', () => {
     expect(promoStats(apps)).toEqual({
-      'TA-A': { applications: 1, pax: 3, quotaPax: 3, confirmedPax: 3, netSales: 224000, discountTotal: 6000 },
+      'TA-A': { applications: 1, pax: 3, quotaPax: 3, confirmedPax: 3, netSales: 224000, discountTotal: 6000, freeVisaPax: 0, freeVisaConfirmedPax: 0 },
     });
+  });
+  it('counts free visa travelers (infants included) from the application snapshot', () => {
+    const visa = { code: 'CREW', agencyName: 'Crew', type: 'fixed' as const, value: 0, discountTotal: 0, freeVisa: true };
+    const counts = { full: 2, tenK: 0, companion: 0, childTenK: 0, childTenKNoBed: 0, child: 0, childNoBed: 0, infant: 1 };
+    const pricing = { lines: [], singleSupplements: 0, subtotal: 0, promo: visa, total: 0, depositDue: 0 };
+    const s = promoStats([
+      app({ id: 'v1', status: 'new', counts, pricing }),
+      app({ id: 'v2', status: 'confirmed', pricing }),
+      app({ id: 'v3', status: 'cancelled', counts, pricing }),
+    ]).CREW;
+    expect(s.freeVisaPax).toBe(4);
+    expect(s.freeVisaConfirmedPax).toBe(1);
   });
 });

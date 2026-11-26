@@ -73,7 +73,7 @@ export function recalculate(
     counts,
     travelers,
     // 신청 당시 할인 조건을 그대로 쓴다 (코드 유효성은 다시 판정하지 않음)
-    promo: snap ? { code: snap.code, agencyName: snap.agencyName, discountType: snap.type, discountValue: snap.value } : null,
+    promo: snap ? { code: snap.code, agencyName: snap.agencyName, discountType: snap.type, discountValue: snap.value, freeVisa: snap.freeVisa } : null,
     depositPerPax: perPaxDeposit,
   });
   const warnings = paymentWarnings(app, pricing);

@@ -39,6 +39,14 @@ describe('application emails', () => {
     const { html } = customerEmail(referral);
     expect(html).toContain('GRH_C (GRAND HOPE SM)');
     expect(html).not.toContain('−PHP 0');
+    expect(html).not.toContain('Free visa processing');
+  });
+  it('shows the free visa benefit in both emails and the staff subject', () => {
+    const crew = { ...app, pricing: { ...app.pricing, promo: { code: 'JSUADD', agencyName: 'Just Show Up Manila', type: 'fixed' as const, value: 0, discountTotal: 0, freeVisa: true } } };
+    expect(customerEmail(crew).html).toContain('Free visa processing');
+    const staff = staffEmail(crew, 'doc-1');
+    expect(staff.html).toContain('Free visa processing');
+    expect(staff.subject).toContain('| JSUADD (free visa)');
   });
   it('customer email explains the waitlist', () => {
     const { subject, html } = customerEmail({ ...app, status: 'waitlist' });
